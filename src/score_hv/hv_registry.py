@@ -14,6 +14,7 @@ from score_hv.harvesters.soca_diags import SOCADiagsConfig, SOCADiagsHv
 from score_hv.harvesters.gsi_satellite_radiance_channel import GSISatelliteRadianceChannelConfig, GSISatelliteRadianceChannelHv
 from score_hv.harvesters.ioda_meta_netcdf import IodaMetaCfg, IodaMetaHv
 from score_hv.harvesters.wod_insitu_meta_netcdf import WodInsituMetaCfg, WodInsituMetaHv
+from score_hv.harvesters.gsi_conventional_obs import GSIConvObsConfig, GSIConvObsHv
 
 NAMED_TUPLES_LIST = 'tuples_list'
 PANDAS_DATAFRAME = 'pandas_dataframe'
@@ -26,6 +27,7 @@ SOCA_DIAGS = 'soca_diags'
 GSI_SATELLITE_RADIANCE_CHANNEL = 'gsi_satellite_radiance_channel'
 IODA_META_NETCDF = 'ioda_meta_netcdf'
 WOD_INSITU_META_NETCDF = 'wod_insitu_meta_netcdf'
+GSI_CONVENTIONAL_OBS = 'gsi_conventional_obs'
 
 Harvester = namedtuple('Harvester', ('name', 'config_handler', 'data_parser'),)
 
@@ -72,5 +74,11 @@ harvester_registry = {INNOV_NETCDF: Harvester(
                       WOD_INSITU_META_NETCDF: Harvester(
                           'meta data contained in wod insitu netcdf files',
                           WodInsituMetaCfg,
-                          WodInsituMetaHv)
+                          WodInsituMetaHv),
+                      GSI_CONVENTIONAL_OBS: Harvester(
+                          'Conventional observation departure statistics from '
+                          'the GSI analysis fit files',
+                          GSIConvObsConfig,
+                          GSIConvObsHv
+                          )
                       }
