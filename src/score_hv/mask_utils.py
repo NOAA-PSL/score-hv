@@ -9,9 +9,10 @@ import numpy as np
 import xarray as xr
 import pytest
 import pdb
+from pathlib import Path
 
 VARIABLES_TO_MASK = ['icetk','nsst','snod','soilm','soilt4','sst','tg3','tsnowp','weasd']
-VALID_MASKS = ['none','land','water', 'ice']
+VALID_MASKS = ['none','land','ocean', 'ice']
 
 class MaskCatalog:
     def __init__(self):
@@ -157,9 +158,23 @@ class MaskCatalog:
             masked_fraction = fraction_data.where((sotyp_data != 0) & (sotyp_data != 16),drop=False)
             masked_weights  = weights.where((sotyp_data != 0) & (sotyp_data != 16),drop=False)
         
-        elif mask_type == 'water':
-            masked_variable = variable_data.where(sotyp_data == 0,False)
-            masked_weights = weights.where(sotyp_data == 0,False)
+        elif mask_type == 'ocean':
+            print("ocean")
+            elevation_file_path = os.path.join(Path(__file__).parent.resolve(),'data','GEBCO_elevations.nc')
+            elevations_file =  xr.open_dataset(elevation_file_path)
+            if not elevations_file:
+               print("Unable to open elevations file: {elevations}")
+               sys.exit(1)
+            elevations = elevations_file['elevation']   
+            threshold = -600.0
+            region_lat = variable_data.grid_yt
+            region_lon = variable_data.grid_xt
+            regional_elevations = elevations.sel(grid_yt=region_lat, grid_xt=region_lon)            
+            masked_variable = variable_data.where(elevations < threshold,drop=False)
+            masked_weights = weights.where(elevations < threshold,drop=False)
+                        
+            #masked_variable = variable_data.where(sotyp_data == 0,False)
+            #masked_weights = weights.where(sotyp_data == 0,False)
             """
               This line replaces the lfrac values over the water where they are 0 with 1.  Then
               it subtracts the lfrac values that are between 0 and 1 from 1 to get the fraction
