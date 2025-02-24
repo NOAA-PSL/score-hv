@@ -10,6 +10,7 @@ from score_hv.harvesters.innov_netcdf import InnovStatsCfg, InnovStatsHv
 from score_hv.harvesters.obs_log import ObsInfoCfg, ObsInfoHv
 from score_hv.harvesters.inc_logs import LogIncCfg, LogIncHv
 from score_hv.harvesters.daily_bfg import DailyBFGConfig, DailyBFGHv
+from score_hv.harvesters.soca_diags import SOCADiagsConfig, SOCADiagsHv
 from score_hv.harvesters.gsi_satellite_radiance_channel import GSISatelliteRadianceChannelConfig, GSISatelliteRadianceChannelHv
 from score_hv.harvesters.ioda_meta_netcdf import IodaMetaCfg, IodaMetaHv
 
@@ -19,6 +20,8 @@ INNOV_NETCDF = 'innov_stats_netcdf'
 OBS_INFO_LOG = 'obs_info_log'
 INC_LOGS = 'inc_logs'
 DAILY_BFG = 'daily_bfg'
+SOCA_DIAGS = 'soca_diags'
+
 GSI_SATELLITE_RADIANCE_CHANNEL = 'gsi_satellite_radiance_channel'
 IODA_META_NETCDF = 'ioda_meta_netcdf'
 
@@ -44,9 +47,14 @@ harvester_registry = {INNOV_NETCDF: Harvester(
                           LogIncHv
                           ),
                       DAILY_BFG: Harvester(
-                          'Daily mean statistics from background forecast data',
+                          'Daily mean statistics from background forecast',
                           DailyBFGConfig,
                           DailyBFGHv
+                          ),
+                      SOCA_DIAGS: Harvester(
+                          'Statistics from SOCA diagnostics files',
+                          SOCADiagsConfig,
+                          SOCADiagsHv
                           ),
                       GSI_SATELLITE_RADIANCE_CHANNEL: Harvester(
                           'Satellite radiance statistics by channel from the '
@@ -57,5 +65,6 @@ harvester_registry = {INNOV_NETCDF: Harvester(
                       IODA_META_NETCDF: Harvester(
                           'meta data contained in ioda formatted netcdf files',
                           IodaMetaCfg,
-                          IodaMetaHv)
+                          IodaMetaHv
+                          ),
                       }
