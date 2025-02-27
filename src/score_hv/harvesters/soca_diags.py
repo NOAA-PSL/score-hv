@@ -17,7 +17,7 @@ from netCDF4 import Dataset
 from score_hv.config_base import ConfigInterface
 
 HARVESTER_NAME = 'soca_diags'
-VALID_STATISTICS = ('mean', 'median', 'StdDev',  'minimum', 'maximum')
+VALID_STATISTICS = ('mean', 'median', 'StdDev','minimum', 'maximum')
 
 """Variables of interest that come from the background forecast data.
 Commented out variables can be uncommented to generate gridcell weighted
@@ -25,6 +25,10 @@ statistics but are in development and are currently not fully supported.
 """
 VALID_VARIABLES  =  ('sst', #sea surface temperature
                      'icec', #seaIceFraction
+                     'salinity',
+                     'waterTemperature',
+                     'seaSurfaceSalinity',
+                     'seaSurfaceTemperature',
                     )
 HarvestedData = namedtuple('HarvestedData', ['filenames',
                                              'sensor',
@@ -58,13 +62,19 @@ def parse_filename(filename):
     filename_info = {
               'variable_type': parts[0],
               'sensor':  parts[1],
-    }         
+    }        
+    if filename_info['variable_type'] == 'insitu':
+       filename_info['sensor'] = None
+
     filename_info['datetime'] = datetime_part 
     filename_info['region'] = None
     filename_info['satellite'] = None
     filename_info['level'] = None
     if len(parts) == 3:
-       filename_info['region'] = parts[2]
+       if filename_info['variable_type'] == 'insitu':
+          filename_info['satellite'] = parts[2]
+       else:
+          filename_info['region'] = parts[2]
     elif len(parts) == 4:
        filename_info['satellite'] = parts[2]
        filename_info['level'] = parts[3]
@@ -209,8 +219,9 @@ class SOCADiagsHv(object):
             file_region = filename_info['region']
             satellite = filename_info['satellite']
             level = filename_info['level']
-            print(variable,"  ",sensor,"  ",file_region," ",satellite,"  ",level)
+            #print(variable,"  ",sensor,"  ",file_region," ",satellite,"  ",level)
             latitude,longitude = read_MetaData_group(dataset)
+            
             """
               We can now loop through the list of wanted groups.
               We get the values from the wanted groups and the FillValue.
@@ -219,53 +230,67 @@ class SOCADiagsHv(object):
                 if group not in dataset.groups:
                    print(group," is not in the dataset.groups ",dataset.groups)
                    sys.exit(1)
-                else:            
+                else:     
                    requested_group = dataset.groups[group]
                    group_name = group
-                   longname = list(requested_group.variables.keys())[0] 
+                   num_variables = len(requested_group.variables)
                    for var_name in requested_group.variables:
+                       #print("in the for loop ",var_name,"  ",group)
+                       var = requested_group.variables[var_name]
+                       if num_variables > 1:
+                          longname = var_name 
+                          variable = var_name 
+                       else:
+                          longname = list(requested_group.variables.keys())[0] 
+
+                       if "units" in var.ncattrs():
+                          units = str(var.getncattr("units"))
+   
                        groupvalue_variable = requested_group.variables[var_name]
                        var_values = np.array(groupvalue_variable[:])
+
                        if '_FillValue' in groupvalue_variable.ncattrs():
                           fill_value = groupvalue_variable.getncattr('_FillValue')
+
+                       if np.ma.isMaskedArray(var_values):
+                          var_values = np.ma.filled(var_values, np.nan) 
+                       else:   
                           var_values[var_values == fill_value] = np.nan                                       
-                   """
-                     Calculate the requested statistics. Our var_values arrays are 
-                     all of type <class 'numpy.ndarray'>.  We have used the fill_value
-                     to put np.nan's in the for all values to to the fill_values so we 
-                     can calculate the statistics.
-                     """
-                   for j, statistic in enumerate(self.config.get_stats()):
-                       #print(statistic,"  ",group,"  ",longname,"  ",variable)
-                       group = group_name
-                       if statistic == 'mean':
-                          value = np.nanmean(var_values)
-                             
-                       elif statistic == 'median':
-                            value = np.nanmedian(var_values)
+                       """
+                          Calculate the requested statistics. Our var_values arrays are 
+                          all of type <class 'numpy.ndarray'>.  We have used the fill_value
+                          to put np.nan's in the for all values to to the fill_values so we 
+                          can calculate the statistics.
+                          """
+                       for j, statistic in enumerate(self.config.get_stats()):
+                           #print(statistic,"  ",group,"  ",longname,"  ",variable)
+                           group = group_name
+                           if statistic == 'mean':
+                               value = np.nanmean(var_values)
+                               #print(variable,"  ",group,"  ",value) 
+                           elif statistic == 'median':
+                               value = np.nanmedian(var_values)
 
-                       elif statistic == 'StdDev':
-                            value = np.nanstd(var_values)
+                           elif statistic == 'StdDev':
+                               value = np.nanstd(var_values)
 
-                       elif statistic == 'minimum':
-                            value = np.nanmin(var_values)
+                           elif statistic == 'minimum':
+                               value = np.nanmin(var_values)
 
-                       elif statistic == 'maximum':
-                            value = np.nanmax(var_values)
+                           elif statistic == 'maximum':
+                               value = np.nanmax(var_values)
 
-                       harvested_data.append(HarvestedData(
-                                            filename,
-                                            sensor,
-                                            satellite,
-                                            level,
-                                            variable,
-                                            group,
-                                            longname,
-                                            units,
-                                            statistic,
-                                            np.float32(value),
-                                            filetime,
-                                            file_region))
-        print("at end ",filename)
-        dataset.close() 
-        return(harvested_data)
+                           harvested_data.append(HarvestedData(
+                                                 filename,
+                                                 sensor,
+                                                 satellite,
+                                                 level,
+                                                 variable,
+                                                 group,
+                                                 longname,
+                                                 units,
+                                                 statistic,
+                                                 np.float32(value),
+                                                 filetime,
+                                                 file_region))
+            return(harvested_data)
