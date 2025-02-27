@@ -219,7 +219,6 @@ class SOCADiagsHv(object):
             file_region = filename_info['region']
             satellite = filename_info['satellite']
             level = filename_info['level']
-            #print(variable,"  ",sensor,"  ",file_region," ",satellite,"  ",level)
             latitude,longitude = read_MetaData_group(dataset)
             
             """
@@ -235,7 +234,6 @@ class SOCADiagsHv(object):
                    group_name = group
                    num_variables = len(requested_group.variables)
                    for var_name in requested_group.variables:
-                       #print("in the for loop ",var_name,"  ",group)
                        var = requested_group.variables[var_name]
                        if num_variables > 1:
                           longname = var_name 
@@ -256,6 +254,7 @@ class SOCADiagsHv(object):
                           var_values = np.ma.filled(var_values, np.nan) 
                        else:   
                           var_values[var_values == fill_value] = np.nan                                       
+                       
                        """
                           Calculate the requested statistics. Our var_values arrays are 
                           all of type <class 'numpy.ndarray'>.  We have used the fill_value
@@ -263,11 +262,10 @@ class SOCADiagsHv(object):
                           can calculate the statistics.
                           """
                        for j, statistic in enumerate(self.config.get_stats()):
-                           #print(statistic,"  ",group,"  ",longname,"  ",variable)
                            group = group_name
                            if statistic == 'mean':
                                value = np.nanmean(var_values)
-                               #print(variable,"  ",group,"  ",value) 
+                           
                            elif statistic == 'median':
                                value = np.nanmedian(var_values)
 
