@@ -60,9 +60,7 @@ def verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
-        if data.group not in groups_wanted:
-           print(f"{data.group} is not in the wanted groups.")
-           sys.exit(1)
+        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
 
 def calculate_statistic(statistic,thegroup):
     for var_name in thegroup.variables:
@@ -95,8 +93,7 @@ def verify_group_mean_values():
     try: 
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : sst_viirs_n20_l3u.2021070300.nc4 {e}")
     """
       calculate the statistic from the open dataset..
       """
@@ -115,8 +112,8 @@ def verify_group_median_values():
     try:
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e:
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : sst_viirs_n20_l3u.2021070300.nc4 {e}")
+
     """
       calculate the statistic from the open dataset..
       """
@@ -135,8 +132,7 @@ def verify_group_StdDev_values():
     try: 
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : sst_viirs_n20_l3u.2021070300.nc4 {e}")
 
     groups_wanted = ['ObsValue','oman','ombg']
     for group_name in groups_wanted: 

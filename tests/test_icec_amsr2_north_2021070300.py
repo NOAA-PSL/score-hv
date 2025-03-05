@@ -59,12 +59,9 @@ def verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
-        if data.group not in groups_wanted:
-           print(f"{data.group} is not in the wanted groups.")
-           sys.exit(1)
+        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
 
 def calculate_statistic(statistic,thegroup):
-    print("in calculate statistic ",statistic)
     for var_name in thegroup.variables:
         variable = thegroup.variables[var_name] 
         var_values = np.array(variable[:]) 
@@ -76,7 +73,6 @@ def calculate_statistic(statistic,thegroup):
            elif statistic == 'median':
               statistic_value = np.nanmedian(var_values)
            elif statistic == 'StdDev':
-              print("in the StdDev")
               statistic_value = np.nanstd(var_values)
 
     return(statistic_value)
@@ -89,7 +85,6 @@ def get_harvested_statistic_value(statistic):
     return harvested_data    
 
 def verify_group_mean_values():
-    print("in verify group mean values")
     statistic = 'mean'
     
     filename = SOCA_PATH[0]  
@@ -97,7 +92,6 @@ def verify_group_mean_values():
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
        raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
     """
       calculate the statistic from the open dataset..
       """
@@ -106,7 +100,6 @@ def verify_group_mean_values():
         thegroup = dataset.groups[group_name]
         calculated_mean = calculate_statistic(statistic,thegroup)
         harvested_mean = get_harvested_statistic_value(statistic)       
-#        print(group_name,"  ",calculated_mean,"  ",harvested_mean)
         assert calculated_mean == harvested_mean[group_name]
     dataset.close() 
 
@@ -118,7 +111,6 @@ def verify_group_median_values():
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e:
        raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
     """
       calculate the statistic from the open dataset..
       """
@@ -127,12 +119,10 @@ def verify_group_median_values():
         thegroup = dataset.groups[group_name]
         calculated_median = calculate_statistic(statistic,thegroup)
         harvested_median = get_harvested_statistic_value(statistic)
-#        print(group_name,"  ",calculated_median,"  ",harvested_median)
         assert calculated_median == harvested_median[group_name]
     dataset.close()
 
 def verify_group_StdDev_values():
-    print("in verify_group_StdDev")
     statistic = 'StdDev'
 
     filename = SOCA_PATH[0]  
@@ -140,14 +130,12 @@ def verify_group_StdDev_values():
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
        raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
 
     groups_wanted = ['ObsValue','oman','ombg']
     for group_name in groups_wanted: 
         thegroup = dataset.groups[group_name]
         calculated_std = calculate_statistic(statistic,thegroup)
         harvested_std = get_harvested_statistic_value(statistic)       
-        #print(group_name,"  ",calculated_std,"  ",harvested_std)
         assert calculated_std == harvested_std[group_name]
     dataset.close() 
 

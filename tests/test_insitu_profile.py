@@ -45,8 +45,7 @@ def verify_filename_components():
     data1 = harvest(VALID_CONFIG_DICT)
     for item in data1:
         if item.variable not in expected_variable_names:
-           print(f"Error: {item.variable} is not in the expected variable list.")
-           sys.exit(1)
+           raise ValueError(f"Error: {item.variable} is not in the expected variable list.") 
         assert item.sensor == None   
         assert item.satellite == 'argo'
         assert item.level == None   
@@ -63,9 +62,7 @@ def verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
-        if data.group not in groups_wanted:
-           print(f"{data.group} is not in the wanted groups.")
-           sys.exit(1)
+        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
 
 def calculate_statistic(statistic,group,var_name):
     """
@@ -79,7 +76,6 @@ def calculate_statistic(statistic,group,var_name):
         dict: A dictionary with statistic names as keys and computed values as values. 
     """
     variable = group.variables[var_name]
-    print("the variable ",var_name)
     data = variable[:]  
 
     # Check if the variable has a '_FillValue' attribute and replace it with NaN
@@ -122,7 +118,6 @@ def get_harvested_statistic_value(statistic, thegroup, var_name):
     Returns:
         The value associated with the matching HarvestedData record, or None if not found.
     """
-    print("in the harvested ",statistic,"  ",thegroup,"  ",var_name)
     data1 = harvest(VALID_CONFIG_DICT)
     for item in data1:
         if item.group == thegroup:
@@ -137,10 +132,10 @@ def verify_group_mean_values():
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
        raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
-       sys.exit(1)
     """
       calculate the statistic from the open dataset..
-      """
+    """
+    
     statistic = 'mean'  
     groups_wanted = ['ObsValue','oman','ombg']
     for group_name in groups_wanted:
@@ -160,11 +155,11 @@ def verify_group_median_values():
     try: 
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
     """
       calculate the statistic from the open dataset..
       """
+    
     statistic = 'median'  
     groups_wanted = ['ObsValue','oman','ombg']
     for group_name in groups_wanted:
@@ -185,8 +180,8 @@ def verify_group_standard_deviation_values():
     try: 
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
+    
     """
       calculate the statistic from the open dataset..
       """
@@ -209,12 +204,37 @@ def verify_group_minimum_values():
     try: 
        dataset = netCDF4.Dataset(filename,'r')
     except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
+    
     """
       calculate the statistic from the open dataset..
       """
     statistic = 'minimum'  
+    groups_wanted = ['ObsValue','oman','ombg']
+    for group_name in groups_wanted:
+        requested_group = dataset.groups[group_name]
+        num_variables = len(requested_group.variables)
+        variable_names = list(requested_group.variables.keys())        
+        for var_name in variable_names: 
+            thegroup = dataset.groups[group_name]
+            calculated_value = calculate_statistic(statistic,thegroup,var_name)
+            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
+            assert calculated_value == harvested_value
+    dataset.close() 
+
+def verify_group_maximum_values():
+
+    filename = SOCA_PATH[0]  
+    try: 
+       dataset = netCDF4.Dataset(filename,'r')
+    except Exception as e: 
+       sys.exit(1)
+       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
+    
+    """
+      calculate the statistic from the open dataset..
+      """
+    statistic = 'maximum'  
     groups_wanted = ['ObsValue','oman','ombg']
     for group_name in groups_wanted:
         requested_group = dataset.groups[group_name]
@@ -236,6 +256,7 @@ def main():
     verify_group_median_values()
     verify_group_standard_deviation_values()
     verify_group_minimum_values()
+    verify_group_maximum_values()
 
 if __name__=='__main__':
     main()
