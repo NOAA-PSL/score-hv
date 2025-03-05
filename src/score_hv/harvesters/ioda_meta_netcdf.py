@@ -179,6 +179,8 @@ class IodaMetaHv:
         # Iterate through each variable in 'ObsValue' for getting correct min and max datetime per variable
         if 'ObsValue' in dataset.groups:
             obs_group = dataset.groups['ObsValue']
+            if num_vars is None: 
+                num_vars = len(obs_group.variables)
             for var_name in obs_group.variables:
                 var = obs_group.variables[var_name][:]
                 

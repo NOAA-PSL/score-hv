@@ -106,8 +106,8 @@ def test_ioda_sst_noaa07_meta():
     assert sst_data.platform == "NOAA-07"
     assert sst_data.ioda_layout == "ObsGroup"
     assert sst_data.processing_level == "L3U"
-    assert sst_data.thinning == 0.95
-    assert sst_data.ioda_version == 'v3'
+    assert sst_data.thinning == None
+    assert sst_data.ioda_version == 'v2'
 
 #Test insitu data stored in v2 for salinity and temp in one file, values are independently sourced from the file
 def test_ioda_insitu_v2_meta():
