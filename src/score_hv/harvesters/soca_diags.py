@@ -49,16 +49,25 @@ def parse_filename(filename):
       filename does not have the expected number of parts,
       the program exits.
       Parameters: The filename. 
-      Return: The information listed above for the filename.
+      Return: The information listed above for the filename in
+              the form of the dictionary filename_info.
+              - variable_type (str)
+              - sensor (str or None)
+              - satellite (str or None)
+              - level (str or None)
+              - region (str or None)
+              - datetime (str)
+      Raises:
+              ValueError: If the filename format is unexpected or has an invalid number of parts.        
       """
     base = os.path.basename(filename)
     try:
        name_part, datetime_part, ext = base.rsplit('.', 2)
     except ValueError:
-       print(f"Filename format unexpected: {filename}")
-       sys.exit(1)
+       raise ValueError(f"Filename format unexpected: {filename}")
 
     parts = name_part.split('_')
+    # Initialize dictionary with default values
     filename_info = {
               'variable_type': parts[0],
               'sensor':  parts[1],
@@ -79,12 +88,10 @@ def parse_filename(filename):
        filename_info['satellite'] = parts[2]
        filename_info['level'] = parts[3]
     elif len(parts) == 5:
-       filename_info['platform'] = parts[2]
        filename_info['level'] = parts[3]
        filename_info['region'] = parts[4]
     else:
-       print(f"Unexpected number of parts in filename: {filename}")
-       sys.exit(1) 
+       raise ValueError(f"Unexpected number of parts in filename: {filename}")
 
     return filename_info
 
@@ -98,11 +105,11 @@ def read_MetaData_group(dataset):
        Returns: latitude and longitude value 
                 from the MetadData group.
        """
-    metadata_group = dataset.groups['MetaData']
     if 'MetaData' not in dataset.groups:
        latitude = None
        longitude = None
     else: 
+       metadata_group = dataset.groups['MetaData'] 
        if 'latitude' in metadata_group.variables:
           latitudes = metadata_group['latitude'][:]
        else:
@@ -204,7 +211,6 @@ class SOCADiagsHv(object):
                dataset = netCDF4.Dataset(filename, 'r')
             except Exception as e: 
                raise OSError (f"Failed to open NetCDF file {filename}: {e}")
-               sys.exit(1)
 
             print("file is open ",filename)
             """
