@@ -11,6 +11,7 @@ from score_hv.harvesters.obs_log import ObsInfoCfg, ObsInfoHv
 from score_hv.harvesters.inc_logs import LogIncCfg, LogIncHv
 from score_hv.harvesters.daily_bfg import DailyBFGConfig, DailyBFGHv
 from score_hv.harvesters.gsi_satellite_radiance_channel import GSISatelliteRadianceChannelConfig, GSISatelliteRadianceChannelHv
+from score_hv.harvesters.ioda_meta_netcdf import IodaMetaCfg, IodaMetaHv
 
 NAMED_TUPLES_LIST = 'tuples_list'
 PANDAS_DATAFRAME = 'pandas_dataframe'
@@ -19,6 +20,7 @@ OBS_INFO_LOG = 'obs_info_log'
 INC_LOGS = 'inc_logs'
 DAILY_BFG = 'daily_bfg'
 GSI_SATELLITE_RADIANCE_CHANNEL = 'gsi_satellite_radiance_channel'
+IODA_META_NETCDF = 'ioda_meta_netcdf'
 
 Harvester = namedtuple('Harvester', ('name', 'config_handler', 'data_parser'),)
 
@@ -51,5 +53,9 @@ harvester_registry = {INNOV_NETCDF: Harvester(
                           'GSI analysis fit files',
                           GSISatelliteRadianceChannelConfig,
                           GSISatelliteRadianceChannelHv
-                          )
+                          ),
+                      IODA_META_NETCDF: Harvester(
+                          'meta data contained in ioda formatted netcdf files',
+                          IodaMetaCfg,
+                          IodaMetaHv)
                       }
