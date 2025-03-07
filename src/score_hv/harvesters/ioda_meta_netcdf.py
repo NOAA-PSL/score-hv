@@ -243,7 +243,6 @@ def parse_filename(file_path):
     filename = os.path.basename(file_path)
     
     # Regular expression to match the filename pattern
-    #pattern = r'.*\.(\d{8})\.T(\d{6})Z\.ioda(v\d+)\.nc$'
     pattern = r'.*\.(\d{8})\.T(\d{6})Z\.ioda(v\d+)\b.*\.nc$'
     
     match = re.match(pattern, filename)
