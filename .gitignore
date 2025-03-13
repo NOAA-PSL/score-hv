@@ -1,5 +1,8 @@
 __pycache__
 .pyc
 .DS_Store
-tests/data/
+.pytest_cache
+.vscode
+pytest.ini
 *.egg-info
+tests/data/
