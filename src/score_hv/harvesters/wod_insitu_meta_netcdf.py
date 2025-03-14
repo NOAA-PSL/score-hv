@@ -8,7 +8,7 @@ Collection of methods to retrieve metadata from ioda formatted nc files.
 from collections import namedtuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from netCDF4 import Dataset
+from netCDF4 import Dataset, num2date
 import re
 import os 
 import numpy as np
@@ -22,10 +22,8 @@ HarvestedData = namedtuple(
     [
         'filename',
         'obs_day',
-        'file_date_time',
         'min_date_time',
         'max_date_time',
-        'num_locs',
         'min_depth',
         'max_depth',
         'num_vars',
@@ -93,19 +91,67 @@ class WodInsituMetaHv:
         'variable_name',
         'var_count',
         'sensor',
-        'casts',
+        'casts'
         """
         harvested_data = []
         dataset = Dataset(self.config.harvest_filename, 'r')
 
-       
+        #get the basic variable obs counts for all _obs dimensions in the file
+        variable_counts = {dim[:-4]: dataset.dimensions[dim].size for dim in dataset.dimensions if dim.endswith("_obs")}
+        
+        min_depth = None
+        max_depth = None
+        #get the min and max depth as appropriate
+        if 'z' in dataset.variables:
+            z_var = dataset.variables['z'][:]
+            min_depth = np.min(z_var) if np.issubdtype(z_var.dtype, np.floating) else None
+            max_depth = np.max(z_var) if np.issubdtype(z_var.dtype, np.floating) else None
+
+        #get the number of casts
+        casts = None
+        if 'casts' in dataset.dimensions:
+            casts = dataset.dimensions['casts'].size
+
+        time_min = None
+        time_max = None
+        if 'time' in dataset.variables:
+            time_var = dataset.variables['time']
+            time_values = time_var[:]
+            
+            # Extract time units
+            time_units = time_var.units if hasattr(time_var, 'units') else None
+            
+            if time_units:
+                # Convert time values to datetime
+                time_dates = num2date(time_values, units=time_units)
+                
+                # Get min and max
+                time_min = format_datetime_string(min(time_dates))
+                time_max = format_datetime_string(max(time_dates))
 
         filename_parsed = parse_filename(self.config.harvest_filename) 
         sensor = filename_parsed['sensor']
         filename = filename_parsed['filename']
         obs_day = filename_parsed['formatted_datetime_str']
 
-     
+        num_vars = len(variable_counts)
+        for variable_name, var_count in variable_counts.items():
+            harvested_data.append(
+                HarvestedData(
+                    filename,
+                    obs_day,
+                    time_min,
+                    time_max,
+                    min_depth,
+                    max_depth,
+                    num_vars,
+                    variable_name,
+                    var_count,
+                    sensor, 
+                    casts,
+                )
+            )
+
         return harvested_data
 
 
