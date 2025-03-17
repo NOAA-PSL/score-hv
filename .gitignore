@@ -5,3 +5,4 @@ __pycache__
 .vscode
 pytest.ini
 *.egg-info
+tests/data/
