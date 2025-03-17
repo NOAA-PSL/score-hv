@@ -138,5 +138,78 @@ def test_wod_gld_meta():
     assert chlorophyll_obs.sensor == "gld"
     assert chlorophyll_obs.casts == 74
 
+def test_wod_mrb_meta():
+    data = harvest(VALID_CONFIG_WOD_MRB)
+    temperature_obs = data[1]
+    assert temperature_obs.filename == WOD_MRB_DATA
+    assert temperature_obs.obs_day == '1983-06-03 12:00:00'
+    assert temperature_obs.min_date_time == '1983-06-03 12:00:00'
+    assert temperature_obs.max_date_time == '1983-06-03 12:00:00'
+    assert temperature_obs.min_depth == 1.0
+    assert temperature_obs.max_depth == 1564.0
+    assert temperature_obs.num_vars == 2
+    assert temperature_obs.variable_name == "Temperature"
+    assert temperature_obs.var_count == 5
+    assert temperature_obs.sensor == "mrb"
+    assert temperature_obs.casts == 1
 
+def test_wod_osd_meta():
+    data = harvest(VALID_CONFIG_WOD_OSD)
+    cfc11_obs = data[11]
+    assert cfc11_obs.filename == WOD_OSD_DATA
+    assert cfc11_obs.obs_day == "1998-05-02 00:00:00"
+    assert cfc11_obs.min_date_time == "1998-05-02 00:00:00"
+    assert cfc11_obs.max_date_time == "1998-05-02 04:14:59"
+    assert numpy.isclose(cfc11_obs.min_depth, 1.981195)
+    assert numpy.isclose(cfc11_obs.max_depth, 3828.195557)
+    assert cfc11_obs.num_vars == 22
+    assert cfc11_obs.variable_name == "CFC11"
+    assert cfc11_obs.var_count == 8651
+    assert cfc11_obs.sensor == "osd"
+    assert cfc11_obs.casts == 35
+
+def test_wod_pfl_meta():
+    data = harvest(VALID_CONFIG_WOD_PFL)
+    oxygen_obs = data[4]
+    assert oxygen_obs.filename == WOD_PFL_DATA
+    assert oxygen_obs.obs_day == "2019-10-01 18:00:00"
+    assert oxygen_obs.min_date_time == "2019-10-01 18:02:48"
+    assert oxygen_obs.max_date_time == "2019-10-01 23:54:21"
+    assert oxygen_obs.min_depth == 0.0
+    assert numpy.isclose(oxygen_obs.max_depth, 4783.741211)
+    assert oxygen_obs.num_vars == 8
+    assert oxygen_obs.variable_name == "Oxygen"
+    assert oxygen_obs.var_count == 6345
+    assert oxygen_obs.sensor == "pfl"
+    assert oxygen_obs.casts == 70
+
+def test_wod_uor_meta():
+    data = harvest(VALID_CONFIG_WOD_UOR)
+    pressure_obs = data[3]
+    assert pressure_obs.filename == WOD_UOR_DATA
+    assert pressure_obs.obs_day == "2002-10-06 18:00:00"
+    assert pressure_obs.min_date_time == "2002-10-06 19:43:00"
+    assert pressure_obs.max_date_time == "2002-10-06 21:43:00"
+    assert pressure_obs.min_depth == 0.0
+    assert numpy.isclose(pressure_obs.max_depth, 152.889603)
+    assert pressure_obs.num_vars == 4
+    assert pressure_obs.variable_name == "Pressure"
+    assert pressure_obs.var_count == 693
+    assert pressure_obs.sensor == "uor"
+    assert pressure_obs.casts == 2
+
+def test_wod_xbt_meta():
+    data = harvest(VALID_CONFIG_WOD_XBT)
+    temperature_obs = data[1]
+    assert temperature_obs.filename == WOD_XBT_DATA
+    assert temperature_obs.obs_day == "2009-08-02 18:00:00"
+    assert temperature_obs.min_date_time == "2009-08-02 18:00:00"
+    assert temperature_obs.max_date_time == "2009-08-02 23:23:59"
+    assert numpy.isclose(temperature_obs.min_depth, 0.7)
+    assert numpy.isclose(temperature_obs.max_depth, 897.50)
+    assert temperature_obs.num_vars == 2
+    assert temperature_obs.variable_name == "Temperature"
+    assert temperature_obs.var_count == 21261
+    assert temperature_obs.sensor == "xbt"
+    assert temperature_obs.casts == 18
 
