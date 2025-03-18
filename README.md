@@ -29,10 +29,12 @@ Depending on your use case, you can install score-hv using one of three methods 
 
 `pip install -t [TARGET_DIR] --upgrade . # target installation into TARGET_DIR, useful for deploying for cylc workflows (see https://cylc.github.io/cylc-doc/stable/html/tutorial/runtime/introduction.html#id3)`
 
-Verify the installation by running the unit test suite. There are no expected test failures.
+Verify the installation by running the unit test suite. To run the full test 
+suite, download the test data by running the `get_unit_test_data.sh` bash script and run `pytest` from within the top of the score-hv repository. There are no expected test failures.
 
 ```sh
-pytest tests
+score-hv/$ ./get_unit_test_data.sh
+score-hv/$ pytest
 ```
 
 ## Harvesting metric data with score-hv
