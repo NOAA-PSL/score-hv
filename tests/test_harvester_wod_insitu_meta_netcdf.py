@@ -11,6 +11,7 @@ WOD_APB_DATA = 'wod_apb_2005-02-01T06.nc'
 WOD_CTD_DATA = 'wod_ctd_2014-06-02T06.nc'
 WOD_DRB_DATA = 'wod_drb_2014-10-02T18.nc'
 WOD_GLD_DATA = 'wod_gld_2013-06-02T06.nc'
+WOD_MBT_DATA = 'wod_mbt_1989-12-13T00.nc'
 WOD_MRB_DATA = 'wod_mrb_1983-06-03T12.nc'
 WOD_OSD_DATA = 'wod_osd_1998-05-02T00.nc'
 WOD_PFL_DATA = 'wod_pfl_2019-10-01T18.nc'
@@ -24,6 +25,7 @@ file_path_wod_apb_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_APB_DATA
 file_path_wod_ctd_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_CTD_DATA)
 file_path_wod_drb_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_DRB_DATA)
 file_path_wod_gld_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_GLD_DATA)
+file_path_wod_mbt_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_MBT_DATA)
 file_path_wod_mrb_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_MRB_DATA)
 file_path_wod_osd_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_OSD_DATA)
 file_path_wod_pfl_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_PFL_DATA)
@@ -48,6 +50,11 @@ VALID_CONFIG_WOD_DRB = {
 VALID_CONFIG_WOD_GLD = {
     'harvester_name': hv_registry.WOD_INSITU_META_NETCDF,
     'filename': file_path_wod_gld_data
+}
+
+VALID_CONFIG_WOD_MBT = {
+    'harvester_name': hv_registry.WOD_INSITU_META_NETCDF,
+    'filename': file_path_wod_mbt_data
 }
 
 VALID_CONFIG_WOD_MRB = {
@@ -137,6 +144,21 @@ def test_wod_gld_meta():
     assert chlorophyll_obs.var_count == 14677
     assert chlorophyll_obs.sensor == "gld"
     assert chlorophyll_obs.casts == 74
+
+def test_wod_mbt_meta():
+    data = harvest(VALID_CONFIG_WOD_MBT)
+    temperature_obs = data[0]
+    assert temperature_obs.filename == WOD_MBT_DATA
+    assert temperature_obs.obs_day == '1989-12-13 00:00:00'
+    assert temperature_obs.min_date_time == '1989-12-13 00:00:00'
+    assert temperature_obs.max_date_time == '1989-12-13 05:24:00'
+    assert temperature_obs.min_depth == 0.0
+    assert temperature_obs.max_depth == 280.0
+    assert temperature_obs.num_vars == 1
+    assert temperature_obs.variable_name == "Temperature"
+    assert temperature_obs.var_count == 174
+    assert temperature_obs.sensor == "mbt"
+    assert temperature_obs.casts == 18
 
 def test_wod_mrb_meta():
     data = harvest(VALID_CONFIG_WOD_MRB)
