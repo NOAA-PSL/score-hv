@@ -97,7 +97,12 @@ class WodInsituMetaHv:
         dataset = Dataset(self.config.harvest_filename, 'r')
 
         #get the basic variable obs counts for all _obs dimensions in the file
-        variable_counts = {dim[:-4]: dataset.dimensions[dim].size for dim in dataset.dimensions if dim.endswith("_obs") and dim != "z_obs"}
+        #exclude depth and JulianDay which are not scientific variables but additional dimensions 
+        variable_counts = {
+            dim[:-4]: dataset.dimensions[dim].size
+            for dim in dataset.dimensions
+            if dim.endswith("_obs") and dim not in {"z_obs", "JulianDay_obs"}
+        }
         
         min_depth = None
         max_depth = None

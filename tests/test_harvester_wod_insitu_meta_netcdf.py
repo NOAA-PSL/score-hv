@@ -139,7 +139,7 @@ def test_wod_gld_meta():
     assert chlorophyll_obs.max_date_time == '2013-06-02 11:54:22'
     assert chlorophyll_obs.min_depth == 0.0
     assert numpy.isclose(chlorophyll_obs.max_depth, 995.717590)
-    assert chlorophyll_obs.num_vars == 8
+    assert chlorophyll_obs.num_vars == 7
     assert chlorophyll_obs.variable_name == "Chlorophyll"
     assert chlorophyll_obs.var_count == 14677
     assert chlorophyll_obs.sensor == "gld"
