@@ -26,6 +26,8 @@ HarvestedData = namedtuple(
         'max_date_time',
         'min_depth',
         'max_depth',
+        'min_file_depth',
+        'max_file_depth',
         'num_vars',
         'variable_name',
         'var_count',
@@ -87,6 +89,8 @@ class WodInsituMetaHv:
         'num_locs',
         'min_depth',
         'max_depth',
+        'min_file_depth',
+        'max_file_depth',
         'num_vars',
         'variable_name',
         'var_count',
@@ -99,18 +103,31 @@ class WodInsituMetaHv:
         #get the basic variable obs counts for all _obs dimensions in the file
         #exclude depth and JulianDay which are not scientific variables but additional dimensions 
         variable_counts = {
-            dim[:-4]: dataset.dimensions[dim].size
+            dim[:-4]: {'count': dataset.dimensions[dim].size, 'min_depth': None, 'max_depth': None}
             for dim in dataset.dimensions
-            if dim.endswith("_obs") and dim not in {"z_obs", "JulianDay_obs"}
+            if dim.endswith("_obs") and dim not in {"z_obs", "JulianDay_obs", "Latitude_obs", "Longitude_obs"}
         }
         
-        min_depth = None
-        max_depth = None
+        min_file_depth = None
+        max_file_depth = None
         #get the min and max depth as appropriate
         if 'z' in dataset.variables:
             z_var = dataset.variables['z'][:]
-            min_depth = np.min(z_var) if np.issubdtype(z_var.dtype, np.floating) else None
-            max_depth = np.max(z_var) if np.issubdtype(z_var.dtype, np.floating) else None
+            min_file_depth = np.min(z_var) if np.issubdtype(z_var.dtype, np.floating) else None
+            max_file_depth = np.max(z_var) if np.issubdtype(z_var.dtype, np.floating) else None
+
+            #make sure to get min and max depth for the variable size, in case it differs 
+            start = 0
+            for var, stats in variable_counts.items():
+                size = stats['count']
+                if size == 0:
+                    continue
+
+                # Extract corresponding depths using the range from start to start+size
+                var_depths = z_var[start:start+size]
+                if len(var_depths) > 0:
+                    variable_counts[var]['min_depth'] = np.nanmin(var_depths)
+                    variable_counts[var]['max_depth'] = np.nanmax(var_depths)
 
         #get the number of casts
         casts = None
@@ -140,18 +157,20 @@ class WodInsituMetaHv:
         obs_day = filename_parsed['formatted_datetime_str']
 
         num_vars = len(variable_counts)
-        for variable_name, var_count in variable_counts.items():
+        for variable_name, data in variable_counts.items():
             harvested_data.append(
                 HarvestedData(
                     filename,
                     obs_day,
                     time_min,
                     time_max,
-                    min_depth,
-                    max_depth,
+                    data['min_depth'],
+                    data['max_depth'],
+                    min_file_depth,
+                    max_file_depth,
                     num_vars,
                     variable_name,
-                    var_count,
+                    data['count'],
                     sensor, 
                     casts,
                 )

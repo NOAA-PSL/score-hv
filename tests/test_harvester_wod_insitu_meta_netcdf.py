@@ -91,6 +91,8 @@ def test_wod_apb_meta():
     assert temperature_data.max_date_time == '2005-02-01 11:31:52'
     assert temperature_data.min_depth == 0.0
     assert temperature_data.max_depth == 584.0
+    assert temperature_data.min_file_depth == 0.0
+    assert temperature_data.max_file_depth == 584.0
     assert temperature_data.num_vars == 3
     assert temperature_data.variable_name == "Temperature"
     assert temperature_data.var_count == 676
@@ -108,6 +110,8 @@ def test_wod_ctd_meta():
     assert salinity_obs.max_date_time == '2014-06-02 11:57:59'
     assert salinity_obs.min_depth == 0.0
     assert numpy.isclose(salinity_obs.max_depth, 5636.777832)
+    assert salinity_obs.min_file_depth == 0.0
+    assert numpy.isclose(salinity_obs.max_file_depth, 5636.777832)
     assert salinity_obs.num_vars == 7
     assert salinity_obs.variable_name == "Salinity"
     assert nitrate_obs.variable_name == "Nitrate"
@@ -124,6 +128,8 @@ def test_wod_drb_meta():
     assert pressure_obs.max_date_time == '2014-10-02 21:02:27'
     assert numpy.isclose(pressure_obs.min_depth, 6.232697)
     assert numpy.isclose(pressure_obs.max_depth, 751.304993)
+    assert numpy.isclose(pressure_obs.min_file_depth, 6.232697)
+    assert numpy.isclose(pressure_obs.max_file_depth, 751.304993)
     assert pressure_obs.num_vars == 5
     assert pressure_obs.variable_name == "Pressure"
     assert pressure_obs.var_count == 1274
@@ -139,7 +145,9 @@ def test_wod_gld_meta():
     assert chlorophyll_obs.max_date_time == '2013-06-02 11:54:22'
     assert chlorophyll_obs.min_depth == 0.0
     assert numpy.isclose(chlorophyll_obs.max_depth, 995.717590)
-    assert chlorophyll_obs.num_vars == 7
+    assert chlorophyll_obs.min_file_depth == 0.0
+    assert numpy.isclose(chlorophyll_obs.max_file_depth, 995.717590)
+    assert chlorophyll_obs.num_vars == 5
     assert chlorophyll_obs.variable_name == "Chlorophyll"
     assert chlorophyll_obs.var_count == 14677
     assert chlorophyll_obs.sensor == "gld"
@@ -154,6 +162,8 @@ def test_wod_mbt_meta():
     assert temperature_obs.max_date_time == '1989-12-13 05:24:00'
     assert temperature_obs.min_depth == 0.0
     assert temperature_obs.max_depth == 280.0
+    assert temperature_obs.min_file_depth == 0.0
+    assert temperature_obs.max_file_depth == 280.0
     assert temperature_obs.num_vars == 1
     assert temperature_obs.variable_name == "Temperature"
     assert temperature_obs.var_count == 174
@@ -169,6 +179,8 @@ def test_wod_mrb_meta():
     assert temperature_obs.max_date_time == '1983-06-03 12:00:00'
     assert temperature_obs.min_depth == 1.0
     assert temperature_obs.max_depth == 1564.0
+    assert temperature_obs.min_file_depth == 1.0
+    assert temperature_obs.max_file_depth == 1564.0
     assert temperature_obs.num_vars == 1
     assert temperature_obs.variable_name == "Temperature"
     assert temperature_obs.var_count == 5
@@ -184,6 +196,8 @@ def test_wod_osd_meta():
     assert cfc11_obs.max_date_time == "1998-05-02 04:14:59"
     assert numpy.isclose(cfc11_obs.min_depth, 1.981195)
     assert numpy.isclose(cfc11_obs.max_depth, 3828.195557)
+    assert numpy.isclose(cfc11_obs.min_file_depth, 1.981195)
+    assert numpy.isclose(cfc11_obs.max_file_depth, 3828.195557)
     assert cfc11_obs.num_vars == 21
     assert cfc11_obs.variable_name == "CFC11"
     assert cfc11_obs.var_count == 8651
@@ -199,6 +213,8 @@ def test_wod_pfl_meta():
     assert oxygen_obs.max_date_time == "2019-10-01 23:54:21"
     assert oxygen_obs.min_depth == 0.0
     assert numpy.isclose(oxygen_obs.max_depth, 4783.741211)
+    assert oxygen_obs.min_file_depth == 0.0
+    assert numpy.isclose(oxygen_obs.max_file_depth, 4783.741211)
     assert oxygen_obs.num_vars == 7
     assert oxygen_obs.variable_name == "Oxygen"
     assert oxygen_obs.var_count == 6345
@@ -214,6 +230,8 @@ def test_wod_uor_meta():
     assert pressure_obs.max_date_time == "2002-10-06 21:43:00"
     assert pressure_obs.min_depth == 0.0
     assert numpy.isclose(pressure_obs.max_depth, 152.889603)
+    assert pressure_obs.min_file_depth == 0.0
+    assert numpy.isclose(pressure_obs.max_file_depth, 152.889603)
     assert pressure_obs.num_vars == 3
     assert pressure_obs.variable_name == "Pressure"
     assert pressure_obs.var_count == 693
@@ -229,6 +247,8 @@ def test_wod_xbt_meta():
     assert temperature_obs.max_date_time == "2009-08-02 23:23:59"
     assert numpy.isclose(temperature_obs.min_depth, 0.7)
     assert numpy.isclose(temperature_obs.max_depth, 897.50)
+    assert numpy.isclose(temperature_obs.min_file_depth, 0.7)
+    assert numpy.isclose(temperature_obs.max_file_depth, 897.50)
     assert temperature_obs.num_vars == 1
     assert temperature_obs.variable_name == "Temperature"
     assert temperature_obs.var_count == 21261
