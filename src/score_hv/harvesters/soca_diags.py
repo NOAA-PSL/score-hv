@@ -240,10 +240,10 @@ class SOCADiagsHv(object):
                    group_name = group
                    num_variables = len(requested_group.variables)
                    for var_name in requested_group.variables:
+                       variable = var_name
                        var = requested_group.variables[var_name]
                        if num_variables > 1:
                           longname = var_name 
-                          variable = var_name 
                        else:
                           longname = list(requested_group.variables.keys())[0] 
 
@@ -271,16 +271,16 @@ class SOCADiagsHv(object):
                            group = group_name
                            if statistic == 'mean':
                                value = np.nanmean(var_values)
-                           
+                                
                            elif statistic == 'median':
                                value = np.nanmedian(var_values)
-
+                                
                            elif statistic == 'StdDev':
                                value = np.nanstd(var_values)
-
+                               
                            elif statistic == 'minimum':
                                value = np.nanmin(var_values)
-
+                               
                            elif statistic == 'maximum':
                                value = np.nanmax(var_values)
 
@@ -297,4 +297,5 @@ class SOCADiagsHv(object):
                                                  np.float32(value),
                                                  filetime,
                                                  file_region))
+            dataset.close()               
             return(harvested_data)
