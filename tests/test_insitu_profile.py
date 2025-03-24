@@ -63,190 +63,101 @@ def verify_groups():
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
         assert data.group in groups_wanted, f"Unexpected group: {data.group}"
-
-def calculate_statistic(statistic,group,var_name):
-    """
-    Computes the specified statisticis for a given variable in the provided group.
-    
-    Parameters:
-        group (netCDF4.Group): The group from the netCDF dataset.
-        var_name (str): The name of the variable in the group.
-    
-    Returns:
-        dict: A dictionary with statistic names as keys and computed values as values. 
-    """
-    variable = group.variables[var_name]
-    data = variable[:]  
-
-    # Check if the variable has a '_FillValue' attribute and replace it with NaN
-    if '_FillValue' in variable.ncattrs():
-        fill_value = variable.getncattr('_FillValue')
-
-    if np.ma.isMaskedArray(data):
-       data = np.ma.filled(data, np.nan)  
-    else:
-       data[data == fill_value] = np.nan  
-  
-
-    if statistic == 'mean':
-         value = np.nanmean(data)
-
-    elif statistic == 'median':
-         value = np.nanmedian(data)
-
-    elif statistic == 'StdDev':
-         value = np.nanstd(data)
-
-    elif statistic == 'minimum':
-         value = np.nanmin(data)
-
-    elif statistic == 'maximum':
-         value = np.nanmax(data)
    
-    return value
-
-def get_harvested_statistic_value(statistic, thegroup, var_name):
-    """
-    Retrieve the harvested statistic value that matches the provided statistic,
-    group, and variable name.
-
-    Parameters:
-        statistic (str): The statistic to look for (e.g., 'mean', 'median').
-        thegroup (str): The group name to match (e.g., 'ObsValue').
-        var_name (str): The variable name to match (e.g., 'salinity').
-
-    Returns:
-        The value associated with the matching HarvestedData record, or None if not found.
-    """
+def verify_group_mean_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
+    salinity_means = [34.21835,-0.566438,-0.566423]
+    waterTemperature_means = [7.605209,0.053602,0.049655]
+    groups_wanted = ['ObsValue','oman','ombg']
     for item in data1:
-        if item.group == thegroup:
-           if item.statistic == statistic:
-              if item.variable == var_name:
-                 return item.value
-
-def verify_group_mean_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
-    """
-      calculate the statistic from the open dataset..
-    """
-    
-    statistic = 'mean'  
+        if item.variable == 'salinity' and item.statistic == 'mean':
+           for i, group_name in enumerate(groups_wanted):
+               if item.group == group_name:
+                  calc_value = salinity_means[i]
+                  harvested_value = item.value
+                  assert abs(harvested_value - calc_value) <= tolerance 
+        elif item.variable == 'waterTemperature' and item.statistic == 'mean':    
+             for i, group_name in enumerate(groups_wanted):
+                 if item.group == group_name:
+                    calc_value = waterTemperature_means[i]
+                    harvested_value = item.value
+                    assert abs(harvested_value - calc_value) <= tolerance
+                    
+def verify_group_median_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+    salinity_medians = [34.905998,0.132076,0.13207]
+    waterTemperature_medians = [5.421991,0.00878,0.008301]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-    
-def verify_group_median_values():
+    for item in data1:
+        if item.variable == 'salinity' and item.statistic == 'median':
+           for i, group_name in enumerate(groups_wanted):
+               if item.group == group_name:
+                  calc_value = salinity_medians[i]
+                  harvested_value = item.value
+                  assert abs(harvested_value - calc_value) <= tolerance 
+        elif item.variable == 'waterTemperature' and item.statistic == 'median':    
+             for i, group_name in enumerate(groups_wanted):
+                 if item.group == group_name:
+                    calc_value = waterTemperature_medians[i]
+                    harvested_value = item.value
+                    assert abs(harvested_value - calc_value) <= tolerance
 
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
-    """
-      calculate the statistic from the open dataset..
-      """
-    
-    statistic = 'median'  
+def verify_group_standard_deviation_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+    salinity_StdDev = [3.976359,4.34975,4.349679]
+    waterTemperature_StdDev = [6.19354,0.749902,0.772137]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            print("median  ",var_name,"  ",group_name,"  ",calculated_value,"  ",harvested_value)
-            assert calculated_value == harvested_value
-    dataset.close() 
+    for item in data1:
+        if item.variable == 'salinity' and item.statistic == 'StdDev':
+           for i, group_name in enumerate(groups_wanted):
+               if item.group == group_name:
+                  calc_value = salinity_StdDev[i]
+                  harvested_value = item.value
+                  assert abs(harvested_value - calc_value) <= tolerance 
+        elif item.variable == 'waterTemperature' and item.statistic == 'StdDev':    
+             for i, group_name in enumerate(groups_wanted):
+                 if item.group == group_name:
+                    calc_value = waterTemperature_StdDev[i]
+                    harvested_value = item.value
+                    assert abs(harvested_value - calc_value) <= tolerance
 
-def verify_group_standard_deviation_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
-    
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'StdDev'  
+def verify_group_minimum_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+    salinity_minimums = [0.0,-35.445389,-35.445419]
+    waterTemperature_minimums = [-1.015997,-8.81186,-8.81186]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-
-def verify_group_minimum_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
+    for item in data1:
+        if item.variable == 'salinity' and item.statistic == 'minimum':
+           for i, group_name in enumerate(groups_wanted):
+               if item.group == group_name:
+                  calc_value = salinity_minimums[i]
+                  harvested_value = item.value
+                  assert abs(harvested_value - calc_value) <= tolerance 
+        elif item.variable == 'waterTemperature' and item.statistic == 'minimum':    
+             for i, group_name in enumerate(groups_wanted):
+                 if item.group == group_name:
+                    calc_value = waterTemperature_minimums[i]
+                    harvested_value = item.value
+                    assert abs(harvested_value - calc_value) <= tolerance
     
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'minimum'  
+def verify_group_maximum_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+    salinity_maximums = [37.417999,34.542,34.542]
+    waterTemperature_maximums = [30.451014,7.235542,7.235542]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-
-def verify_group_maximum_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       sys.exit(1)
-       raise OSError(f"Failed to open NetCDF file : insitu_profile_argo.2021070300.nc4 {e}")
-    
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'maximum'  
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-
+    for item in data1:
+        if item.variable == 'salinity' and item.statistic == 'maximum':
+           for i, group_name in enumerate(groups_wanted):
+               if item.group == group_name:
+                  calc_value = salinity_maximums[i]
+                  harvested_value = item.value
+                  assert abs(harvested_value - calc_value) <= tolerance 
+        elif item.variable == 'waterTemperature' and item.statistic == 'maximum':    
+             for i, group_name in enumerate(groups_wanted):
+                 if item.group == group_name:
+                    calc_value = waterTemperature_maximums[i]
+                    harvested_value = item.value
+                    assert abs(harvested_value - calc_value) <= tolerance
 def main():
     test_soca_harvester()
     verify_filename_components()

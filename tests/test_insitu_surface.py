@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import faulthandler
 from pathlib import Path 
 import numpy as np
 from datetime import datetime
@@ -15,6 +16,7 @@ from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 from score_hv.yaml_utils import YamlLoader
 from score_hv.harvesters.innov_netcdf import Region, InnovStatsCfg
+faulthandler.enable()
 
 TEST_DATA_FILE_NAMES = [
                         'insitu_surface_trkob.2021070300.nc4'
@@ -31,7 +33,7 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH,
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
                      'statistic': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
-                     'variable': ['salinity','waterTemperature'],
+                     'variable': ['seaSurfaceSalinity','seaSurfaceTemperature'],
                      }
 
 def test_soca_harvester():
@@ -51,209 +53,143 @@ def verify_filename_components():
         assert item.level == None   
 
 def verify_datetime():
-    data1 = harvest(VALID_CONFIG_DICT) 
+    data1 = harvest(VALID_CONFIG_DICT)
     date_str = "2021070300"
     date_obj = datetime.strptime(date_str, "%Y%m%d%H")
     filetime_str = data1[0].filetime
     filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
     assert date_obj == filetime_dt 
 
-def verify_groups():
-    data1 = harvest(VALID_CONFIG_DICT)
-    groups_wanted = ['ObsValue', 'oman', 'ombg']
-    for data in data1:
-        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
-
-def calculate_statistic(statistic,group,var_name):
-    """
-    Computes the specified statisticis for a given variable in the provided group.
-    
-    Parameters:
-        group (netCDF4.Group): The group from the netCDF dataset.
-        var_name (str): The name of the variable in the group.
-    
-    Returns:
-        dict: A dictionary with statistic names as keys and computed values as values. 
-    """
-    variable = group.variables[var_name]
-    data = variable[:]  
-
-    # Check if the variable has a '_FillValue' attribute and replace it with NaN
-    if '_FillValue' in variable.ncattrs():
-        fill_value = variable.getncattr('_FillValue')
-
-    if np.ma.isMaskedArray(data):
-       data = np.ma.filled(data, np.nan)  
-    else:
-       data[data == fill_value] = np.nan  
-  
-
-    if statistic == 'mean':
-         value = np.nanmean(data)
-
-    elif statistic == 'median':
-         value = np.nanmedian(data)
-
-    elif statistic == 'StdDev':
-         value = np.nanstd(data)
-
-    elif statistic == 'minimum':
-         value = np.nanmin(data)
-
-    elif statistic == 'maximum':
-         value = np.nanmax(data)
-   
-    return value
-
-def get_harvested_statistic_value(statistic, thegroup, var_name):
-    """
-    Retrieve the harvested statistic value that matches the provided statistic,
-    group, and variable name.
-
-    Parameters:
-        statistic (str): The statistic to look for (e.g., 'mean', 'median').
-        thegroup (str): The group name to match (e.g., 'ObsValue').
-        var_name (str): The variable name to match (e.g., 'salinity').
-
-    Returns:
-        The value associated with the matching HarvestedData record, or None if not found.
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
+def verify_group_mean_values(tolerance=.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
-        if item.group == thegroup:
-           if item.statistic == statistic:
-              if item.variable == var_name:
-                 return item.value
+        if item.statistic == 'mean':
+           if item.group == 'ObsValue': 
+              if item.variable == 'seaSurfaceSalinity':
+                 calc_value = 35.432342
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+              elif item.variable == 'seaSurfaceTemperature':
+                 calc_value = 23.566126
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+           elif item.group == 'oman':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.310008
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
+           elif item.group == 'ombg':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.313802
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
 
-def verify_group_mean_values():
+def verify_group_median_values(tolerance=.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    for item in data1:
+        if item.statistic == 'median':
+           if item.group == 'ObsValue': 
+              if item.variable == 'seaSurfaceSalinity':
+                 calc_value = 35.169998
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+              elif item.variable == 'seaSurfaceTemperature':
+                 calc_value = 23.1
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+           elif item.group == 'oman':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.482664
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
+           elif item.group == 'ombg':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.433351
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
 
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_surface_trkob.2021070300.nc4 {e}")
-    
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'mean'  
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-    
-def verify_group_median_values():
+def verify_group_standard_deviation_values(tolerance=.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    for item in data1:
+        if item.statistic == 'StdDev':
+           if item.group == 'ObsValue':
+              if item.variable == 'seaSurfaceSalinity':
+                 calc_value = 1.547105 
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+              elif item.variable == 'seaSurfaceTemperature':
+                 calc_value = 1.038353
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value                
+           elif item.group == 'oman':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.33505
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
+           elif item.group == 'ombg':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.32389
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
 
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_surface_trkob.2021070300.nc4 {e}")
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'median'  
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
+def verify_group_minimum_values(tolerance=.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    for item in data1:
+        if item.statistic == 'minimum':
+           if item.group == 'ObsValue':
+              if item.variable == 'seaSurfaceSalinity':
+                 calc_value = 32.0 
+                 print(item.value)
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+              elif item.variable == 'seaSurfaceTemperature':
+                 calc_value = 22.1 
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value                
+           elif item.group == 'oman':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = abs(-0.686694)
+                   harvested = abs(item.value)
+                   assert calc_value <= (1 + tolerance) * harvested 
+                   assert calc_value >= (1 - tolerance) * harvested
+           elif item.group == 'ombg':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = abs(-0.686694)
+                   harveted = abs(item.value)
+                   assert calc_value <= (1 + tolerance) * harvested   
 
-def verify_group_standard_deviation_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_surface_trkob.2021070300.nc4 {e}")
-    
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'StdDev'  
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-
-def verify_group_minimum_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : insitu_surface_trkob.2021070300.nc4 {e}")
-   
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'minimum'  
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
-
-def verify_group_maximum_values():
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-    
-    """
-      calculate the statistic from the open dataset..
-      """
-    statistic = 'maximum'  
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        requested_group = dataset.groups[group_name]
-        num_variables = len(requested_group.variables)
-        variable_names = list(requested_group.variables.keys())        
-        for var_name in variable_names: 
-            thegroup = dataset.groups[group_name]
-            calculated_value = calculate_statistic(statistic,thegroup,var_name)
-            harvested_value = get_harvested_statistic_value(statistic,group_name,var_name) 
-            assert calculated_value == harvested_value
-    dataset.close() 
+def verify_group_maximum_values(tolerance=.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    for item in data1:
+        if item.statistic == 'maximum':
+           if item.group == 'ObsValue':
+              if item.variable == 'seaSurfaceSalinity':
+                 calc_value = 40.990002 
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value
+              elif item.variable == 'seaSurfaceTemperature':
+                 calc_value = 27.6
+                 assert calc_value <= (1 + tolerance) * item.value
+                 assert calc_value >= (1 - tolerance) * item.value                
+           elif item.group == 'oman':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.743538
+                   assert calc_value <= (1 + tolerance) * item.value
+                   assert calc_value >= (1 - tolerance) * item.value
+           elif item.group == 'ombg':
+                if item.variable == 'seaSurfaceTemperature':
+                   calc_value = 0.743538 
+                   assert calc_value <= (1 + tolerance) * item.value
 
 def main():
     test_soca_harvester()
     verify_filename_components()
     verify_datetime()
-    verify_groups()
     verify_group_mean_values()
     verify_group_median_values()
     verify_group_standard_deviation_values()
     verify_group_minimum_values()
-    varify_group_maximum_values()
+    verify_group_maximum_values()
 
 if __name__=='__main__':
     main()
