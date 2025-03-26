@@ -271,7 +271,7 @@ class SOCADiagsHv(object):
                            group = group_name
                            if statistic == 'mean':
                                value = np.nanmean(var_values)
-                                
+                               
                            elif statistic == 'median':
                                value = np.nanmedian(var_values)
                                 
@@ -280,10 +280,10 @@ class SOCADiagsHv(object):
                                
                            elif statistic == 'minimum':
                                value = np.nanmin(var_values)
-                               
+                           
                            elif statistic == 'maximum':
                                value = np.nanmax(var_values)
-
+                                
                            harvested_data.append(HarvestedData(
                                                  filename,
                                                  sensor,
