@@ -42,7 +42,7 @@ def test_soca_harvester():
     assert len(data1) > 0
     assert data1[0].filenames==SOCA_PATH[0]
 
-def verify_filename_components():
+def test_verify_filename_components():
     expected_variable_names = ['seaSurfaceSalinity','seaSurfaceTemperature']
     data1 = harvest(VALID_CONFIG_DICT)
     for item in data1:
@@ -52,7 +52,7 @@ def verify_filename_components():
         assert item.satellite == 'trkob'
         assert item.level == None   
 
-def verify_datetime():
+def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT)
     date_str = "2021070300"
     date_obj = datetime.strptime(date_str, "%Y%m%d%H")
@@ -60,7 +60,7 @@ def verify_datetime():
     filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
     assert date_obj == filetime_dt 
 
-def verify_group_mean_values(tolerance=.001):
+def test_verify_group_mean_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
         if item.statistic == 'mean':
@@ -84,7 +84,7 @@ def verify_group_mean_values(tolerance=.001):
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
 
-def verify_group_median_values(tolerance=.001):
+def test_verify_group_median_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
         if item.statistic == 'median':
@@ -108,7 +108,7 @@ def verify_group_median_values(tolerance=.001):
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
 
-def verify_group_standard_deviation_values(tolerance=.001):
+def test_verify_group_standard_deviation_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
         if item.statistic == 'StdDev':
@@ -132,7 +132,7 @@ def verify_group_standard_deviation_values(tolerance=.001):
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
 
-def verify_group_minimum_values(tolerance=.001):
+def test_verify_group_minimum_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
         if item.statistic == 'minimum':
@@ -158,7 +158,7 @@ def verify_group_minimum_values(tolerance=.001):
                    harveted = abs(item.value)
                    assert calc_value <= (1 + tolerance) * harvested   
 
-def verify_group_maximum_values(tolerance=.001):
+def test_verify_group_maximum_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
         if item.statistic == 'maximum':
@@ -183,13 +183,13 @@ def verify_group_maximum_values(tolerance=.001):
 
 def main():
     test_soca_harvester()
-    verify_filename_components()
-    verify_datetime()
-    verify_group_mean_values()
-    verify_group_median_values()
-    verify_group_standard_deviation_values()
-    verify_group_minimum_values()
-    verify_group_maximum_values()
+    test_verify_filename_components()
+    test_verify_datetime()
+    test_verify_group_mean_values()
+    test_verify_group_median_values()
+    test_verify_group_standard_deviation_values()
+    test_verify_group_minimum_values()
+    test_verify_group_maximum_values()
 
 if __name__=='__main__':
     main()

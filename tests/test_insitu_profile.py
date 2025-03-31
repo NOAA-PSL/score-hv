@@ -40,7 +40,7 @@ def test_soca_harvester():
     assert len(data1) > 0
     assert data1[0].filenames==SOCA_PATH[0]
 
-def verify_filename_components():
+def test_verify_filename_components():
     expected_variable_names = ['salinity','waterTemperature']
     data1 = harvest(VALID_CONFIG_DICT)
     for item in data1:
@@ -50,7 +50,7 @@ def verify_filename_components():
         assert item.satellite == 'argo'
         assert item.level == None   
 
-def verify_datetime():
+def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
     date_str = "2021070300"
     date_obj = datetime.strptime(date_str, "%Y%m%d%H")
@@ -58,13 +58,13 @@ def verify_datetime():
     filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
     assert date_obj == filetime_dt 
 
-def verify_groups():
+def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
         assert data.group in groups_wanted, f"Unexpected group: {data.group}"
    
-def verify_group_mean_values(tolerance=0.001):
+def test_verify_group_mean_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     salinity_means = [34.21835,-0.566438,-0.566423]
     waterTemperature_means = [7.605209,0.053602,0.049655]
@@ -83,7 +83,7 @@ def verify_group_mean_values(tolerance=0.001):
                     harvested_value = item.value
                     assert abs(harvested_value - calc_value) <= tolerance
                     
-def verify_group_median_values(tolerance=0.001):
+def test_verify_group_median_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     salinity_medians = [34.905998,0.132076,0.13207]
     waterTemperature_medians = [5.421991,0.00878,0.008301]
@@ -102,7 +102,7 @@ def verify_group_median_values(tolerance=0.001):
                     harvested_value = item.value
                     assert abs(harvested_value - calc_value) <= tolerance
 
-def verify_group_standard_deviation_values(tolerance=0.001):
+def test_verify_group_standard_deviation_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     salinity_StdDev = [3.976359,4.34975,4.349679]
     waterTemperature_StdDev = [6.19354,0.749902,0.772137]
@@ -121,7 +121,7 @@ def verify_group_standard_deviation_values(tolerance=0.001):
                     harvested_value = item.value
                     assert abs(harvested_value - calc_value) <= tolerance
 
-def verify_group_minimum_values(tolerance=0.001):
+def test_verify_group_minimum_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     salinity_minimums = [0.0,-35.445389,-35.445419]
     waterTemperature_minimums = [-1.015997,-8.81186,-8.81186]
@@ -140,7 +140,7 @@ def verify_group_minimum_values(tolerance=0.001):
                     harvested_value = item.value
                     assert abs(harvested_value - calc_value) <= tolerance
     
-def verify_group_maximum_values(tolerance=0.001):
+def test_verify_group_maximum_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     salinity_maximums = [37.417999,34.542,34.542]
     waterTemperature_maximums = [30.451014,7.235542,7.235542]
@@ -160,14 +160,14 @@ def verify_group_maximum_values(tolerance=0.001):
                     assert abs(harvested_value - calc_value) <= tolerance
 def main():
     test_soca_harvester()
-    verify_filename_components()
-    verify_datetime()
-    verify_groups()
-    verify_group_mean_values()
-    verify_group_median_values()
-    verify_group_standard_deviation_values()
-    verify_group_minimum_values()
-    verify_group_maximum_values()
+    test_verify_filename_components()
+    test_verify_datetime()
+    test_verify_groups()
+    test_verify_group_mean_values()
+    test_verify_group_median_values()
+    test_verify_group_standard_deviation_values()
+    test_verify_group_minimum_values()
+    test_verify_group_maximum_values()
 
 if __name__=='__main__':
     main()

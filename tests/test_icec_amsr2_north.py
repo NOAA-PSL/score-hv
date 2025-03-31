@@ -17,7 +17,7 @@ from score_hv.yaml_utils import YamlLoader
 from score_hv.harvesters.innov_netcdf import Region, InnovStatsCfg
 
 TEST_DATA_FILE_NAMES = [
-                        'sst_viirs_n20_l3u.2021070300.nc4'
+                        'icec_amsr2_north.2021070300.nc4'
                        ]
 
 DATA_DIR = os.path.join(Path(__file__).parent.parent.resolve(), 'src', 'score_hv', 'data')
@@ -31,7 +31,7 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH,
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
                      'statistic': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
-                     'variable': ['sst'],
+                     'variable': ['icec'],
                      }
 
 def test_soca_harvester():
@@ -40,15 +40,14 @@ def test_soca_harvester():
     assert len(data1) > 0
     assert data1[0].filenames==SOCA_PATH[0]
 
-def verify_filename_components():
+def test_verify_filename_components():
     data1 = harvest(VALID_CONFIG_DICT)
     data = data1[0]
-    assert data.variable == 'seaSurfaceTemperature'
-    assert data.sensor == 'viirs'
-    assert data.satellite == 'n20'
-    assert data.level == 'l3u'
+    assert data.variable == 'seaIceFraction'
+    assert data.sensor == 'amsr2'
+    assert data.file_region == 'north'   
 
-def verify_datetime():
+def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
     date_str = "2021070300"
     date_obj = datetime.strptime(date_str, "%Y%m%d%H")
@@ -56,18 +55,45 @@ def verify_datetime():
     filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
     assert date_obj == filetime_dt 
 
-def verify_groups():
+def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
         assert data.group in groups_wanted, f"Unexpected group: {data.group}"
 
-def verify_group_mean_values(tolerance=0.001):
+def calculate_statistic(statistic,thegroup):
+    for var_name in thegroup.variables:
+        variable = thegroup.variables[var_name] 
+        var_values = np.array(variable[:]) 
+        if '_FillValue' in variable.ncattrs():
+           fill_value = variable.getncattr('_FillValue')
+           var_values[var_values == fill_value] = np.nan
+           if statistic == 'mean':
+              statistic_value = np.nanmean(var_values)
+           elif statistic == 'median':
+              statistic_value = np.nanmedian(var_values)
+           elif statistic == 'StdDev':
+              statistic_value = np.nanstd(var_values)
+
+    return(statistic_value)
+
+def get_harvested_statistic_value(statistic):
+    data1 = harvest(VALID_CONFIG_DICT)
+    harvested_data = {
+        data.group: data.value for data in data1 if data.statistic == statistic
+    }
+    return harvested_data    
+
+def test_verify_group_mean_values(tolerance=0.001):
     """
-      Mean values that are hard coded here were calculated offline.
+      The mean values that are hard coded in this method were
+      calculated with the NCO function 
+      ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
+      mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
+      calculated_values are 0.5933418, 0.06660749, 0.1327579
       """
     data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_means = [18.924038657133483,0.06212510113054594,0.07588130216644204]
+    calculated_means = [0.5933418,0.06660749,0.1327579]
     groups_wanted = ['ObsValue','oman','ombg'] 
     group_index = 0
     # Filter out only the data that has the "mean" statistic
@@ -86,9 +112,9 @@ def verify_group_mean_values(tolerance=0.001):
         assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
         group_index += 1
        
-def verify_group_median_values(tolerance=0.001):
+def test_verify_group_median_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_medians = [22.409034729003906,0.029189025983214375,0.055334743112325675]
+    calculated_medians = [0.949999988079071,0.01528690755367279,0.043333768844604485]
     groups_wanted = ['ObsValue','oman','ombg'] 
     group_index = 0
     harvested_data = [data for data in data1 if data.statistic == 'median']
@@ -105,9 +131,9 @@ def verify_group_median_values(tolerance=0.001):
         assert abs(harvested_medians - calculated_value) <= tolerance, f"Median value mismatch for {group_name}"
         group_index += 1
 
-def verify_group_StdDev_values(tolerance=0.001):
+def test_verify_group_StdDev_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_StdDevs = [9.234388236283511,0.43633542496370253,0.4974935575667632]
+    calculated_StdDevs = [0.46483881994362,0.15594015101052516,0.20401885665594757]
     groups_wanted = ['ObsValue','oman','ombg'] 
     group_index = 0
     harvested_data = [data for data in data1 if data.statistic == 'StdDev']
@@ -123,9 +149,16 @@ def verify_group_StdDev_values(tolerance=0.001):
         assert abs(harvested_StdDevs - calculated_value) <= tolerance, f"Standard Deviation value mismatch for {group_name}"
         group_index += 1
 
-def verify_group_minimum_values(tolerance=0.001):
+def test_verify_group_minimum_values(tolerance=0.001):
+    """
+      The mean values that are hard coded in this method were
+      calculated with the NCO function
+      ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
+      mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
+      calculated_values are 0.5933418, 0.06660749, 0.1327579
+      """
     data1 = harvest(VALID_CONFIG_DICT)
-    calculated_minimums = [-2.123818159103393,-6.02739143371582,-6.222834587097168]
+    calculated_minimums = [0.0,-0.8637589812278748,-0.8629218339920045]
     groups_wanted = ['ObsValue','oman','ombg']
     group_index = 0
     harvested_data = [data for data in data1 if data.statistic == 'minimum']
@@ -141,9 +174,16 @@ def verify_group_minimum_values(tolerance=0.001):
         assert abs(harvested_minimum - calculated_value) <= tolerance, f"Minimum value mismatch for {group_name}"
         group_index += 1
 
-def verify_group_maximum_values(tolerance=0.001):
+def test_verify_group_maximum_values(tolerance=0.001):
+    """
+      The mean values that are hard coded in this method were
+      calculated with the NCO function
+      ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
+      mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
+      calculated_values are 0.5933418, 0.06660749, 0.1327579
+      """
     data1 = harvest(VALID_CONFIG_DICT)
-    calculated_maximums = [34.480560302734375,11.538920402526855,11.55988597869873]
+    calculated_maximums = [1.0,1.0,1.0]
     groups_wanted = ['ObsValue','oman','ombg']
     group_index = 0
     harvested_data = [data for data in data1 if data.statistic == 'maximum']
@@ -162,14 +202,14 @@ def verify_group_maximum_values(tolerance=0.001):
 
 def main():
     test_soca_harvester()
-    verify_filename_components()
-    verify_datetime()
-    verify_groups()
-    verify_group_mean_values()
-    verify_group_median_values() 
-    verify_group_StdDev_values()
-    verify_group_minimum_values()
-    verify_group_maximum_values()
+    test_verify_filename_components()
+    test_verify_datetime()
+    test_verify_groups()
+    test_verify_group_mean_values()
+    test_verify_group_median_values() 
+    test_verify_group_StdDev_values()
+    test_verify_group_minimum_values()
+    test_verify_group_maximum_values()
 
 if __name__=='__main__':
     main()
