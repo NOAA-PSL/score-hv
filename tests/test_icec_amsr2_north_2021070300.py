@@ -43,7 +43,7 @@ def test_soca_harvester():
 def verify_filename_components():
     data1 = harvest(VALID_CONFIG_DICT)
     data = data1[0]
-    assert data.variable == 'icec'
+    assert data.variable == 'seaIceFraction'
     assert data.sensor == 'amsr2'
     assert data.file_region == 'north'   
 
@@ -59,12 +59,9 @@ def verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
-        if data.group not in groups_wanted:
-           print(f"{data.group} is not in the wanted groups.")
-           sys.exit(1)
+        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
 
 def calculate_statistic(statistic,thegroup):
-    print("in calculate statistic ",statistic)
     for var_name in thegroup.variables:
         variable = thegroup.variables[var_name] 
         var_values = np.array(variable[:]) 
@@ -76,7 +73,6 @@ def calculate_statistic(statistic,thegroup):
            elif statistic == 'median':
               statistic_value = np.nanmedian(var_values)
            elif statistic == 'StdDev':
-              print("in the StdDev")
               statistic_value = np.nanstd(var_values)
 
     return(statistic_value)
@@ -88,68 +84,121 @@ def get_harvested_statistic_value(statistic):
     }
     return harvested_data    
 
-def verify_group_mean_values():
-    print("in verify group mean values")
-    statistic = 'mean'
-    
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
+def verify_group_mean_values(tolerance=0.001):
     """
-      calculate the statistic from the open dataset..
+      The mean values that are hard coded in this method were
+      calculated with the NCO function 
+      ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
+      mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
+      calculated_values are 0.5933418, 0.06660749, 0.1327579
       """
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted: 
-        thegroup = dataset.groups[group_name]
-        calculated_mean = calculate_statistic(statistic,thegroup)
-        harvested_mean = get_harvested_statistic_value(statistic)       
-#        print(group_name,"  ",calculated_mean,"  ",harvested_mean)
-        assert calculated_mean == harvested_mean[group_name]
-    dataset.close() 
-
-def verify_group_median_values():
-    statistic = 'median'
-
-    filename = SOCA_PATH[0]
-    try:
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e:
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
+    data1 = harvest(VALID_CONFIG_DICT) 
+    calculated_means = [0.5933418,0.06660749,0.1327579]
+    groups_wanted = ['ObsValue','oman','ombg'] 
+    group_index = 0
+    # Filter out only the data that has the "mean" statistic
+    harvested_data = [data for data in data1 if data.statistic == 'mean']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
        sys.exit(1)
+
+    # Iterate over harvested data and check means for each group
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_mean = data.value
+        calculated_value = calculated_means[group_index]
+        # Verify that the harvested mean is within tolerance of the calculated mean
+        assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
+        group_index += 1
+       
+def verify_group_median_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    calculated_medians = [0.949999988079071,0.01528690755367279,0.043333768844604485]
+    groups_wanted = ['ObsValue','oman','ombg'] 
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'median']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
+
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_medians = data.value
+        calculated_value = calculated_medians[group_index]
+        # Verify that the harvested mean is within tolerance of the calculated median 
+        assert abs(harvested_medians - calculated_value) <= tolerance, f"Median value mismatch for {group_name}"
+        group_index += 1
+
+def verify_group_StdDev_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    calculated_StdDevs = [0.46483881994362,0.15594015101052516,0.20401885665594757]
+    groups_wanted = ['ObsValue','oman','ombg'] 
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'StdDev']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
+
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_StdDevs = data.value
+        calculated_value = calculated_StdDevs[group_index]
+        assert abs(harvested_StdDevs - calculated_value) <= tolerance, f"Standard Deviation value mismatch for {group_name}"
+        group_index += 1
+
+def verify_group_minimum_values(tolerance=0.001):
     """
-      calculate the statistic from the open dataset..
+      The mean values that are hard coded in this method were
+      calculated with the NCO function
+      ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
+      mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
+      calculated_values are 0.5933418, 0.06660749, 0.1327579
       """
+    data1 = harvest(VALID_CONFIG_DICT)
+    calculated_minimums = [0.0,-0.8637589812278748,-0.8629218339920045]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        thegroup = dataset.groups[group_name]
-        calculated_median = calculate_statistic(statistic,thegroup)
-        harvested_median = get_harvested_statistic_value(statistic)
-#        print(group_name,"  ",calculated_median,"  ",harvested_median)
-        assert calculated_median == harvested_median[group_name]
-    dataset.close()
-
-def verify_group_StdDev_values():
-    print("in verify_group_StdDev")
-    statistic = 'StdDev'
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'minimum']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
        sys.exit(1)
 
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_minimum = data.value
+        calculated_value = calculated_minimums[group_index]
+        assert abs(harvested_minimum - calculated_value) <= tolerance, f"Minimum value mismatch for {group_name}"
+        group_index += 1
+
+def verify_group_maximum_values(tolerance=0.001):
+    """
+      The mean values that are hard coded in this method were
+      calculated with the NCO function
+      ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
+      mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
+      calculated_values are 0.5933418, 0.06660749, 0.1327579
+      """
+    data1 = harvest(VALID_CONFIG_DICT)
+    calculated_maximums = [1.0,1.0,1.0]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted: 
-        thegroup = dataset.groups[group_name]
-        calculated_std = calculate_statistic(statistic,thegroup)
-        harvested_std = get_harvested_statistic_value(statistic)       
-        #print(group_name,"  ",calculated_std,"  ",harvested_std)
-        assert calculated_std == harvested_std[group_name]
-    dataset.close() 
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'maximum']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
+
+    # Iterate over harvested data and check means for each group
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_maximum = data.value
+        calculated_value = calculated_maximums[group_index]
+        assert abs(harvested_maximum - calculated_value) <= tolerance, f" Maximum value mismatch for {group_name}"
+        group_index += 1
 
 def main():
     test_soca_harvester()
@@ -159,6 +208,8 @@ def main():
     verify_group_mean_values()
     verify_group_median_values() 
     verify_group_StdDev_values()
+    verify_group_minimum_values()
+    verify_group_maximum_values()
 
 if __name__=='__main__':
     main()

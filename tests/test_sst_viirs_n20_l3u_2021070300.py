@@ -43,10 +43,10 @@ def test_soca_harvester():
 def verify_filename_components():
     data1 = harvest(VALID_CONFIG_DICT)
     data = data1[0]
-    assert data.variable == 'sst'
+    assert data.variable == 'seaSurfaceTemperature'
     assert data.sensor == 'viirs'
     assert data.satellite == 'n20'
-    assert data.level == 'l3u'   
+    assert data.level == 'l3u'
 
 def verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
@@ -60,91 +60,105 @@ def verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
     groups_wanted = ['ObsValue', 'oman', 'ombg']
     for data in data1:
-        if data.group not in groups_wanted:
-           print(f"{data.group} is not in the wanted groups.")
-           sys.exit(1)
+        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
 
-def calculate_statistic(statistic,thegroup):
-    for var_name in thegroup.variables:
-        variable = thegroup.variables[var_name] 
-        var_values = np.array(variable[:]) 
-        if '_FillValue' in variable.ncattrs():
-           fill_value = variable.getncattr('_FillValue')
-           var_values[var_values == fill_value] = np.nan
-           if statistic == 'mean':
-              statistic_value = np.nanmean(var_values)
-           elif statistic == 'median':
-              statistic_value = np.nanmedian(var_values)
-           elif statistic == 'StdDev':
-              print("in the StdDev")
-              statistic_value = np.nanstd(var_values)
+def verify_group_mean_values(tolerance=0.001):
+    """
+      Mean values that are hard coded here were calculated offline.
+      """
+    data1 = harvest(VALID_CONFIG_DICT) 
+    calculated_means = [18.924038657133483,0.06212510113054594,0.07588130216644204]
+    groups_wanted = ['ObsValue','oman','ombg'] 
+    group_index = 0
+    # Filter out only the data that has the "mean" statistic
+    harvested_data = [data for data in data1 if data.statistic == 'mean']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
 
-    return(statistic_value)
+    # Iterate over harvested data and check means for each group
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_mean = data.value
+        calculated_value = calculated_means[group_index]
+        # Verify that the harvested mean is within tolerance of the calculated mean
+        assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
+        group_index += 1
+       
+def verify_group_median_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    calculated_medians = [22.409034729003906,0.029189025983214375,0.055334743112325675]
+    groups_wanted = ['ObsValue','oman','ombg'] 
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'median']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
 
-def get_harvested_statistic_value(statistic):
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_medians = data.value
+        calculated_value = calculated_medians[group_index]
+        # Verify that the harvested mean is within tolerance of the calculated median 
+        assert abs(harvested_medians - calculated_value) <= tolerance, f"Median value mismatch for {group_name}"
+        group_index += 1
+
+def verify_group_StdDev_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT) 
+    calculated_StdDevs = [9.234388236283511,0.43633542496370253,0.4974935575667632]
+    groups_wanted = ['ObsValue','oman','ombg'] 
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'StdDev']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
+
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_StdDevs = data.value
+        calculated_value = calculated_StdDevs[group_index]
+        assert abs(harvested_StdDevs - calculated_value) <= tolerance, f"Standard Deviation value mismatch for {group_name}"
+        group_index += 1
+
+def verify_group_minimum_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
-    harvested_data = {
-        data.group: data.value for data in data1 if data.statistic == statistic
-    }
-    return harvested_data    
-
-def verify_group_mean_values():
-    statistic = 'mean'
-    
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
-    """
-      calculate the statistic from the open dataset..
-      """
+    calculated_minimums = [-2.123818159103393,-6.02739143371582,-6.222834587097168]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted: 
-        thegroup = dataset.groups[group_name]
-        calculated_mean = calculate_statistic(statistic,thegroup)
-        harvested_mean = get_harvested_statistic_value(statistic)       
-        assert calculated_mean == harvested_mean[group_name]
-    dataset.close() 
-
-def verify_group_median_values():
-    statistic = 'median'
-
-    filename = SOCA_PATH[0]
-    try:
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e:
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
-       sys.exit(1)
-    """
-      calculate the statistic from the open dataset..
-      """
-    groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted:
-        thegroup = dataset.groups[group_name]
-        calculated_median = calculate_statistic(statistic,thegroup)
-        harvested_median = get_harvested_statistic_value(statistic)
-        assert calculated_median == harvested_median[group_name]
-    dataset.close()
-    
-def verify_group_StdDev_values():
-    statistic = 'StdDev'
-
-    filename = SOCA_PATH[0]  
-    try: 
-       dataset = netCDF4.Dataset(filename,'r')
-    except Exception as e: 
-       raise OSError(f"Failed to open NetCDF file : icec_amsr2_north.2021070300.nc4 {e}")
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'minimum']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
        sys.exit(1)
 
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_minimum = data.value
+        calculated_value = calculated_minimums[group_index]
+        assert abs(harvested_minimum - calculated_value) <= tolerance, f"Minimum value mismatch for {group_name}"
+        group_index += 1
+
+def verify_group_maximum_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+    calculated_maximums = [34.480560302734375,11.538920402526855,11.55988597869873]
     groups_wanted = ['ObsValue','oman','ombg']
-    for group_name in groups_wanted: 
-        thegroup = dataset.groups[group_name]
-        calculated_std = calculate_statistic(statistic,thegroup)
-        harvested_std = get_harvested_statistic_value(statistic)       
-        assert calculated_std == harvested_std[group_name]
-    dataset.close() 
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistic == 'maximum']
+    if len(harvested_data) != len(groups_wanted):
+       print("Error: Mismatch between expected groups and harvested data.")
+       sys.exit(1)
+
+    # Iterate over harvested data and check means for each group
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        harvested_maximum = data.value
+        calculated_value = calculated_maximums[group_index]
+        assert abs(harvested_maximum - calculated_value) <= tolerance, f" Maximum value mismatch for {group_name}"
+        group_index += 1
 
 def main():
     test_soca_harvester()
@@ -154,6 +168,8 @@ def main():
     verify_group_mean_values()
     verify_group_median_values() 
     verify_group_StdDev_values()
+    verify_group_minimum_values()
+    verify_group_maximum_values()
 
 if __name__=='__main__':
     main()
