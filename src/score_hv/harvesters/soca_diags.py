@@ -251,15 +251,16 @@ class SOCADiagsHv(object):
                           units = str(var.getncattr("units"))
    
                        groupvalue_variable = requested_group.variables[var_name]
-                       var_values = np.array(groupvalue_variable[:])
 
                        if '_FillValue' in groupvalue_variable.ncattrs():
                           fill_value = groupvalue_variable.getncattr('_FillValue')
-
-                       if np.ma.isMaskedArray(var_values):
-                          var_values = np.ma.filled(var_values, np.nan) 
+                          var_values = np.ma.masked_where(groupvalue_variable[:] == fill_value,groupvalue_variable[:])
                        else:   
-                          var_values[var_values == fill_value] = np.nan                                       
+                          var_values =  np.ma.array(groupvalue_variable[:])
+                       """
+                         Mask out the nans in place.
+                         """
+                       np.ma.masked_where(var_values == np.nan,var_values,copy=False)
                        
                        """
                           Calculate the requested statistics. Our var_values arrays are 
@@ -270,19 +271,19 @@ class SOCADiagsHv(object):
                        for j, statistic in enumerate(self.config.get_stats()):
                            group = group_name
                            if statistic == 'mean':
-                               value = np.nanmean(var_values)
+                               value = np.ma.mean(var_values)
                                
                            elif statistic == 'median':
-                               value = np.nanmedian(var_values)
+                               value = np.ma.median(var_values)
                                 
                            elif statistic == 'StdDev':
-                               value = np.nanstd(var_values)
+                               value = np.ma.std(var_values)
                                
                            elif statistic == 'minimum':
-                               value = np.nanmin(var_values)
+                               value = np.ma.min(var_values)
                            
                            elif statistic == 'maximum':
-                               value = np.nanmax(var_values)
+                               value = np.ma.max(var_values)
                                 
                            harvested_data.append(HarvestedData(
                                                  filename,
