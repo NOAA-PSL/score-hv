@@ -30,8 +30,8 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
-                     'statistic': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
-                     'variable': ['sst'],
+                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
+                     'variables': ['sst'],
                      }
 
 def test_soca_harvester():
@@ -43,7 +43,7 @@ def test_soca_harvester():
 def test_verify_filename_components():
     data1 = harvest(VALID_CONFIG_DICT)
     data = data1[0]
-    assert data.variable == 'seaSurfaceTemperature'
+    assert data.variables == 'seaSurfaceTemperature'
     assert data.sensor == 'viirs'
     assert data.satellite == 'n20'
     assert data.level == 'l3u'
@@ -69,14 +69,9 @@ def test_verify_group_mean_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     calculated_means = [18.924038657133483,0.06212510113054594,0.07588130216644204]
     groups_wanted = ['ObsValue','oman','ombg'] 
-    group_index = 0
-    # Filter out only the data that has the "mean" statistic
-    harvested_data = [data for data in data1 if data.statistic == 'mean']
-    if len(harvested_data) != len(groups_wanted):
-       print("Error: Mismatch between expected groups and harvested data.")
-       sys.exit(1)
-
-    # Iterate over harvested data and check means for each group
+    harvested_data = [data for data in data1 if data.statistics == 'mean']
+    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
+   
     group_index = 0
     for data in harvested_data:
         group_name = data.group
@@ -90,12 +85,9 @@ def test_verify_group_median_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     calculated_medians = [22.409034729003906,0.029189025983214375,0.055334743112325675]
     groups_wanted = ['ObsValue','oman','ombg'] 
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistic == 'median']
-    if len(harvested_data) != len(groups_wanted):
-       print("Error: Mismatch between expected groups and harvested data.")
-       sys.exit(1)
-
+    harvested_data = [data for data in data1 if data.statistics == 'median']
+    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
+   
     group_index = 0
     for data in harvested_data:
         group_name = data.group
@@ -109,12 +101,9 @@ def test_verify_group_StdDev_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     calculated_StdDevs = [9.234388236283511,0.43633542496370253,0.4974935575667632]
     groups_wanted = ['ObsValue','oman','ombg'] 
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistic == 'StdDev']
-    if len(harvested_data) != len(groups_wanted):
-       print("Error: Mismatch between expected groups and harvested data.")
-       sys.exit(1)
-
+    harvested_data = [data for data in data1 if data.statistics == 'StdDev']
+    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
+    
     group_index = 0
     for data in harvested_data:
         group_name = data.group
@@ -127,12 +116,9 @@ def test_verify_group_minimum_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     calculated_minimums = [-2.123818159103393,-6.02739143371582,-6.222834587097168]
     groups_wanted = ['ObsValue','oman','ombg']
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistic == 'minimum']
-    if len(harvested_data) != len(groups_wanted):
-       print("Error: Mismatch between expected groups and harvested data.")
-       sys.exit(1)
-
+    harvested_data = [data for data in data1 if data.statistics == 'minimum']
+    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
+    
     group_index = 0
     for data in harvested_data:
         group_name = data.group
@@ -145,13 +131,9 @@ def test_verify_group_maximum_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     calculated_maximums = [34.480560302734375,11.538920402526855,11.55988597869873]
     groups_wanted = ['ObsValue','oman','ombg']
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistic == 'maximum']
-    if len(harvested_data) != len(groups_wanted):
-       print("Error: Mismatch between expected groups and harvested data.")
-       sys.exit(1)
+    harvested_data = [data for data in data1 if data.statistics == 'maximum']
+    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."    
 
-    # Iterate over harvested data and check means for each group
     group_index = 0
     for data in harvested_data:
         group_name = data.group
