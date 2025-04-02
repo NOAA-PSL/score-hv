@@ -32,8 +32,8 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
-                     'statistic': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
-                     'variable': ['seaSurfaceSalinity','seaSurfaceTemperature'],
+                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
+                     'variables': ['seaSurfaceSalinity','seaSurfaceTemperature'],
                      }
 
 def test_soca_harvester():
@@ -46,8 +46,8 @@ def test_verify_filename_components():
     expected_variable_names = ['seaSurfaceSalinity','seaSurfaceTemperature']
     data1 = harvest(VALID_CONFIG_DICT)
     for item in data1:
-        if item.variable not in expected_variable_names:
-           raise ValueError(f"Error: {item.variable} is not in the expected variable list.")  
+        if item.variables not in expected_variable_names:
+           raise ValueError(f"Error: {item.variables} is not in the expected variable list.")  
         assert item.sensor == None   
         assert item.satellite == 'trkob'
         assert item.level == None   
@@ -63,23 +63,23 @@ def test_verify_datetime():
 def test_verify_group_mean_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
-        if item.statistic == 'mean':
+        if item.statistics == 'mean':
            if item.group == 'ObsValue': 
-              if item.variable == 'seaSurfaceSalinity':
+              if item.variables == 'seaSurfaceSalinity':
                  calc_value = 35.432342
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
-              elif item.variable == 'seaSurfaceTemperature':
+              elif item.variables == 'seaSurfaceTemperature':
                  calc_value = 23.566126
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
            elif item.group == 'oman':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.310008
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
            elif item.group == 'ombg':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.313802
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
@@ -87,23 +87,23 @@ def test_verify_group_mean_values(tolerance=.001):
 def test_verify_group_median_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
-        if item.statistic == 'median':
+        if item.statistics == 'median':
            if item.group == 'ObsValue': 
-              if item.variable == 'seaSurfaceSalinity':
+              if item.variables == 'seaSurfaceSalinity':
                  calc_value = 35.169998
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
-              elif item.variable == 'seaSurfaceTemperature':
+              elif item.variables == 'seaSurfaceTemperature':
                  calc_value = 23.1
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
            elif item.group == 'oman':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.482664
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
            elif item.group == 'ombg':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.433351
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
@@ -111,23 +111,23 @@ def test_verify_group_median_values(tolerance=.001):
 def test_verify_group_standard_deviation_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
-        if item.statistic == 'StdDev':
+        if item.statistics == 'StdDev':
            if item.group == 'ObsValue':
-              if item.variable == 'seaSurfaceSalinity':
+              if item.variables == 'seaSurfaceSalinity':
                  calc_value = 1.547105 
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
-              elif item.variable == 'seaSurfaceTemperature':
+              elif item.variables == 'seaSurfaceTemperature':
                  calc_value = 1.038353
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value                
            elif item.group == 'oman':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.33505
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
            elif item.group == 'ombg':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.32389
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
@@ -135,25 +135,25 @@ def test_verify_group_standard_deviation_values(tolerance=.001):
 def test_verify_group_minimum_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
-        if item.statistic == 'minimum':
+        if item.statistics == 'minimum':
            if item.group == 'ObsValue':
-              if item.variable == 'seaSurfaceSalinity':
+              if item.variables == 'seaSurfaceSalinity':
                  calc_value = 32.0 
                  print(item.value)
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
-              elif item.variable == 'seaSurfaceTemperature':
+              elif item.variables == 'seaSurfaceTemperature':
                  calc_value = 22.1 
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value                
            elif item.group == 'oman':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = abs(-0.686694)
                    harvested = abs(item.value)
                    assert calc_value <= (1 + tolerance) * harvested 
                    assert calc_value >= (1 - tolerance) * harvested
            elif item.group == 'ombg':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = abs(-0.686694)
                    harveted = abs(item.value)
                    assert calc_value <= (1 + tolerance) * harvested   
@@ -161,23 +161,23 @@ def test_verify_group_minimum_values(tolerance=.001):
 def test_verify_group_maximum_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
     for item in data1:
-        if item.statistic == 'maximum':
+        if item.statistics == 'maximum':
            if item.group == 'ObsValue':
-              if item.variable == 'seaSurfaceSalinity':
+              if item.variables == 'seaSurfaceSalinity':
                  calc_value = 40.990002 
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
-              elif item.variable == 'seaSurfaceTemperature':
+              elif item.variables == 'seaSurfaceTemperature':
                  calc_value = 27.6
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value                
            elif item.group == 'oman':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.743538
                    assert calc_value <= (1 + tolerance) * item.value
                    assert calc_value >= (1 - tolerance) * item.value
            elif item.group == 'ombg':
-                if item.variable == 'seaSurfaceTemperature':
+                if item.variables == 'seaSurfaceTemperature':
                    calc_value = 0.743538 
                    assert calc_value <= (1 + tolerance) * item.value
 
