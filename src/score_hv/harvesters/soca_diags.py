@@ -34,11 +34,11 @@ HarvestedData = namedtuple('HarvestedData', ['filenames',
                                              'sensor',
                                              'satellite',
                                              'level',
-                                             'variable',
+                                             'variables',
                                              'group',
                                              'longname',
                                              'units',
-                                             'statistic',
+                                             'statistics',
                                              'value',
                                              'filetime',
                                              'file_region'])
@@ -111,18 +111,18 @@ def read_MetaData_group(dataset):
     else: 
        metadata_group = dataset.groups['MetaData'] 
        if 'latitude' in metadata_group.variables:
-          latitudes = metadata_group['latitude'][:]
+          latitude = metadata_group['latitude'][:]
        else:
-          latitudes = None 
+          latitude = None 
           print("'latitude' not found in metadata_vars")
 
        if 'longitude' in metadata_group.variables:
-          longitudes = metadata_group['longitude'][:]
+          longitude = metadata_group['longitude'][:]
        else:
-          longitudes = None 
+          longitude = None 
           print("'longitude' not found in metadata_vars")
 
-    return(latitudes,longitudes)
+    return(latitude,longitude)
 
 @dataclass
 class SOCADiagsConfig(ConfigInterface):
@@ -146,7 +146,7 @@ class SOCADiagsConfig(ConfigInterface):
         """
           Set the variables specified by the config dict
           """
-        self.variables = self.config_data.get('variable')
+        self.variables = self.config_data.get('variables')
         for var in self.variables:
             if var not in VALID_VARIABLES:
                 msg = ("'%s' is not a supported "
@@ -159,7 +159,7 @@ class SOCADiagsConfig(ConfigInterface):
         """
            Set the statistics specified by the config dict
            """
-        self.stats = self.config_data.get('statistic')
+        self.stats = self.config_data.get('statistics')
         for stat in self.stats:
             if stat not in VALID_STATISTICS:
                 msg = ("'%s' is not a supported statistic to harvest from "
@@ -206,13 +206,11 @@ class SOCADiagsHv(object):
         for filename in self.config.harvest_filenames:
             harvested_data = list()
             filename_info = parse_filename(filename)
-            print("Opening file: ",filename)
             try:
                dataset = netCDF4.Dataset(filename, 'r')
             except Exception as e: 
                raise OSError (f"Failed to open NetCDF file {filename}: {e}")
 
-            print("file is open ",filename)
             """
               The information about the file from the 
               file name.
@@ -233,8 +231,7 @@ class SOCADiagsHv(object):
               """
             for group in groups_wanted:
                 if group not in dataset.groups:
-                   print(group," is not in the dataset.groups ",dataset.groups)
-                   sys.exit(1)
+                   raise ValueError(f"{group} is not in dataset.groups: {dataset.groups}")   
                 else:     
                    requested_group = dataset.groups[group]
                    group_name = group
@@ -242,11 +239,7 @@ class SOCADiagsHv(object):
                    for var_name in requested_group.variables:
                        variable = var_name
                        var = requested_group.variables[var_name]
-                       if num_variables > 1:
-                          longname = var_name 
-                       else:
-                          longname = list(requested_group.variables.keys())[0] 
-
+                       longname = var_name 
                        if "units" in var.ncattrs():
                           units = str(var.getncattr("units"))
    
