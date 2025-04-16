@@ -34,7 +34,7 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.GSI_SATELLITE_RADIANCE_CHANNE
                                     'bias_pre_corr',
                                     'bias_post_corr',
                                     'penalty',
-                                    'sqrt_bias',
+                                    'rmse_post_corr',
                                     'std')
                     }
                     
@@ -56,7 +56,7 @@ VALID_CONFIG_DICT_GEOS_IT_1998 = {'harvester_name':
                                     'bias_pre_corr',
                                     'bias_post_corr',
                                     'penalty',
-                                    'sqrt_bias',
+                                    'rmse_post_corr',
                                     'std')
                     }
     
@@ -85,7 +85,7 @@ def test_bad_config():
                                       'bias_pre_corr',
                                       'bias_post_corr',
                                       'qcpenalty',
-                                      'sqrt_bias',
+                                      'rmse_post_corr',
                                       'std')
                     }
 
@@ -313,7 +313,7 @@ def test_no_vars():
                                         'bias_pre_corr',
                                         'bias_post_corr',
                                         'penalty',
-                                        'sqrt_bias',
+                                        'rmse_post_corr',
                                         'std')
                                     }
     

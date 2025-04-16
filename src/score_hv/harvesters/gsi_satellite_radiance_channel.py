@@ -22,26 +22,27 @@ N_BIAS_CORR_COEF = 12
 # NASA GEOS: variables 'icld_det', 'icloud', 'iaeros' are not supported for
 # GSI analysis logs from NASA
 VALID_VARIABLES = (
-        'var',
-        'varch_cld',
-        'use',
-        'ermax',
-        'b_rad',
-        'pg_rad',
-        'icld_det',
+        'var', # error variance for each satellite channel
+        'varch_cld', # error variance for each satellite channel if cloudy
+        'use', # =1, use this channel data; =-1, don't use this channel data
+        'ermax', # error maximum for gross check to observations
+        'b_rad', # possible range of variable for gross errors
+        'pg_rad', # probability of gross error
+        'icld_det', # use this channel in cloud detection if > 0
         'icloud',
         'iaeros',
-        BIAS_CORR_COEF_STR)
+        BIAS_CORR_COEF_STR # bias correction coefficients
+)
 
 # GSI statistics varying by instrument channel
 VALID_STATISTICS = (
-    'nobs_used', # number of obs used in GSI analysis
-    'nobs_tossed', # number of obs tossed by gross check
-    'variance', # variance for each satellite channel
+    'nobs_used', # number of obs used in GSI analysis within this channel
+    'nobs_tossed', # number of obs tossed by gross check within this channel
+    'variance', # observation error variance for each satellite channel
     'bias_pre_corr', # observation minus guess before bias correction
     'bias_post_corr', # observation minus guess after bias correction
-    'penalty', # penalty contribution
-    'sqrt_bias', # square root of (o-g with bias correction)**2 (?)
+    'penalty', # penalty contribution from this channel
+    'rmse_post_corr', # square root of (o-g with bias correction)**2 (RMS)
     'std' # standard deviation
 )
 
@@ -264,7 +265,7 @@ class GSISatelliteRadianceChannelHv(object):
                 longname = 'number of observations tossed by gross check'
             elif stat == 'variance':
                 value = float(line_parts[5])
-                longname = 'variance for satellite channel'
+                longname = 'error variance for satellite channel'
             elif stat == 'bias_pre_corr':
                 value = float(line_parts[6])
                 longname = 'observation minus guess before bias correction'
@@ -274,7 +275,7 @@ class GSISatelliteRadianceChannelHv(object):
             elif stat == 'penalty':
                 value = float(line_parts[8])
                 longname = 'penalty contribution from channel'
-            elif stat == 'sqrt_bias':
+            elif stat == 'rmse_post_corr':
                 value = float(line_parts[9])
                 longname = 'square root of (o-g with bias correction)**2'
             elif stat == 'std':
@@ -312,21 +313,29 @@ class GSISatelliteRadianceChannelHv(object):
                 channel = int(line2list[1].split()[0])    
                 
                 data_usage_dict = dict()
+                longname = None
                 for var in self.config.vars_to_harvest:
                     if var == 'var':
                         value = float(line2list[2].split()[0])
+                        longname = 'error variance'
                     elif var == 'varch_cld':
                         value = float(line2list[3].split()[0])
+                        longname = 'error variance if cloudy'
                     elif var == 'use':
                         value = int(line2list[4].split()[0])
+                        longname = "=1, use this channel data; =-1 don't use this channel data"
                     elif var == 'ermax':
                         value = float(line2list[5].split()[0])
+                        longname = "error maximum for gross check to observations"
                     elif var == 'b_rad':
                         value = float(line2list[6].split()[0])
+                        longname = "possible range of variable for gross errors"
                     elif var == 'pg_rad':
                         value = float(line2list[7].split()[0])
+                        longname = "probability of gross error"
                     elif var == 'icld_det':
                         value = int(line2list[8].split()[0])
+                        longname = "use this channel in cloud detection if > 0"
                     elif var == 'icloud':
                         value = int(line2list[9].split()[0])
                     elif var == 'iaeros':
@@ -334,13 +343,15 @@ class GSISatelliteRadianceChannelHv(object):
                     elif var == BIAS_CORR_COEF_STR:
                         value = list() # empty list for bias
                                        # correction coeficients
+                        longname = 'bias correction coefficients'
                     
-                    data_usage_dict[var] = value    
+                    data_usage_dict[var] = value
                 
                 self.channels[series_number] = {
                     'observation_type': observation_type,
                     'channel': channel,
-                    'data_usage_dict': data_usage_dict
+                    'data_usage_dict': data_usage_dict,
+                    'longname': longname
                 }
                 
                 # store channel numbers
