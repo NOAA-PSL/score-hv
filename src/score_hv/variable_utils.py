@@ -140,16 +140,14 @@ class VarUtilsCatalog(object):
         soil_type_data = self.dataset['sotyp']
         return(soil_type_data)
 
-    def get_fraction_data(self,var_name):
+    def get_fraction_data(self):
         """
           Get the ice fraction concentration for the ice thickness variable(icetk).
           Get the land fraction for all other variables.
           The dimension of the icec and lfrac is (time, grid_yt, grid_xt).
           """
-        if var_name == 'icetk':
-           self.check_variable_exists('icec')
-           fraction_data = self.dataset['icec']
-        else:
-           self.check_variable_exists('lfrac')
-           fraction_data = self.dataset['lfrac']
-        return(fraction_data)
+        self.check_variable_exists('icec')
+        icec_data = self.dataset['icec']
+        self.check_variable_exists('lfrac')
+        land_fraction_data = self.dataset['lfrac']
+        return(land_fraction_data, icec_data)

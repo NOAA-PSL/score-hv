@@ -10,7 +10,7 @@ import xarray as xr
 import pytest
 import pdb
 
-VARIABLES_TO_MASK = ['icetk','nsst','snod','soilm','soilt4','sst','tg3','tsnowp','weasd']
+VARIABLES_TO_MASK = ['icec', 'icetk','nsst','snod','soilm','soilt4','sst','tg3','tsnowp','weasd']
 VALID_MASKS = ['none','land','water', 'ice']
 
 class MaskCatalog:
@@ -18,7 +18,9 @@ class MaskCatalog:
         """
           Here we initalize the MaskCatalog class.
           """
-        pass 
+        self.soil_snow_variables = ['soilt4','soilm','snod','tg3','tsnowp', 'weasd']
+        self.ice_variables = ['icetk', 'icec']
+        self.sst_variables = ['sst', 'nsst']
 
     def check_variable_to_mask(self,var_name):
         """
@@ -28,7 +30,8 @@ class MaskCatalog:
           """
         return var_name in VARIABLES_TO_MASK
 
-    def initial_mask_variable(self,var_name,variable_data,fraction_data,weights,sotyp_data):
+    def initial_mask_variable(self, var_name, variable_data, lfrac,
+                              sotyp_data, icec=None):
         """
           This method does the masking of the variables requested by the user.
           There are some variables that are always masked. 
@@ -57,60 +60,52 @@ class MaskCatalog:
                    For the ice_variables the ice fraction(icec) is returned.
                    The masked gridcell_area_weights are returned after masking.
           """
-       
-        soil_snow_variables = ['soilt4','soilm','snod','tg3','tsnowp', 'weasd']
-        ice_variables = ['icetk']
-        sst_variables = ['sst','nsst']
         if var_name in soil_snow_variables:        
            """
              We will need the sotyp(soil type) variable from the dataset.
              The values of 0 and 16 in the sotyp variable are used to delete values
-             over water and ice. This is used specifically for the 
+             over water and land ice. This is used specifically for the 
              soil_snow variables: soilm,soilt4,tg3,snod and weasd. We also need
              the land fraction or the ice fraction variable depending on what
              variable the user has requested.
              """
-           masked_variable = variable_data.where((sotyp_data != 0) & (sotyp_data != 16),drop=False)
-           masked_fraction = fraction_data.where((sotyp_data != 0) & (sotyp_data != 16), drop=False)
-           masked_weights  = weights.where((sotyp_data != 0) & (sotyp_data != 16), drop=False)
+           masked_variable = variable_data.where(
+               (sotyp_data != 0) & (sotyp_data != 16)
+           )
+           masked_frac = lfrac.where(
+               (sotyp_data != 0) & (sotyp_data != 16)
+           )
         
         elif var_name in ice_variables:
            """
-             The ice thikness variable has 0 everwhere except where there is ice.
+             The ice thickness variable has 0 everwhere except where there is ice.
              """
-           masked_variable = variable_data  
-           masked_weights =  weights.where(sotyp_data !=16,False,drop=False)
-           masked_fraction = fraction_data
+           masked_variable = variable_data.where(icec > 0)
+           masked_frac = icec.where(icec > 0)
 
         elif var_name in sst_variables:
-           if var_name == "sst":
+           if var_name == "sst" or var_name == 'nsst':
               """
                 For the sst(tmpsfc) variable we use the sotyp data and keep the
                 values that are over the water. 
                 """
-              masked_variable = variable_data.where(sotyp_data == 0,False)
-              masked_weights = weights.where(sotyp_data == 0,False)
+              masked_variable = variable_data.where(
+                  (sotyp_data == 0) & (icec == 0)
+              )
               """
-                This line replaces the lfrac values over the water where they are 0 with 1.  Then
-                it subtracts the lfrac values that are between 0 and 1 from 1 to get the fraction
-                of the land that is over the water.
+                This line replaces the lfrac values over sea ice with nans. Then
+                it subtracts the lfrac values elsewhere from 1 to get the fraction
+                of water.
                 """
-              masked_fraction = xr.where(fraction_data == 0, 1, xr.where(fraction_data == 1, 0, 1 - fraction_data))
-           elif var_name == "nsst":
-              masked_variable = variable_data.where(sotyp_data == 0,False)
-              masked_weights  = weights.where(sotyp_data == 0,False)
-              masked_fraction = xr.where(fraction_data == 0, 1, xr.where(fraction_data == 1, 0, 1 - fraction_data))
+              masked_frac = 1. - lfrac.where(icec==0)
            else:
              raise KeyError(f"Variable is not in VARIABLES_TO_MASK list: {var_name}")
              sys.exit(1) 
 
-        valid_variable_data = masked_variable.where(~masked_variable.isnull(),other=np.nan)
-        valid_fraction_data = masked_fraction.where(~masked_fraction.isnull())
+        #valid_variable_data = masked_variable.where(~masked_variable.isnull(),other=np.nan)
+        #valid_fraction_data = masked_fraction.where(~masked_fraction.isnull())
         
-        import ipdb
-        ipdb.set_trace()
-        
-        return(valid_variable_data,valid_fraction_data,masked_weights)
+        return(masked_variable, masked_frac)
 
     def replace_bad_values_with_nan(self,variable_data):
         """

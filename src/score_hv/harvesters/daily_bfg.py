@@ -39,7 +39,8 @@ VALID_VARIABLES are the variables of interest that come from the
 background forecast data.
 """
 VALID_VARIABLES = (
-    #'icetk',       # sea ice thickness (m)
+    'icec',        # sea ice concentration (ice=1; no ice=2)
+    'icetk',       # sea ice thickness (m)
     'lhtfl_ave',   # surface latent heat flux (W/m**2)
     'shtfl_ave',   # surface sensible heat flux (W/m**2)
     'dlwrf_ave',   # surface downward longwave flux (W/m**2)
@@ -48,7 +49,7 @@ VALID_VARIABLES = (
     'uswrf_ave',   # averaged surface upward shortwave flux (W/m**2)
     'netrf_avetoa',# top of atmosphere net radiative flux (SW and LW) (W/m**2)
     'netef_ave',   # surface energy balance (W/m**2)
-    #'nsst',        # near sea surface temperature(K), using tref over the ocean 
+    'nsst',        # near sea surface temperature(K), using tref over the ocean 
                    # only
     'prateb_ave',   # bucket surface precip rate (mm weq. s^-1)
     'prate_ave',   # surface precip rate (mm weq. s^-1)
@@ -57,7 +58,7 @@ VALID_VARIABLES = (
     #'snod',        # surface snow depth (m)
     #'soilm',       # total column soil moisture content (mm weq.)
     #'soilt4',      # soil temperature unknown layer 4 (K)
-    #'sst',         # sea surface temperature (K), using tmpsfc over the ocean 
+    'sst',         # sea surface temperature (K), using tmpsfc over the ocean 
                    # only
     #'tg3',         # deep soil temperature (K)
     'tmp2m',       # 2m (surface air) temperature (K)
@@ -275,7 +276,7 @@ class DailyBFGHv(object):
             mask_variable = mask_catalog.check_variable_to_mask(var_name)
             if self.config.surface_mask != None or mask_variable:
                 global_soil_type_data = var_utils_catalog.get_soil_type_data()
-                global_fraction_data = var_utils_catalog.get_fraction_data(var_name)
+                global_land_fraction_data, global_icec_data = var_utils_catalog.get_fraction_data()
 
             # Process each region
             for region_name, region_bounds in self.config.regions.items():
@@ -300,14 +301,13 @@ class DailyBFGHv(object):
                     regions_catalog.gridcell_area_weights[region_name]['longitude'],
                     region_name
                 )
-                
-                
+                 
                 if self.config.surface_mask is not None or mask_variable:
                     is_masked = True
                     # Extract the region-specific fraction data and soil type
                     (fraction_lats, fraction_lons, fraction_data
                     ) = regions_catalog.get_region_data(
-                        region_name, global_fraction_data
+                        region_name, global_land_fraction_data
                     )
                     
                      # Assure equal domains
@@ -319,6 +319,24 @@ class DailyBFGHv(object):
                     
                     check_region_domain(
                         fraction_lons,
+                        regions_catalog.gridcell_area_weights[region_name]['longitude'],
+                        region_name
+                    )
+                    
+                    (icec_lats, icec_lons, icec_data
+                    ) = regions_catalog.get_region_data(
+                        region_name, global_icec_data
+                    )
+                    
+                     # Assure equal domains
+                    check_region_domain(
+                        icec_lats,
+                        regions_catalog.gridcell_area_weights[region_name]['latitude'],
+                        region_name
+                    )
+                    
+                    check_region_domain(
+                        icec_lons,
                         regions_catalog.gridcell_area_weights[region_name]['longitude'],
                         region_name
                     )
@@ -342,8 +360,9 @@ class DailyBFGHv(object):
                     
                     #TODO: optimize where functions in mask_catalog.initial_mask_variable() method in mask_utils.py
                     
-                    masked_variable, masked_fraction, masked_weights = mask_instance.initial_mask_variable(
-                        var_name, variable_data, fraction_data, weights, soil_type_data)
+                    masked_variable, masked_fraction_data = mask_catalog.initial_mask_variable(
+                        var_name, regional_variable_data,
+                        soil_type_data, icec=icec_data)
                     
                     '''                
                     if self.config.surface_mask is not None:
@@ -356,9 +375,9 @@ class DailyBFGHv(object):
                 
                     '''
     
-                    temporal_mean_fraction_data = fraction_data.sum(
+                    temporal_mean_fraction_data = masked_fraction_data.sum(
                         dim = 'time', skipna = True
-                    ) / float(fraction_data.time.size)
+                    ) / float(masked_fraction_data.time.size)
                     
                     region_gridcell_area_weights = np.ma.masked_invalid(
                         temporal_mean_fraction_data *

@@ -18,15 +18,6 @@ TEST_DATA_FILE_NAMES = ['bfg_1994010100_fhr09_prateb_control.nc',
                         'bfg_1994010118_fhr06_prateb_control.nc',
                         'bfg_1994010118_fhr09_prateb_control.nc',
                         'bfg_1994010200_fhr06_prateb_control.nc']
-                        
-TEST_DATA_FILE_NAMES1 = ['bfg_1994010100_fhr09_prate_control.nc',
-                         'bfg_1994010106_fhr06_prate_control.nc',
-                         'bfg_1994010106_fhr09_prate_control.nc',
-                         'bfg_1994010112_fhr06_prate_control.nc',
-                         'bfg_1994010112_fhr09_prate_control.nc',
-                         'bfg_1994010118_fhr06_prate_control.nc',
-                         'bfg_1994010118_fhr09_prate_control.nc',
-                         'bfg_1994010200_fhr06_prate_control.nc']
 
 DATA_DIR = os.path.join(Path(__file__).parent.parent.resolve(), 'src', 'score_hv', 'data')
 GRIDCELL_AREA_DATA_PATH = os.path.join(DATA_DIR,
@@ -38,8 +29,6 @@ PYTEST_CALLING_DIR = Path(__file__).parent.resolve()
 TEST_DATA_PATH = os.path.join(PYTEST_CALLING_DIR, 'data')
 BFG_PATH = [os.path.join(TEST_DATA_PATH,
                          file_name) for file_name in TEST_DATA_FILE_NAMES]
-BFG_PATH1 = [os.path.join(TEST_DATA_PATH,
-                          file_name) for file_name in TEST_DATA_FILE_NAMES1]
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                      'filenames' : BFG_PATH,
@@ -47,9 +36,9 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                      'variable': ['prateb_ave']}
 
 VALID_CONFIG_DICT1 = {'harvester_name': hv_registry.DAILY_BFG,
-                     'filenames' : BFG_PATH1,
+                     'filenames' : BFG_PATH,
                      'statistic': ['mean', 'variance', 'minimum', 'maximum'],
-                     'variable': ['prate_ave'],
+                     'variable': ['prateb_ave'],
                      'regions': {'conus':{'north_lat': 49, 'south_lat': 24, 'west_long': 235, 'east_long':293},
                                  'south_hemis': {'north_lat':0, 'south_lat':-90, 'west_long':0, 'east_long':360},
                                  'north_hemis': {'north_lat':90, 'south_lat':0, 'west_long':0, 'east_long':360},
@@ -100,8 +89,6 @@ def test_gridcell_area_conservation(tolerance=0.001):
 def test_variable_names():
     data = harvest(VALID_CONFIG_DICT)
     assert data[0].variable == 'prateb_ave'
-    data1 = harvest(VALID_CONFIG_DICT1)
-    assert data1[-1].variable == 'prate_ave'
     data2 = harvest(VALID_CONFIG_DICT2)
     assert data2[10].variable == 'prateb_ave'
 
