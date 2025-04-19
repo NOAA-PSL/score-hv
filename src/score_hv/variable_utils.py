@@ -99,7 +99,7 @@ class VarUtilsCatalog(object):
 
     def calculate_toa_radative_flux(self):
         """
-          This method calculates the derived variable netef_ave.
+          This method calculates the derived variable netrf_avetoa.
           The variable name netrf_avetoa referes to the top of the
           atmosphere (TOA) net radiative energy flux.
           The required fields are:
@@ -116,7 +116,8 @@ class VarUtilsCatalog(object):
         dswrf = self.dataset['dswrf_avetoa']
         uswrf = self.dataset['uswrf_avetoa']
         ulwrf = self.dataset['ulwrf_avetoa']
-        netrf_avetoa = dswrf - uswrf - ulwrf
+        # replace nans with 0 in case night time values are masked out in shortwave fluxes
+        netrf_avetoa = dswrf.fillna(0) - uswrf.fillna(0) - ulwrf
         netrf_avetoa.attrs = dswrf.attrs 
         return(netrf_avetoa)
 
