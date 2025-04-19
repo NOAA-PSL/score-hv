@@ -38,7 +38,7 @@ VALID_VARIABLES = (
 VALID_STATISTICS = (
     'nobs_used', # number of obs used in GSI analysis within this channel
     'nobs_tossed', # number of obs tossed by gross check within this channel
-    'variance', # observation error variance for each satellite channel
+    'obs_err_variance', # observation error variance for each satellite channel
     'bias_pre_corr', # observation minus guess before bias correction
     'bias_post_corr', # observation minus guess after bias correction
     'penalty', # penalty contribution from this channel
@@ -263,7 +263,7 @@ class GSISatelliteRadianceChannelHv(object):
             elif stat == 'nobs_tossed':
                 value = int(line_parts[4])
                 longname = 'number of observations tossed by gross check'
-            elif stat == 'variance':
+            elif stat == 'obs_err_variance':
                 value = float(line_parts[5])
                 longname = 'error variance for satellite channel'
             elif stat == 'bias_pre_corr':

@@ -30,7 +30,7 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.GSI_SATELLITE_RADIANCE_CHANNE
                                    'bias_correction_coefficients'),
                      'statistics': ('nobs_used',
                                     'nobs_tossed',
-                                    'variance',
+                                    'obs_err_variance',
                                     'bias_pre_corr',
                                     'bias_post_corr',
                                     'penalty',
@@ -52,7 +52,7 @@ VALID_CONFIG_DICT_GEOS_IT_1998 = {'harvester_name':
                                    'bias_correction_coefficients'),
                      'statistics': ('nobs_used',
                                     'nobs_tossed',
-                                    'variance',
+                                    'obs_err_variance',
                                     'bias_pre_corr',
                                     'bias_post_corr',
                                     'penalty',
@@ -81,11 +81,11 @@ def test_bad_config():
                        'variables': ('bias_correction_coefficients'),
                        'statistics': ('nobs_used',
                                       'nobs_tossed',
-                                      'variances',
+                                      'variance',
                                       'bias_pre_corr',
                                       'bias_post_corr',
                                       'qcpenalty',
-                                      'rmse_post_corr',
+                                      'sqrt_bias',
                                       'std')
                     }
 
@@ -126,7 +126,7 @@ def test_channel_stats_nobs_goes_it_1998():
     # harvest data
     data = harvest(valid_config_dict)
     
-    assert data[2].statistic != 'variance'
+    assert data[2].statistic != 'obs_err_variance'
     
     assert data[0].statistic == 'use'
     assert data[0].values_by_channel == [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
@@ -200,7 +200,7 @@ def test_active_channels_goes_it_1998():
                                                    0.0277226]
                 assert entry.channels == [1,2,3, 4]
                                                       
-        if entry.statistic == 'variance' and entry.observation_type=='msu_n14':
+        if entry.statistic == 'obs_err_variance' and entry.observation_type=='msu_n14':
             if entry.iteration == 1:
                 # GSI stage 1
                 assert entry.values_by_channel == [-2.5, 0.3, 0.23, 0.3]
@@ -209,6 +209,38 @@ def test_active_channels_goes_it_1998():
                 # GSI stage 2
                 assert entry.values_by_channel == [2.5, 0.3, 0.23, 0.3]
                 assert entry.channels == [1,2,3,4]
+                
+        if entry.statistic == 'rmse_post_corr' and entry.observation_type=='ssmi_f13':
+            if entry.iteration == 1:
+                # GSI stage 1
+                assert entry.values_by_channel == [1.7126331,
+                                                   2.5233476,
+                                                   2.2932751,
+                                                   1.4953883,
+                                                   2.5998429,
+                                                   1.6823446,
+                                                   2.8834491]
+                assert entry.channels == [1,2,3,4,5,6,7]
+            elif entry.iteration == 2:
+                # GSI stage 2
+                assert entry.values_by_channel == [1.3283425,
+                                                   1.7447032,
+                                                   1.5959025,
+                                                   1.2028380,
+                                                   1.8117589,
+                                                   1.1439318,
+                                                   2.0309073]
+                assert entry.channels == [1,2,3,4,5,6,7]
+            elif entry.iteration == 3:
+                # GSI stage 2
+                assert entry.values_by_channel == [1.2768395,
+                                                   1.6195533,
+                                                   1.4883442,
+                                                   1.1596221,
+                                                   1.6951671,
+                                                   1.0515003,
+                                                   1.8374513]
+                assert entry.channels == [1,2,3,4,5,6,7]
 
 def test_channel_stats_meta():
     datetime_format = '%Y%m%d%H'
@@ -233,7 +265,7 @@ def test_channel_stats_nobs():
     
     data = harvest(valid_config_dict)
     
-    assert data[2].statistic != 'variance'
+    assert data[2].statistic != 'obs_err_variance'
     
     assert data[0].statistic == 'use'
     assert data[0].values_by_channel == [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
@@ -243,6 +275,17 @@ def test_channel_stats_nobs():
     assert data[-1].longnames==['number of observations tossed by gross check',
                                 'number of observations tossed by gross check',
                                 None]
+                                
+    for entry in data:
+        if entry.statistic == 'nobs_used' and entry.observation_type=='msu_tirosn':
+            if entry.iteration == 1:
+                # GSI stage 1
+                assert entry.values_by_channel == [1585,1681,4712,7224]
+                assert entry.channels == [1,2,3,4]
+            elif entry.iteration == 2:
+                # GSI stage 2
+                assert entry.values_by_channel == [1711,1818,4892,7389]
+                assert entry.channels == [1,2,3,4]
         
 def test_active_channels():
     valid_config_dict = VALID_CONFIG_DICT
@@ -293,7 +336,7 @@ def test_active_channels():
                                                       None]
                 assert entry.channels == [1,2,3]
                                                       
-        if entry.statistic == 'variance' and entry.observation_type=='msu_tirosn':
+        if entry.statistic == 'obs_err_variance' and entry.observation_type=='msu_tirosn':
             if entry.iteration == 1:
                 # GSI stage 1
                 assert entry.values_by_channel == [2.5, 0.3, 0.23, 0.3]
@@ -303,13 +346,25 @@ def test_active_channels():
                 assert entry.values_by_channel == [2.5, 0.3, 0.23, 0.3]
                 assert entry.channels == [1,2,3,4]
                 
+        if entry.statistic == 'rmse_post_corr' and entry.observation_type=='ssu_tirosn':
+            if entry.iteration == 1:
+                # GSI stage 1
+                assert entry.values_by_channel == [0.6360358,
+                                                   0.8732550]
+                assert entry.channels == [1,2]
+            elif entry.iteration == 2:
+                # GSI stage 2
+                assert entry.values_by_channel == [0.5987983,
+                                                   0.8363038]
+                assert entry.channels == [1,2]
+                
 def test_no_vars():
     valid_config_dict = {'harvester_name': 
                              hv_registry.GSI_SATELLITE_RADIANCE_CHANNEL,
                          'filename': FIT_FILE_PATH,
                          'statistics': ('nobs_used',
                                         'nobs_tossed',
-                                        'variance',
+                                        'obs_err_variance',
                                         'bias_pre_corr',
                                         'bias_post_corr',
                                         'penalty',
