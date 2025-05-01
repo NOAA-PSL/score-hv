@@ -42,17 +42,14 @@ def harvest(harvest_config):
     # harvesters).
     try:
         harvester_name = harvest_dict.get('harvester_name')
-        print(f'harvester_name: {harvester_name}')
-        print(f'harvester_registry: {hvr.harvester_registry}, ' \
-                f'type(harvester_registry): {type(hvr.harvester_registry)}')
         harvester = hvr.harvester_registry.get(harvester_name)
     except Exception as err:
-        msg = f'could not find harvester from config: {harvest_dict}'
+        msg = f'could not find harvester from config: {harvest_dict}\n'
+        msg += f'valid harvester registry options: {hvr.harvester_registry}'
         raise KeyError(msg) from err
 
-    print(f'harvester_name: {harvester_name}')
+    print(f'running harvester: {harvester_name}')
     config = harvester.config_handler(harvest_dict)
-    print(f'type(config): {type(config)}')
     return harvester.data_parser(config).get_data()
 
 
