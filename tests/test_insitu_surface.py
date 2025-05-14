@@ -50,7 +50,8 @@ def test_verify_filename_components():
            raise ValueError(f"Error: {item.variables} is not in the expected variable list.")  
         assert item.sensor == None   
         assert item.satellite == 'trkob'
-        assert item.level == None   
+        assert item.level == None
+        assert item.file_region == 'global'
 
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT)
