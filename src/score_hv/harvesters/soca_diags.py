@@ -76,7 +76,7 @@ def parse_filename(filename):
        filename_info['sensor'] = None
 
     filename_info['datetime'] = datetime_part 
-    filename_info['region'] = None
+    filename_info['region'] = 'global'
     filename_info['satellite'] = None
     filename_info['level'] = None
     if len(parts) == 3:
