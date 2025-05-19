@@ -22,7 +22,7 @@ VALID_CONFIG_DICT = {
     'filename': FIT_FILE_PATH,
     'variables': ('fit_psfc_data', # fit of surface pressure data (mb)
                   'fit_uv_data', # fit of u, v wind data (m/s),
-                  #'fit_t_data', # fit of temperature data (K)
+                  'fit_t_data', # fit of temperature data (K)
                   #'fit_q_data', # fit of moisture data (% of qsaturation guess)
                   ),
     'statistics': (
@@ -40,7 +40,7 @@ VALID_CONFIG_DICT_GEOS_IT_1998 = {
     'filename': FIT_FILE_PATH_GEOS_IT_1998,
     'variables': ('fit_psfc_data', # fit of surface pressure data (mb)
                   'fit_uv_data', # fit of u, v wind data (m/s),
-                  #'fit_t_data', # fit of temperature data (K)
+                  'fit_t_data', # fit of temperature data (K)
                   #'fit_q_data', # fit of moisture data (% of qsaturation guess)
                   ),
     'statistics': (
@@ -110,6 +110,178 @@ def test_bad_config():
     
     assert exception_caught
  
+def test_temperature_units():
+    data_list = harvest(VALID_CONFIG_DICT)
+    assert data_list[0].units == 'K'
+    assert data_list[-1].units == 'K'
+    
+def test_temperature_plevs():
+    data_list = harvest(VALID_CONFIG_DICT)
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_t_data':
+            assert data_i.plevs_top[0] == [0.100E+04,
+                                           0.900E+03,
+                                           0.800E+03,
+                                           0.600E+03,
+                                           0.400E+03,
+                                           0.300E+03,
+                                           0.250E+03,
+                                           0.200E+03,
+                                           0.150E+03,
+                                           0.100E+03,
+                                           0.500E+02,
+                                           0.000E+00]
+            assert data_i.plevs_bot[0] == [0.120E+04,
+                                           0.100E+04,
+                                           0.900E+03,
+                                           0.800E+03,
+                                           0.600E+03,
+                                           0.400E+03,
+                                           0.300E+03,
+                                           0.250E+03,
+                                           0.200E+03,
+                                           0.150E+03,
+                                           0.100E+03,
+                                           0.200E+04]
+            assert data_i.plevs_units[0] == 'hPa'
+                                           
+def test_temperature_rawinsonde():
+    data_list = harvest(VALID_CONFIG_DICT)
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_t_data': # temperature
+            assert data_i.units == 'K'
+            if data_i.type == '120': # rawinsonde
+                if data_i.iteration == 1: # GSI stage 1 (o - b)
+                    if data_i.usage == 'asm': # assimilated
+                        if data_i.statistic == 'count':
+                            assert data_i.values == [788,
+                                                     1256,
+                                                     1797,
+                                                     3060,
+                                                     2784,
+                                                     2399,
+                                                     522,
+                                                     1349,
+                                                     1498,
+                                                     1999,
+                                                     1781,
+                                                     21940]
+                        elif data_i.statistic == 'bias':
+                            assert data_i.values == [-0.500E+00,
+                                                     -0.275E-01,
+                                                     -0.860E-01,
+                                                     -0.153E+00,
+                                                     -0.212E+00,
+                                                     -0.373E+00,
+                                                     -0.622E+00,
+                                                     -0.425E+00,
+                                                     0.111E+00,
+                                                     0.969E+00,
+                                                     0.177E+01,
+                                                     0.114E+00]
+                        elif data_i.statistic == 'rms':
+                            assert data_i.values == [0.361E+01,
+                                                     0.299E+01,
+                                                     0.223E+01,
+                                                     0.183E+01,
+                                                     0.164E+01,
+                                                     0.176E+01,
+                                                     0.238E+01,
+                                                     0.218E+01,
+                                                     0.231E+01,
+                                                     0.218E+01,
+                                                     0.293E+01,
+                                                     0.235E+01]
+
+def test_temperature_oma():
+    data_list = harvest(VALID_CONFIG_DICT)
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_t_data':
+            data_i.units == 'K'
+            if data_i.iteration == 2:
+                if data_i.usage == 'asm':
+                    if data_i.type == 'all':
+                        if data_i.statistic == 'count':
+                            assert data_i.values == [2205,
+                                                     1419,
+                                                     1802,
+                                                     3066,
+                                                     2818,
+                                                     2548,
+                                                     902,
+                                                     1857,
+                                                     1612,
+                                                     1999,
+                                                     1782,
+                                                     24717]
+                        elif data_i.statistic == 'bias':
+                            assert data_i.values == [0.125E+00,
+                                                     0.480E-01,
+                                                     0.505E-01,
+                                                     -0.311E-01,
+                                                     -0.964E-01,
+                                                     -0.245E+00,
+                                                     -0.348E+00,
+                                                     -0.224E+00,
+                                                     0.396E-01,
+                                                     0.788E+00,
+                                                     0.157E+01,
+                                                     0.154E+00]
+                        elif data_i.statistic == 'rms':
+                            assert data_i.values == [0.283E+01,
+                                                     0.268E+01,
+                                                     0.179E+01,
+                                                     0.140E+01,
+                                                     0.125E+01,
+                                                     0.152E+01,
+                                                     0.208E+01,
+                                                     0.209E+01,
+                                                     0.208E+01,
+                                                     0.192E+01,
+                                                     0.267E+01,
+                                                     0.210E+01]
+                if data_i.usage == 'mon':
+                    if data_i.type == 'all':
+                        if data_i.statistic == 'count':
+                            assert data_i.values == [44,
+                                                     39,
+                                                     13,
+                                                     18,
+                                                     40,
+                                                     44,
+                                                     126,
+                                                     142,
+                                                     48,
+                                                     18,
+                                                     14,
+                                                     568]
+                        elif data_i.statistic == 'bias':
+                            assert data_i.values == [0.121E+01,
+                                                     0.600E+00,
+                                                     0.931E+01,
+                                                     -0.298E+01,
+                                                     -0.829E+00,
+                                                     -0.240E+01,
+                                                     -0.596E+00,
+                                                     0.350E-02,
+                                                     0.458E+00,
+                                                     0.320E+00,
+                                                     0.140E+01,
+                                                     -0.529E+00]
+                        elif data_i.statistic == 'rms':
+                            assert data_i.values == [0.564E+01,
+                                                     0.475E+01,
+                                                     0.188E+02,
+                                                     0.119E+02,
+                                                     0.103E+02,
+                                                     0.719E+01,
+                                                     0.329E+01,
+                                                     0.395E+01,
+                                                     0.607E+01,
+                                                     0.692E+01,
+                                                     0.574E+01,
+                                                     0.817E+01]
+                                                     
 def test_fit_of_surface_pressure_data():
     data_list = harvest(VALID_CONFIG_DICT)    
     
@@ -118,6 +290,7 @@ def test_fit_of_surface_pressure_data():
             assert data_i.plevs_top == [[0.], [0.]]
             assert data_i.plevs_bot == [[2000.], [2000.]]
             assert data_i.plevs_units == ['hPa', 'hPa']
+            assert data_i.units == 'mb'
             
             if data_i.iteration == 1:
                 if data_i.usage == 'asm':
@@ -315,7 +488,8 @@ def test_fit_of_uv_wind_data():
                                          0.150E+03,
                                          0.100E+03,
                                          0.200E+04]]
-            assert data_i.plevs_units == ['m/s', 'm/s']
+            assert data_i.plevs_units == ['hPa', 'hPa']
+            assert data_i.units == 'm/s'
             
             if data_i.iteration == 1:
                 if data_i.usage == 'asm':
@@ -1116,7 +1290,9 @@ def test_fit_of_uv_wind_data():
                                                      0.160E+01,
                                                      0.136E+00,
                                                      0.000E+00,
-                                                     0.860E+00]                            
+                                                     0.860E+00]
+                                                     
+                            
                                                         
 def run_test():
     import ipdb
