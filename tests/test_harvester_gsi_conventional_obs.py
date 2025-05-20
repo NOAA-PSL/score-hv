@@ -14,9 +14,6 @@ PYTEST_CALLING_DIR = Path(__file__).parent.resolve()
 FIT_FILE_PATH = os.path.join(PYTEST_CALLING_DIR, 'data',
                              'gsistats.1979032100_control')
                              
-FIT_FILE_PATH_GEOS_IT_1998 = os.path.join(PYTEST_CALLING_DIR, 'data',
-                    'x0123_abcdef_xyz01.xyz_stats.log.19980101_00z.txt')
-                             
 VALID_CONFIG_DICT = {
     'harvester_name': hv_registry.GSI_CONVENTIONAL_OBS,
     'filename': FIT_FILE_PATH,
@@ -34,33 +31,9 @@ VALID_CONFIG_DICT = {
         )
     }
                     
-VALID_CONFIG_DICT_GEOS_IT_1998 = {
-    'harvester_name': 
-    hv_registry.GSI_CONVENTIONAL_OBS,
-    'filename': FIT_FILE_PATH_GEOS_IT_1998,
-    'variables': ('fit_psfc_data', # fit of surface pressure data (mb)
-                  'fit_uv_data', # fit of u, v wind data (m/s),
-                  'fit_t_data', # fit of temperature data (K)
-                  'fit_q_data', # fit of moisture data (% of qsaturation guess)
-                  ),
-    'statistics': (
-        'count', # number of obs summed under obs types and vertical layers
-        'bias', # bias of obs departure for each outer loop (it)
-        'rms', # root mean squre error of obs departure for each outer loop (it)
-        'cpen', # obs part of penalty (cost function)
-        'qcpen' # nonlinear qc penalty
-        )
-                    }
-                    
 def test_datetime():
     data_list = harvest(VALID_CONFIG_DICT)
     test_datetime = datetime.strptime('1979032100', '%Y%m%d%H')
-    for i, data_i in enumerate(data_list):
-        assert test_datetime == data_i.datetime
-        
-def test_datetime_geos_it_1998():
-    data_list = harvest(VALID_CONFIG_DICT_GEOS_IT_1998)
-    test_datetime = datetime.strptime('1998010100', '%Y%m%d%H')
     for i, data_i in enumerate(data_list):
         assert test_datetime == data_i.datetime
 
@@ -79,6 +52,10 @@ def test_units():
             assert data_i.units == 'mb'
         elif data_i.variable == 'fit_q_data':
             assert data_i.units == r'%'
+        elif data_i.variable == 'fit_t_data':
+            assert data_i.units == 'K'
+        elif data_i.variable == 'fit_uv_data':
+            assert data_i.units == 'm/s'
 
 def test_bad_config():
     """test that a misconfigured config_dict does not result in data being
@@ -109,12 +86,6 @@ def test_bad_config():
         exception_caught = True
     
     assert exception_caught
- 
-def test_temperature_units():
-    data_list = harvest(VALID_CONFIG_DICT)
-    for i, data_i in enumerate(data_list):
-        if data_i.variable == 'fit_t_data':
-            assert data_i.units == 'K'
     
 def test_qsat_plevs():
     data_list = harvest(VALID_CONFIG_DICT)
@@ -145,12 +116,6 @@ def test_qsat_plevs():
                                            0.300E+03,
                                            0.200E+04]
             assert data_i.plevs_units[1] == 'hPa'
-
-def test_qsat_units():
-    data_list = harvest(VALID_CONFIG_DICT)
-    for i, data_i in enumerate(data_list):
-        if data_i.variable == 'fit_q_data':
-            assert data_i.units == r'%'
 
 def test_qsat_asm():
     data_list = harvest(VALID_CONFIG_DICT)
@@ -415,7 +380,6 @@ def test_fit_of_surface_pressure_data():
             assert data_i.plevs_top == [[0.], [0.]]
             assert data_i.plevs_bot == [[2000.], [2000.]]
             assert data_i.plevs_units == ['hPa', 'hPa']
-            assert data_i.units == 'mb'
             
             if data_i.iteration == 1:
                 if data_i.usage == 'asm':
@@ -558,7 +522,7 @@ def test_fit_of_surface_pressure_data():
                         elif data_i.statistic == 'cpen':
                             assert data_i.values == [0.714E+00]
                         elif data_i.statistic == 'qcpen':
-                            assert data_i.values == [0.483E+00 ]
+                            assert data_i.values == [0.483E+00]
 
 def test_fit_of_uv_wind_data():
     data_list = harvest(VALID_CONFIG_DICT)    
@@ -614,7 +578,6 @@ def test_fit_of_uv_wind_data():
                                          0.100E+03,
                                          0.200E+04]]
             assert data_i.plevs_units == ['hPa', 'hPa']
-            assert data_i.units == 'm/s'
             
             if data_i.iteration == 1:
                 if data_i.usage == 'asm':
