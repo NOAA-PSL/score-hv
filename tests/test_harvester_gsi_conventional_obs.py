@@ -41,7 +41,7 @@ VALID_CONFIG_DICT_GEOS_IT_1998 = {
     'variables': ('fit_psfc_data', # fit of surface pressure data (mb)
                   'fit_uv_data', # fit of u, v wind data (m/s),
                   'fit_t_data', # fit of temperature data (K)
-                  #'fit_q_data', # fit of moisture data (% of qsaturation guess)
+                  'fit_q_data', # fit of moisture data (% of qsaturation guess)
                   ),
     'statistics': (
         'count', # number of obs summed under obs types and vertical layers
@@ -112,9 +112,135 @@ def test_bad_config():
  
 def test_temperature_units():
     data_list = harvest(VALID_CONFIG_DICT)
-    assert data_list[0].units == 'K'
-    assert data_list[-1].units == 'K'
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_t_data':
+            assert data_i.units == 'K'
     
+def test_qsat_plevs():
+    data_list = harvest(VALID_CONFIG_DICT)
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_q_data':
+            assert data_i.plevs_top[1] == [0.100E+04,
+                                           0.950E+03,
+                                           0.900E+03,
+                                           0.850E+03,
+                                           0.800E+03,
+                                           0.700E+03,
+                                           0.600E+03,
+                                           0.500E+03,
+                                           0.400E+03,
+                                           0.300E+03,
+                                           0.000E+00,
+                                           0.000E+00]
+            assert data_i.plevs_bot[1] == [0.120E+04,
+                                           0.100E+04,
+                                           0.950E+03,
+                                           0.900E+03,
+                                           0.850E+03,
+                                           0.800E+03,
+                                           0.700E+03,
+                                           0.600E+03,
+                                           0.500E+03,
+                                           0.400E+03,
+                                           0.300E+03,
+                                           0.200E+04]
+            assert data_i.plevs_units[1] == 'hPa'
+
+def test_qsat_units():
+    data_list = harvest(VALID_CONFIG_DICT)
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_q_data':
+            assert data_i.units == r'%'
+
+def test_qsat_asm():
+    data_list = harvest(VALID_CONFIG_DICT)
+    for i, data_i in enumerate(data_list):
+        if data_i.variable == 'fit_q_data':
+            if data_i.iteration == 1: # GSI stage 1 (o - b)
+                if data_i.usage == 'asm': # assimilated
+                    if data_i.type == 'all':
+                        if data_i.statistic == 'count':
+                            assert data_i.values == [1732,
+                                                     650,
+                                                     694,
+                                                     1355,
+                                                     431,
+                                                     2014,
+                                                     982,
+                                                     1156,
+                                                     1462,
+                                                     1468,
+                                                     0,
+                                                     11944]
+                        elif data_i.statistic == 'bias':
+                            assert data_i.values == [0.247E+01,
+                                                     -0.199E+01,
+                                                     0.214E+01,
+                                                     -0.287E-01,
+                                                     0.243E+01,
+                                                     -0.181E+01,
+                                                     -0.358E+01,
+                                                     -0.394E+01,
+                                                     -0.279E+01,
+                                                     0.240E+01,
+                                                     0.000E+00,
+                                                     -0.569E+00]
+                        elif data_i.statistic == 'rms':
+                            assert data_i.values == [0.198E+02,
+                                                     0.199E+02,
+                                                     0.246E+02,
+                                                     0.176E+02,
+                                                     0.200E+02,
+                                                     0.223E+02,
+                                                     0.227E+02,
+                                                     0.260E+02,
+                                                     0.246E+02,
+                                                     0.240E+02,
+                                                     0.000E+00,
+                                                     0.224E+02]
+            elif data_i.iteration == 2: # GSI stage 2 (o - a)
+                if data_i.usage == 'asm': # assimilated
+                    if data_i.type == '180':
+                        if data_i.statistic == 'count':
+                            assert data_i.values == [949,
+                                                     89,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     1038]
+                        elif data_i.statistic == 'bias':
+                            assert data_i.values == [0.660E+01,
+                                                     0.218E+01,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.622E+01]
+                        elif data_i.statistic == 'rms':
+                            assert data_i.values == [0.153E+02,
+                                                     0.172E+02,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.000E+00,
+                                                     0.155E+02]
+                                                     
 def test_temperature_plevs():
     data_list = harvest(VALID_CONFIG_DICT)
     for i, data_i in enumerate(data_list):
@@ -149,7 +275,6 @@ def test_temperature_rawinsonde():
     data_list = harvest(VALID_CONFIG_DICT)
     for i, data_i in enumerate(data_list):
         if data_i.variable == 'fit_t_data': # temperature
-            assert data_i.units == 'K'
             if data_i.type == '120': # rawinsonde
                 if data_i.iteration == 1: # GSI stage 1 (o - b)
                     if data_i.usage == 'asm': # assimilated
