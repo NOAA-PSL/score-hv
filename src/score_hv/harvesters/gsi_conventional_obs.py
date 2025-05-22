@@ -1,4 +1,5 @@
-"""methods to extract information from the Gridpoint Statistical Interpolation (GSI) analysis output (fit files), including innovation statistics for
+"""methods to extract information from the Gridpoint Statistical Interpolation
+(GSI) analysis output (fit files), including innovation statistics for
 conventional observations
 """
 
@@ -32,8 +33,8 @@ HarvestedData = namedtuple(
     'HarvestedData',
     ['datetime', # datetime.datetime object (date and a time)
      'ensemble_member',
-     'plevs_top', # pressures at the tops of the layers (for multi-level data)
-     'plevs_bot', # pressure at the bottoms of the layers (for multi-level data)
+     'plevs_top', # pressures at the layer tops (for multi-level data)
+     'plevs_bot', # pressures at the layer bottoms (for multi-level data)
      'plevs_units',
      'variable',
      'statistic',
@@ -136,7 +137,8 @@ class GSIConvObsHv(object):
             self.datetime = datetime.strptime(
                 self.config.harvest_filename.split('.')[-1].split('_')[0],
                 '%Y%m%d%H')
-            self.ensemble_member = self.config.harvest_filename.split('.')[-1].split('_')[1]
+            self.ensemble_member = self.config.harvest_filename.split(
+                '.')[-1].split('_')[1]
             
         except ValueError as err:
             if self.config.harvest_filename[-5:] == 'z.txt':
