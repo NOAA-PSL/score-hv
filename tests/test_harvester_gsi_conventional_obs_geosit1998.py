@@ -1406,21 +1406,18 @@ def test_fit_of_uv_wind_data():
                                                      0.07,
                                                      0.00,
                                                      0.21]
-                                                        
-def run_test():
-    import ipdb
-    
-    data_list = harvest(VALID_CONFIG_DICT_GEOS_IT_1998)
-    for i, data_i in enumerate(data_list):
-        ipdb.set_trace()
 
 def run_all():
-    test_datetime()
-    test_bad_config()
+    test_datetime_geos_it_1998()
     test_longnames()
     test_units()
+    test_qsat_plevs()
+    test_qsat_asm()
+    test_temperature_plevs()
+    test_temperature_rawinsonde()
+    test_temperature_oma()
     test_fit_of_surface_pressure_data()
-    run_test()
+    test_fit_of_uv_wind_data()
     
 def main():
     run_all()

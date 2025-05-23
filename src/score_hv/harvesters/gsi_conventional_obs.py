@@ -131,6 +131,8 @@ class GSIConvObsHv(object):
             }
             for stat in self.config.stats_to_harvest:
                 self.results[var][stat] = dict()
+                self.results[var][stat][stat] = {'column_index': None,
+                                                 'values': list()}
                 
         # get the datetime from the input file name
         try: # format is gsistats.YYYYMMDDHH_control
@@ -195,84 +197,102 @@ class GSIConvObsHv(object):
         
         return harvested_data 
     
-    def extract_fit_uv(self, line_parts):
+    def store_column_info(self, variable, column_idx, line_part):
+        for stat in self.config.stats_to_harvest:
+            if line_part in self.results[variable][
+                stat].keys():
+                """data entries exist, update only the
+                column indicies
+                """
+                self.results[variable][stat][line_part]['column_index'] = column_idx
+            else:
+                """no results added yet, create empty list
+                to store values
+                """
+                self.results[variable][stat][line_part] = {'column_index': column_idx,
+                                                           'values': list()}
+    
+    def extract_fit_uv(self, line_parts, variable_name='fit_uv_data'):
         """ extract fit to u, v wind stats from a given line of the fort.202
         file
         """
         if line_parts[0] == 'current' and line_parts[1] == 'vfit':
             self.read_fit_uv = True
         elif self.read_fit_uv and line_parts[0] == 'o-g' and line_parts[1] == 'ptop':
-            self.results['fit_uv_data']['plevs_top'].append(list())
-            self.results['fit_uv_data']['plevs_bot'].append(list())
+            self.results[variable_name]['plevs_top'].append(list())
+            self.results[variable_name]['plevs_bot'].append(list())
             for plev, ptop in enumerate(line_parts[2:]):
-                self.results['fit_uv_data']['plevs_top'][-1].append(float(ptop))
+                self.results[variable_name]['plevs_top'][-1].append(float(ptop))
         elif self.read_fit_uv and line_parts[0] == 'o-g' and line_parts[1] == 'it':
             read_pbot = False
-            for col, value in enumerate(line_parts[2:]):
+            for col, part in enumerate(line_parts):
                 if read_pbot:
-                    self.results['fit_uv_data']['plevs_bot'][-1].append(
-                        float(value)
+                    self.results[variable_name]['plevs_bot'][-1].append(
+                        float(part)
                     )
-                if value == 'pbot':
+                else:
+                    for wind_results_key, wind_results_values in self.results[variable_name].items():
+                        if part=='it' or part=='obs' or part=='use' or part=='typ' or part=='styp':
+                            self.store_column_info(variable_name, col, part)
+                
+                if part == 'pbot':
                     read_pbot=True
                     
-            if len(self.results['fit_uv_data']['plevs_top'][-1]) != len(
-                self.results['fit_uv_data']['plevs_bot'][-1]):
+            if len(self.results[variable_name]['plevs_top'][-1]) != len(
+                self.results[variable_name]['plevs_bot'][-1]):
                 raise RuntimeError(f'extracted inconsistent number of pressure '
                     f'levels (ptop and pbot) from wind data in '
                     f'{self.config.harvest_filename}')
-        else:
+        elif self.read_fit_uv and line_parts[0] == 'o-g' and line_parts[2] == 'uv':
+            stat = line_parts[6]
+            for results_key, column_values in self.results[variable_name][stat].items():
+                if results_key == stat:
+                    self.results[variable_name][stat][stat]['values'].append(line_parts[7:])
+                else:
+                    column_index = self.results[variable_name][stat][results_key]['column_index']
+                    self.results[variable_name][stat][results_key]['values'].append(
+                        line_parts[column_index]
+                    )
+                
+        elif self.read_fit_uv and line_parts[0] == 'o-g' and line_parts[3] == 'all':
+            # stats for all wind observation types
+            stat = line_parts[4]
+            self.results[variable_name][stat]['it']['values'].append(line_parts[1])
+            self.results[variable_name][stat]['use']['values'].append(line_parts[2])
+            self.results[variable_name][stat]['typ']['values'].append(line_parts[3])
+            self.results[variable_name][stat]['styp']['values'].append(None)
+            self.results[variable_name][stat][stat]['values'].append(line_parts[5:])
+    
+        elif line_parts[0] == 'current' and line_parts[3] == 'temperature':
             self.read_fit_uv = False
             
-    def extract_fit_ps(self, line_parts):
+    def extract_fit_ps(self, line_parts, variable_name='fit_psfc_data'):
         """ extract fit to surface pressure stats from a given line of the
         fort.201 file
         """
         if line_parts[0] == 'pressure' and line_parts[1] == 'levels':
             self.read_fit_ps = True
-            self.results['fit_psfc_data']['plevs_units'].append(
+            self.results[variable_name]['plevs_units'].append(
                 line_parts[2][1:-2]
             )
-            self.results['fit_psfc_data']['plevs_top'].append(
+            self.results[variable_name]['plevs_top'].append(
                 [float(line_parts[3])]
             )
-            self.results['fit_psfc_data']['plevs_bot'].append(
+            self.results[variable_name]['plevs_bot'].append(
                 [float(line_parts[4])]
             )
 
         elif self.read_fit_ps and line_parts[0] == 'o-g' and line_parts[1] == 'it':
-            for stat in self.config.stats_to_harvest:
-                for col, part in enumerate(line_parts):
-                    if part=='it' or part=='obs' or part=='use' or part=='typ' or part=='styp' or part==stat: 
-                        # store column index and column name
-                        
-                        if part in self.results[
-                            'fit_psfc_data'][
-                                stat].keys():
-                            """data entries exist, update only the
-                            column indicies
-                            """
-                            self.results[
-                                'fit_psfc_data'][
-                                    stat][
-                                        part][
-                                            'column_index'] = col
-                        else:
-                            """no results added yet, create empty list
-                            to store values
-                            """
-                            self.results[
-                                'fit_psfc_data'][
-                                    stat][
-                                        part] = {'column_index': col,
-                                                 'values': list()}
+            for col, part in enumerate(line_parts):
+                if part=='it' or part=='obs' or part=='use' or part=='typ' or part=='styp' or part in self.config.stats_to_harvest: 
+                    self.store_column_info(variable_name, col, part)
                                                                  
         elif self.read_fit_ps and line_parts[0] == 'o-g' and line_parts[2] == 'ps':
            
            for stat in self.config.stats_to_harvest:
-               for column_name, column_values in self.results['fit_psfc_data'][stat].items():
+               for column_name, column_values in self.results[variable_name][stat].items():
                    column_index = self.results[
-                       'fit_psfc_data'][
+                       variable_name][
                            stat][
                                column_name][
                                    'column_index']
@@ -284,7 +304,7 @@ class GSIConvObsHv(object):
                        return_value = line_parts[column_index]
                    
                    self.results[
-                       'fit_psfc_data'][
+                       variable_name][
                            stat][column_name][
                                'values'].append(return_value)
                 
@@ -292,26 +312,26 @@ class GSIConvObsHv(object):
             # stats for all surface pressure observation types
             for stat in self.config.stats_to_harvest:
                 self.results[
-                    'fit_psfc_data'][
+                    variable_name][
                         stat][
                             'it'][
                                 'values'].append(
                                     line_parts[1])
                 self.results[
-                    'fit_psfc_data'][
+                    variable_name][
                         stat][
                             'use'][
                                 'values'].append(
                                     line_parts[2])
                 self.results[
-                    'fit_psfc_data'][
+                    variable_name][
                         stat][
                             'typ'][
                                 'values'].append(
                                     line_parts[3])
                                     
                 self.results[
-                    'fit_psfc_data'][
+                    variable_name][
                         stat][
                             'styp'][
                                 'values'].append(None)
@@ -319,7 +339,7 @@ class GSIConvObsHv(object):
                 for column_name, column_values in self.results['fit_psfc_data'][stat].items():
                     if column_name == stat:
                         column_index = self.results[
-                            'fit_psfc_data'][
+                            variable_name][
                                 stat][
                                     column_name][
                                         'column_index'] - 2 # this is a
@@ -335,7 +355,7 @@ class GSIConvObsHv(object):
                                               line_parts[column_index])]
                         
                         self.results[
-                            'fit_psfc_data'][
+                            variable_name][
                                 stat][column_name][
                                     'values'].append(return_value)
         
@@ -351,9 +371,9 @@ class GSIConvObsHv(object):
         for line_number, line in enumerate(self.lines):
             line_parts = line.split()
             if 'fit_psfc_data' in self.config.vars_to_harvest and len(line_parts) > 2:
-                self.extract_fit_ps(line_parts)
+                self.extract_fit_ps(line_parts, variable_name='fit_psfc_data')
             if 'fit_uv_data' in self.config.vars_to_harvest and len(line_parts) > 2:
-                self.extract_fit_uv(line_parts)
+                self.extract_fit_uv(line_parts, variable_name='fit_uv_data')
                 
                 
 def test(gsistats_test_file):
