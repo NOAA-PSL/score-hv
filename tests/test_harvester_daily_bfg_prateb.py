@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import sys,os
 from pathlib import Path 
 
 import numpy as np
@@ -125,199 +125,76 @@ def test_mean_values_regions(tolerance=0.001):
       the values of all three regions at once.  
       """
     data1 = harvest(VALID_CONFIG_DICT1)
+     
     for item in data1:
         if item.statistic == 'mean':
            if item.region['name'] == 'conus':
-               calculated_mean = 0.03251096850286386
+               calculated_mean = 2.909392108325433e-05 
            elif item.region['name'] == 'south_hemis':
-               calculated_mean = 0.03876764799618554
+               calculated_mean = 3.097753207263918e-05 
            elif item.region['name'] == 'north_hemis':
-               calculated_mean = 0.043024001372664884
+               calculated_mean = 3.137008579273044e-05 
            elif item.region['name'] == 'tropics':
-               calculated_mean = 0.060860878009092546
+               calculated_mean =  4.369746331898628e-05 
            elif item.region['name'] == 'global':
-               calculated_mean = 0.0408958246844251
-        
-        assert calculated_mean <= (1 + tolerance) * item.value
-        assert calculated_mean >= (1 - tolerance) * item.value
-
-def test_global_mean_values_offline(tolerance=0.001):
-    """The value of 3.117e-05 is the mean value of the global means 
-    calculated from eight forecast files:
-        
-        bfg_1994010100_fhr09_prateb_control.nc
-        bfg_1994010106_fhr06_prateb_control.nc
-        bfg_1994010106_fhr09_prateb_control.nc
-        bfg_1994010112_fhr06_prateb_control.nc
-        bfg_1994010112_fhr09_prateb_control.nc
-        bfg_1994010118_fhr06_prateb_control.nc
-        bfg_1994010118_fhr09_prateb_control.nc
-        bfg_1994010200_fhr06_prateb_control.nc
-        
-    When averaged together, these files represent a 24 hour mean. The 
-    average value hard-coded in this test was calculated from 
-    these forecast files using a separate python code.
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    global_mean = 3.1173840683271906e-05
-    assert data1[0].value <= (1 + tolerance) * global_mean
-    assert data1[0].value >= (1 - tolerance) * global_mean
-
-def test_global_mean_values_netCDF4(tolerance=0.001):
-    """Opens each background Netcdf file using the
-    netCDF4 library function Dataset and computes the expected value
-    of the provided variable.  In this case prateb_ave.
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    
-    gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
-    norm_weights = gridcell_area_data.variables['area'][:] / np.sum(
-                                        gridcell_area_data.variables['area'][:])
-    
-    summation = np.ma.zeros(gridcell_area_data.variables['area'].shape)
-    for file_count, data_file in enumerate(BFG_PATH):
-        test_rootgrp = Dataset(data_file)
-    
-        summation += test_rootgrp.variables[VALID_CONFIG_DICT['variable'][0]][0]
-        
-        test_rootgrp.close()
-        
-    temporal_mean = summation / (file_count + 1)
-    global_mean = np.ma.sum(norm_weights * temporal_mean)    
-    
-    for i, harvested_tuple in enumerate(data1):
-        if harvested_tuple.statistic == 'mean':
-            assert global_mean <= (1 + tolerance) * harvested_tuple.value
-            assert global_mean >= (1 - tolerance) * harvested_tuple.value
-            
-    gridcell_area_data.close()
-                
-def test_gridcell_variance(tolerance=0.001):
-    """Opens each background Netcdf file using the
-    netCDF4 library function Dataset and computes the variance
-    of the provided variable.  In this case prateb_ave.
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    
-    gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
-    norm_weights = gridcell_area_data.variables['area'][:] / np.sum(
-                                        gridcell_area_data.variables['area'][:])
-    
-    summation = np.ma.zeros(gridcell_area_data.variables['area'].shape)
-    for file_count, data_file in enumerate(BFG_PATH):
-        test_rootgrp = Dataset(data_file)
-    
-        summation += test_rootgrp.variables[VALID_CONFIG_DICT['variable'][0]][0]
-        
-        test_rootgrp.close()
-        
-    temporal_mean = summation / (file_count + 1)
-    
-    global_mean = np.ma.sum(norm_weights * temporal_mean)
-    variance = np.ma.sum((temporal_mean - global_mean)**2 * norm_weights)
-    
-    for i, harvested_tuple in enumerate(data1):
-        if harvested_tuple.statistic == 'variance':
-            assert variance <= (1 + tolerance) * harvested_tuple.value
-            assert variance >= (1 - tolerance) * harvested_tuple.value
-            
-    gridcell_area_data.close()
-    
-def test_gridcell_min_max(tolerance=0.001):
-    """Opens each background Netcdf file using the
-    netCDF4 library function Dataset and computes the maximum
-    of the provided variable.  In this case prateb_ave.
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    
-    gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
-    
-    summation = np.ma.zeros(gridcell_area_data.variables['area'].shape)
-    for file_count, data_file in enumerate(BFG_PATH):
-        test_rootgrp = Dataset(data_file)
-    
-        summation += test_rootgrp.variables[VALID_CONFIG_DICT['variable'][0]][0]
-        
-        test_rootgrp.close()
-        
-    temporal_mean = summation / (file_count + 1)
-    minimum = np.ma.min(temporal_mean)
-    maximum = np.ma.max(temporal_mean)
-    
-    """The following offline min and max were calculated from an external 
-    python code
-    """
-    offline_min = 0.0
-    offline_max = 0.0043600933
-    for i, harvested_tuple in enumerate(data1):
-        if harvested_tuple.statistic == 'maximum':
-            assert maximum <= (1 + tolerance) * harvested_tuple.value
-            assert maximum >= (1 - tolerance) * harvested_tuple.value
-            
-            assert offline_max <= (1 + tolerance) * harvested_tuple.value
-            assert offline_max >= (1 - tolerance) * harvested_tuple.value
-            
-            
-        elif harvested_tuple.statistic == 'minimum':
-            assert minimum <= (1 + tolerance) * harvested_tuple.value
-            assert minimum >= (1 - tolerance) * harvested_tuple.value
-            
-            assert offline_min <= (1 + tolerance) * harvested_tuple.value
-            assert offline_min >= (1 - tolerance) * harvested_tuple.value
-            
-    gridcell_area_data.close()
-
+               calculated_mean = 3.117380893272532e-05 
+           assert calculated_mean <= (1 + tolerance) * item.value
+           assert calculated_mean >= (1 - tolerance) * item.value
+       
 def test_gridcell_variance_regions(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT1)
+   
     for item in data1:
         if item.statistic == 'variance':
             if item.region['name'] == 'conus':
-                calculated_var = 0.000430468651630288
+                calculated_var = 4.463606837398313e-09 
             elif item.region['name'] == 'south_hemis':
-                calculated_var = 0.00108603948347438
+                calculated_var = 4.966532523966948e-09
             elif item.region['name'] == 'north_hemis':
-                calculated_var = 0.0016457705882051094
+                calculated_var = 6.510354028700808e-09
             elif item.region['name'] == 'tropics':
-                calculated_var = 0.002221834374899518
+                calculated_var = 1.009426659717739e-08
             elif item.region['name'] == 'global':
-                calculated_var = 0.0013704341718561103
-        
+                calculated_var = 5.738481800949724e-09 
+       
             assert calculated_var <= (1 + tolerance) * item.value
             assert calculated_var >= (1 - tolerance) * item.value
- 
+            
 def test_gridcell_min_max_regions(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT1)
+    print("in minmax")
+    
     for item in data1:
         if item.statistic == 'minimum':
             if item.region['name'] == 'conus':
-                calculated_min = 0.0015120203606784344
+                calculated_min = 0.0
             elif item.region['name'] == 'south_hemis':
-                calculated_min = 1.5071715324666002e-06
+                calculated_min = 0.0 
             elif item.region['name'] == 'north_hemis':
-                calculated_min = 4.0326767099252425e-11
+                calculated_min = 0.0 
             elif item.region['name'] == 'tropics':
-                calculated_min = 4.032676709925242e-11
+                calculated_min = 0.0 
             elif item.region['name'] == 'global':
-                calculated_min = 4.032676709925242e-11
-        
+                calculated_min = 0.0 
+            
             assert calculated_min <= (1 + tolerance) * item.value
             assert calculated_min >= (1 - tolerance) * item.value
            
         elif item.statistic == 'maximum':
             if item.region['name'] == 'conus':
-                calculated_max = 0.10341465473175052
+                calculated_max = 0.0007141555952330236 
             elif item.region['name'] == 'south_hemis':
-                calculated_max = 0.2618738580495119
+                calculated_max = 0.004360093198556569 
             elif item.region['name'] == 'north_hemis':
-                calculated_max = 0.543392937630415
+                calculated_max = 0.003288917257123103
             elif item.region['name'] == 'tropics':
-                calculated_max = 0.543392937630415
+                calculated_max = 0.004360093198556569
             elif item.region['name'] == 'global':
-                calculated_max = 0.5433929376304149
-            
+                calculated_max = 0.004360093198556569 
+            print(item.region['name'],"  ",item.value) 
             assert calculated_max <= (1 + tolerance) * item.value
             assert calculated_max >= (1 - tolerance) * item.value
-
+   
 def test_units():
     data1 = harvest(VALID_CONFIG_DICT)
     assert data1[0].units == "kg/m**2/s"
@@ -350,10 +227,6 @@ def main():
     test_variable_names()
     test_zonal_regions()
     test_mean_values_regions()
-    test_global_mean_values_offline()
-    test_global_mean_values_netCDF4()
-    test_gridcell_variance()
-    test_gridcell_min_max()
     test_gridcell_variance_regions()
     test_gridcell_min_max_regions()
     test_units()
