@@ -4,6 +4,7 @@ import ast
 import copy
 import os
 import sys
+import warnings
 from datetime import datetime as dt
 from pathlib import Path
 from collections import namedtuple
@@ -67,9 +68,13 @@ VALID_VARIABLES = (
     #'weasd',       # surface snow water equivalent (kg/m**2)
 )
 
+VALID_SEGMENTS = ('background', 'first guess', 'first_guess', 'fg', 'predictor',
+                  'analysis', 'corrector', 'an', 'replay', 'none', 'None', None)
+
 HarvestedData = namedtuple(
     'HarvestedData', [
         'filenames',
+        'segment',
         'statistic',
         'variable',
         'value',
@@ -142,11 +147,47 @@ class DailyBFGConfig(ConfigInterface):
         """Set configuration variables from the given dictionary."""
         self.harvest_filenames = self.config_data.get('filenames')
         self.set_stats()
+        self.set_segment()
         self.set_variables()
         self.set_surface_mask()
         self.set_regions()
         self.set_gridcell_area_data_path()
 
+    def set_segment(self, analysis_segment_safe_list=['analysis',
+                                                      'corrector',
+                                                      'an',
+                                                      'replay'],
+                    background_segment_safe_list=['background', 
+                                                  'first guess',
+                                                  'first_guess',
+                                                  'fg',
+                                                  'predictor']):
+        """Set the representing segment of the input bfg files ("background"
+        versus "analysis"). The segment, which cannot be determined by the
+        harvester itself, will be passed through as a harvested value.
+        """
+        segment = self.config_data.get('segment')
+        
+        if segment not in VALID_SEGMENTS:
+            msg = (
+                f'"{segment}" is not an interpretable model segment '
+                f'type relevant to the bfg netCDF files. Please reconfigure '
+                f'the input dictionary using only the following model segment '
+                f'types: {VALID_SEGMENTS}'
+            )
+            raise KeyError(msg)
+        
+        elif segment in background_segment_safe_list:
+            self.segment = 'background'
+        elif segment in analysis_segment_safe_list:
+            self.segment = 'analysis'
+        else:
+            self.segment = None
+            warnings.warn(f'received model segment "{segment}" but this is '
+                          f'neither understood as a background nor an '
+                          f'analysis model segment type. Proceeding with no '
+                          f'model segment type.')
+                
     def set_variables(self):
         """Set the variables specified by the config dictionary.
         Raises:
@@ -421,6 +462,7 @@ class DailyBFGHv(object):
 
                     harvested_data.append(HarvestedData(
                         self.config.harvest_filenames,
+                        self.config.segment,
                         statistic,
                         var_name,
                         value,

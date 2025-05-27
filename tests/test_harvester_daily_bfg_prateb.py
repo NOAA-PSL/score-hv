@@ -49,6 +49,7 @@ VALID_CONFIG_DICT1 = {'harvester_name': hv_registry.DAILY_BFG,
                      
 VALID_CONFIG_DICT2 = {'harvester_name': hv_registry.DAILY_BFG,
                      'filenames' : BFG_PATH,
+                     'segment' : 'fg',
                      'statistic': ['mean', 'variance', 'minimum', 'maximum'],
                      'variable': ['prateb_ave'],
                      'regions': {'tropics': {'north_lat': 23,
@@ -85,6 +86,16 @@ def test_gridcell_area_conservation(tolerance=0.001):
     assert sum_gridcell_area > (1 - tolerance) * 4 * np.pi
     
     gridcell_area_data.close()
+
+def test_missing_segment_type():
+    data1 = harvest(VALID_CONFIG_DICT1)
+    for item in data1:
+        assert item.segment is None
+        
+def test_background_segment():
+    data2 = harvest(VALID_CONFIG_DICT2)
+    for item in data2:
+        assert item.segment == 'background'
 
 def test_variable_names():
     data = harvest(VALID_CONFIG_DICT)
