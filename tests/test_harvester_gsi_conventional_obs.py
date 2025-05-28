@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+#TODO: CRITICAL!!! refactor unit tests so that they assert exisitence of values to be checked under if statements, which can currently be bypassed if the data don't exist
+
 """Unit tests for gsi_satellite_radiance.py
 """
 
