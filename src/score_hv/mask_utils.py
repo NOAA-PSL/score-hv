@@ -11,7 +11,7 @@ import pytest
 import pdb
 
 VARIABLES_TO_MASK = ['icec', 'icetk','nsst','snod','soilm','soilt4','sst','tg3','tsnowp','weasd']
-VALID_MASKS = ['none','land','water', 'ice']
+VALID_MASKS = ['none','land','water', 'ice', 'sea']
 
 class MaskCatalog:
     def __init__(self):
@@ -19,7 +19,7 @@ class MaskCatalog:
           Here we initalize the MaskCatalog class.
           """
         self.soil_snow_variables = ['soilt4','soilm','snod','tg3','tsnowp', 'weasd']
-        self.ice_variables = ['icetk', 'icec']
+        self.ice_variables = ['icetk']
         self.sst_variables = ['sst', 'nsst']
 
     def check_variable_to_mask(self,var_name):
@@ -45,30 +45,20 @@ class MaskCatalog:
           Parameters:
           var_name - The variable name.
           varaiable_data - The initial variable data by region with no masking.
-          fraction_data - This is the surface ice concentration variable(lcec) for
-                          icetk(ice thinkness) or land fraction variable(lfrac)
-                          for all other variables. By region.
-          weights - The gridcell area weights with no masking. 
-                                  The gridcell area weights do not have a 
-                                  time dimension.  They are (grid_yt,grid_xt)
+          lfrac - land fraction variable (lfrac)
           sotyp_data - The sotyp variale from the data set that is by region.                        
-          return - The variable data is returned with the unwanted grid cell
-                   data deleted. The fraction variable is returned with the
-                   variable data.
-                   For the soil_snow_variables and the sst_variables the 
-                   land fraction(lfrac) is returned.
-                   For the ice_variables the ice fraction(icec) is returned.
-                   The masked gridcell_area_weights are returned after masking.
+          return - The variable data and fraction data are returned with the
+                   unwanted grid cell
+                   data masked.
           """
-        if var_name in soil_snow_variables:        
-           """
-             We will need the sotyp(soil type) variable from the dataset.
+        if var_name in self.soil_snow_variables:        
+           """We will need the sotyp(soil type) variable from the dataset.
              The values of 0 and 16 in the sotyp variable are used to delete values
              over water and land ice. This is used specifically for the 
              soil_snow variables: soilm,soilt4,tg3,snod and weasd. We also need
              the land fraction or the ice fraction variable depending on what
              variable the user has requested.
-             """
+           """
            masked_variable = variable_data.where(
                (sotyp_data != 0) & (sotyp_data != 16)
            )
@@ -76,34 +66,24 @@ class MaskCatalog:
                (sotyp_data != 0) & (sotyp_data != 16)
            )
         
-        elif var_name in ice_variables:
+        elif var_name in self.ice_variables:
+           """The ice concentraion variable has 0 everwhere except where there is ice.
            """
-             The ice thickness variable has 0 everwhere except where there is ice.
-             """
            masked_variable = variable_data.where(icec > 0)
            masked_frac = icec.where(icec > 0)
 
-        elif var_name in sst_variables:
-           if var_name == "sst" or var_name == 'nsst':
-              """
-                For the sst(tmpsfc) variable we use the sotyp data and keep the
-                values that are over the water. 
-                """
-              masked_variable = variable_data.where(
-                  (sotyp_data == 0) & (icec == 0)
-              )
-              """
-                This line replaces the lfrac values over sea ice with nans. Then
-                it subtracts the lfrac values elsewhere from 1 to get the fraction
-                of water.
-                """
-              masked_frac = 1. - lfrac.where(icec==0)
-           else:
-             raise KeyError(f"Variable is not in VARIABLES_TO_MASK list: {var_name}")
-             sys.exit(1) 
-
-        #valid_variable_data = masked_variable.where(~masked_variable.isnull(),other=np.nan)
-        #valid_fraction_data = masked_fraction.where(~masked_fraction.isnull())
+        elif var_name in self.sst_variables:
+            """For the sst (tmpsfc) variable we use the sotyp data and keep the
+            values that are over the water.
+            """
+            masked_variable = variable_data.where(
+                (sotyp_data == 0) & (icec == 0)
+            )
+            masked_frac = 1. - lfrac.where(icec==0)
+            
+        else:
+            masked_variable = variable_data
+            masked_frac = xr.where(variable_data.notnull(), 1.0, np.nan)
         
         return(masked_variable, masked_frac)
 
@@ -140,40 +120,35 @@ class MaskCatalog:
         masked_variable = variable_data.where(mask,np.nan)
         return(masked_variable)
 
-    def user_mask(self,mask_type,variable_data,fraction_data,weights,sotyp_data):
+    def user_mask(self, mask_type, variable_data, fraction_data, lfrac,
+                  sotyp_data, icec=None):
+        """The user has requested a mask. Supported masks include: land, water,
+        or ice
         """
-         The user has requested a mask. Here we keep only the
-         type of data that the user wants.  
-         Parameters: 
-         region_mask - This is the sotyp variable read in from the
-                       bfg data file.   
-         Return - The mask array is returned.  This will contain
-                  boolean values. True for grid points we want and False
-                  for grid points we do not want.
-         """
-        if mask_type == 'land':
-            masked_variable = variable_data.where((sotyp_data != 0) & (sotyp_data != 16),drop=False)
-            masked_fraction = fraction_data.where((sotyp_data != 0) & (sotyp_data != 16),drop=False)
-            masked_weights  = weights.where((sotyp_data != 0) & (sotyp_data != 16),drop=False)
         
-        elif mask_type == 'water':
-            masked_variable = variable_data.where(sotyp_data == 0,False)
-            masked_weights = weights.where(sotyp_data == 0,False)
-            """
-              This line replaces the lfrac values over the water where they are 0 with 1.  Then
-              it subtracts the lfrac values that are between 0 and 1 from 1 to get the fraction
-              of the land that is over water..
-              """
-            masked_fraction = xr.where(fraction_data == 0, 1, xr.where(fraction_data == 1, 0, 1 - fraction_data))
-
+        if mask_type == 'land':
+            masked_variable = variable_data.where(
+                (sotyp_data != 0) & (sotyp_data != 16)
+            )
+            masked_frac = lfrac.where(
+                (sotyp_data != 0) & (sotyp_data != 16) & (fraction_data.notnull())
+            )
+        
         elif mask_type == 'ice':
-             masked_variable = variable_data.where(sotyp_data == 16,False,drop=False)
-             masked_weights = weights.where(sotyp_data == 16,False,drop=False)
-             masked_fraction = fraction_data.where(sotyp_data == 16,False,drop=False)
-
-        valid_variable_data = masked_variable.where(~masked_variable.isnull(),other=np.nan)
-        valid_fraction_data = masked_fraction.where(~masked_fraction.isnull())
-        return(valid_variable_data,valid_fraction_data,masked_weights)
+           """The ice thickness variable has 0 everwhere except where there is ice.
+           """
+           masked_variable = variable_data.where(icec > 0)
+           masked_frac = icec.where(
+               (icec > 0) & (fraction_data.notnull())
+           )
+           
+        elif mask_type == 'water' or mask_type == 'sea':
+            masked_variable = variable_data.where(
+                (sotyp_data == 0) & (icec == 0)
+            )
+            masked_frac = 1. - lfrac.where((icec==0) & (fraction_data.notnull()))
+            
+        return(masked_variable, masked_frac)
      
     def check_surface_mask(self,user_surface_mask):
         for mask in user_surface_mask:

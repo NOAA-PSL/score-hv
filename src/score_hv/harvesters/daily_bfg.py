@@ -283,7 +283,11 @@ class DailyBFGHv(object):
         finite difference.
         """
         harvested_data = []
-
+        if self.config.surface_mask is None:
+            surface_mask_list = [None]
+        else:
+            surface_mask_list = self.config.surface_mask
+            
         # Open datasets
         xr_dataset = xr.open_mfdataset(
             self.config.harvest_filenames, combine='nested', 
@@ -311,7 +315,7 @@ class DailyBFGHv(object):
         # Process each variable
         for i, var_name in enumerate(self.config.variables):
             global_variable_data, longname, units = var_utils_catalog.extract_variable_info(var_name)
-            
+                
             # Initialize mask catalog
             mask_catalog = MaskCatalog()
             mask_variable = mask_catalog.check_variable_to_mask(var_name)
@@ -346,20 +350,20 @@ class DailyBFGHv(object):
                 if self.config.surface_mask is not None or mask_variable:
                     is_masked = True
                     # Extract the region-specific fraction data and soil type
-                    (fraction_lats, fraction_lons, fraction_data
+                    (land_fraction_lats, land_fraction_lons, land_fraction_data
                     ) = regions_catalog.get_region_data(
                         region_name, global_land_fraction_data
                     )
                     
                      # Assure equal domains
                     check_region_domain(
-                        fraction_lats,
+                        land_fraction_lats,
                         regions_catalog.gridcell_area_weights[region_name]['latitude'],
                         region_name
                     )
                     
                     check_region_domain(
-                        fraction_lons,
+                        land_fraction_lons,
                         regions_catalog.gridcell_area_weights[region_name]['longitude'],
                         region_name
                     )
@@ -398,83 +402,111 @@ class DailyBFGHv(object):
                         region_name
                     )
                     
-                    
-                    #TODO: optimize where functions in mask_catalog.initial_mask_variable() method in mask_utils.py
-                    
                     masked_variable, masked_fraction_data = mask_catalog.initial_mask_variable(
-                        var_name, regional_variable_data,
+                        var_name, regional_variable_data, land_fraction_data,
                         soil_type_data, icec=icec_data)
-                    
-                    '''                
-                    if self.config.surface_mask is not None:
-                    is_masked = True
-                    mask_instance.check_surface_mask(self.config.surface_mask)
-                    for mask in self.config.surface_mask:
-                        masked_variable, masked_fraction, masked_weights = mask_instance.user_mask(
-                            mask, variable_data, fraction_data, weights, soil_type_data
-                        )
-                
-                    '''
-    
-                    temporal_mean_fraction_data = masked_fraction_data.sum(
-                        dim = 'time', skipna = True
-                    ) / float(masked_fraction_data.time.size)
-                    
-                    region_gridcell_area_weights = np.ma.masked_invalid(
-                        temporal_mean_fraction_data *
-                        regions_catalog.gridcell_area_weights[region_name]['data']
-                    )
                     
                 else:
                     is_masked = False
-                    region_gridcell_area_weights = regions_catalog.gridcell_area_weights[region_name]['data']
                 
-                temporal_mean_regional_variable_data = np.ma.masked_invalid(
-                    regional_variable_data.sum(
-                        dim = 'time', skipna = True    
-                    ) / float(regional_variable_data.time.size)
-                )
-                # Add statistics to harvested_data
-                for j, statistic in enumerate(self.config.stats):
-                    if statistic == 'mean':
-                        value = stats_utils.area_weighted_mean(
-                            temporal_mean_regional_variable_data,
-                            region_gridcell_area_weights,
-                            region_global=region_global,
-                            is_masked=is_masked
+                for j, surface_mask in enumerate(surface_mask_list):
+                    if not is_masked:
+                        """No masking applied
+                        """
+                        region_gridcell_area_weights = regions_catalog.gridcell_area_weights[region_name]['data']
+                        
+                        temporal_mean_regional_variable_data = np.ma.masked_invalid(
+                            regional_variable_data.mean(
+                                dim = 'time', skipna = False
+                            )
+                        )
+                    elif surface_mask is None:
+                        """No user specified mask but auto masking applied previously
+                        for select variables
+                        """
+                        temporal_mean_fraction_data = masked_fraction_data.sum(
+                            dim = 'time', skipna = True
+                        ) / float(masked_fraction_data.time.size)
+                    
+                        region_gridcell_area_weights = np.ma.masked_invalid(
+                            temporal_mean_fraction_data *
+                            regions_catalog.gridcell_area_weights[region_name]['data']
                         )
                         
-                        #value = self.config.regions[region_name]['mean']
-                    elif statistic == 'variance':
-                        #value = self.config.regions[region_name]['variance']
-                        value = stats_utils.area_weighted_variance(
-                            temporal_mean_regional_variable_data,
-                            region_gridcell_area_weights,
-                            region_global=region_global,
-                            is_masked=is_masked
+                        temporal_mean_regional_variable_data = np.ma.masked_invalid(
+                            masked_variable.mean(
+                                dim = 'time', skipna = False    
+                            )
                         )
-                    elif statistic == 'maximum':
-                        #value = self.config.regions[region_name]['maximum']
-                        value = np.ma.max(temporal_mean_regional_variable_data)
-                    elif statistic == 'minimum':
-                        #value = self.config.regions[region_name]['minimum']
-                        value = np.ma.min(temporal_mean_regional_variable_data)
+                    
+                    elif surface_mask is not None:
+                        """apply user specified mask
+                        """
+                        mask_catalog.check_surface_mask([surface_mask])
+                        
+                        user_masked_variable, user_masked_fraction_data = mask_catalog.user_mask(
+                            surface_mask, masked_variable, masked_fraction_data,
+                            land_fraction_data, soil_type_data
+                        )
+                        
+                        temporal_mean_fraction_data = user_masked_fraction_data.sum(
+                            dim = 'time', skipna = True
+                        ) / float(user_masked_fraction_data.time.size)
+                    
+                        region_gridcell_area_weights = np.ma.masked_invalid(
+                            temporal_mean_fraction_data *
+                            regions_catalog.gridcell_area_weights[region_name]['data']
+                        )
+                        
+                        temporal_mean_regional_variable_data = np.ma.masked_invalid(
+                            user_masked_variable.mean(
+                                dim = 'time', skipna = False    
+                            )
+                        )
+                    
+                    """proceed for all cases
+                    """
+                    # Add statistics to harvested_data
+                    for k, statistic in enumerate(self.config.stats):
+                        if statistic == 'mean':
+                            value = stats_utils.area_weighted_mean(
+                                temporal_mean_regional_variable_data,
+                                region_gridcell_area_weights,
+                                region_global=region_global,
+                                is_masked=is_masked
+                            )
+                        
+                            #value = self.config.regions[region_name]['mean']
+                        elif statistic == 'variance':
+                            #value = self.config.regions[region_name]['variance']
+                            value = stats_utils.area_weighted_variance(
+                                temporal_mean_regional_variable_data,
+                                region_gridcell_area_weights,
+                                region_global=region_global,
+                                is_masked=is_masked
+                            )
+                        elif statistic == 'maximum':
+                            #value = self.config.regions[region_name]['maximum']
+                            value = np.ma.max(temporal_mean_regional_variable_data)
+                        elif statistic == 'minimum':
+                            #value = self.config.regions[region_name]['minimum']
+                            value = np.ma.min(temporal_mean_regional_variable_data)
 
-                    harvested_data.append(HarvestedData(
-                        self.config.harvest_filenames,
-                        self.config.segment,
-                        statistic,
-                        var_name,
-                        value,
-                        units,
-                        dt.fromisoformat(median_cftime.isoformat()),
-                        longname,
-                        self.config.surface_mask,
-                        {'name': region_name,
-                         'latitude': regional_variable_lats,
-                         'longitude': regional_variable_lons
-                        }
-                    ))
+                        harvested_data.append(HarvestedData(
+                            self.config.harvest_filenames,
+                            self.config.segment,
+                            statistic,
+                            var_name,
+                            value,
+                            units,
+                            dt.fromisoformat(median_cftime.isoformat()),
+                            longname,
+                            surface_mask,
+                            {'name': region_name,
+                             'latitude': regional_variable_lats,
+                             'longitude': regional_variable_lons
+                            }
+                        ))
 
         # Close datasets
         gridcell_area_data.close()
