@@ -15,15 +15,14 @@ from score_hv.harvester_base import harvest
 from score_hv.yaml_utils import YamlLoader
 from score_hv.harvesters.innov_netcdf import Region, InnovStatsCfg
 
-TEST_DATA_FILE_NAMES = ['bfg_1994010100_fhr09_tmp2m_control.nc',
-                        'bfg_1994010106_fhr06_tmp2m_control.nc',
-                        'bfg_1994010106_fhr09_tmp2m_control.nc',
-                        'bfg_1994010112_fhr06_tmp2m_control.nc',
-                        'bfg_1994010112_fhr09_tmp2m_control.nc',
-                        'bfg_1994010118_fhr06_tmp2m_control.nc',
-                        'bfg_1994010118_fhr09_tmp2m_control.nc',
-                        'bfg_1994010200_fhr06_tmp2m_control.nc'
-                        ]
+TEST_DATA_FILE_NAMES = ['tmp2m_bfg_2023032100_fhr09_control.nc',
+                        'tmp2m_bfg_2023032106_fhr06_control.nc',
+                        'tmp2m_bfg_2023032106_fhr09_control.nc',
+                        'tmp2m_bfg_2023032112_fhr06_control.nc',
+                        'tmp2m_bfg_2023032112_fhr09_control.nc',
+                        'tmp2m_bfg_2023032118_fhr06_control.nc',
+                        'tmp2m_bfg_2023032118_fhr09_control.nc',
+                        'tmp2m_bfg_2023032200_fhr06_control.nc']
 
 DATA_DIR = os.path.join(Path(__file__).parent.parent.resolve(), 'src', 'score_hv', 'data')
 GRIDCELL_AREA_DATA_PATH = os.path.join(DATA_DIR,
@@ -64,25 +63,91 @@ def test_global_mean_values_offline(tolerance=0.001):
     using a separate python code.
     """
     data1 = harvest(VALID_CONFIG_DICT)
-    global_mean = 285.527800538339 
+    global_mean = 287.0713362523281
     assert data1[0].value <= (1 + tolerance) * global_mean
     assert data1[0].value >= (1 - tolerance) * global_mean 
 
-def test_gridcell_variance(tolerance=0.001):
+def test_global_mean_values_netCDF4(tolerance=0.001):
+    """Opens each background Netcdf file using the netCDF4 library function 
+    Dataset and computes the expected value of the provided variable.  In this 
+    case tmp2m.
+    """
     data1 = harvest(VALID_CONFIG_DICT)
-   
-    variance = 273.2249248235133
+    
+    gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
+    norm_weights = gridcell_area_data.variables['area'][:] / np.sum(
+                                        gridcell_area_data.variables['area'][:])
+    
+    summation = np.ma.zeros(gridcell_area_data.variables['area'].shape)
+    for file_count, data_file in enumerate(BFG_PATH):
+        test_rootgrp = Dataset(data_file)
+    
+        summation += test_rootgrp.variables[VALID_CONFIG_DICT['variable'][0]][0]
+        
+        test_rootgrp.close()
+        
+    temporal_mean = summation / (file_count + 1)
+    global_mean = np.ma.sum(norm_weights * temporal_mean)    
+    
+    for i, harvested_tuple in enumerate(data1):
+        if harvested_tuple.statistic == 'mean':
+            assert global_mean <= (1 + tolerance) * harvested_tuple.value
+            assert global_mean >= (1 - tolerance) * harvested_tuple.value
+            
+    gridcell_area_data.close()
+                
+def test_gridcell_variance(tolerance=0.001):
+    """Opens each background Netcdf file using the netCDF4 library function 
+    Dataset and computes the variance of the provided variable.  In this case 
+    tmp2m.
+    """
+    data1 = harvest(VALID_CONFIG_DICT)
+    
+    gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
+    norm_weights = gridcell_area_data.variables['area'][:] / np.sum(
+                                        gridcell_area_data.variables['area'][:])
+    
+    summation = np.ma.zeros(gridcell_area_data.variables['area'].shape)
+    for file_count, data_file in enumerate(BFG_PATH):
+        test_rootgrp = Dataset(data_file)
+    
+        summation += test_rootgrp.variables[VALID_CONFIG_DICT['variable'][0]][0]
+        
+        test_rootgrp.close()
+        
+    temporal_mean = summation / (file_count + 1)
+    
+    global_mean = np.ma.sum(norm_weights * temporal_mean)
+    variance = np.ma.sum((temporal_mean - global_mean)**2 * norm_weights)
+    
     for i, harvested_tuple in enumerate(data1):
         if harvested_tuple.statistic == 'variance':
             assert variance <= (1 + tolerance) * harvested_tuple.value
             assert variance >= (1 - tolerance) * harvested_tuple.value
             
+    gridcell_area_data.close()
     
 def test_gridcell_min_max(tolerance=0.001):
+    """Opens each background Netcdf file using the netCDF4 library function 
+    Dataset and computes the maximum of the provided variable.  In this case 
+    tmp2m.
+    """
     data1 = harvest(VALID_CONFIG_DICT)
     
-    maximum = 309.8211364746094
-    minimum = 222.6378955841064
+    gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
+    
+    summation = np.ma.zeros(gridcell_area_data.variables['area'].shape)
+    for file_count, data_file in enumerate(BFG_PATH):
+        test_rootgrp = Dataset(data_file)
+    
+        summation += test_rootgrp.variables[VALID_CONFIG_DICT['variable'][0]][0]
+        
+        test_rootgrp.close()
+        
+    temporal_mean = summation / (file_count + 1)
+    minimum = np.ma.min(temporal_mean)
+    maximum = np.ma.max(temporal_mean)
+    
     for i, harvested_tuple in enumerate(data1):
         if harvested_tuple.statistic == 'maximum':
             assert maximum <= (1 + tolerance) * harvested_tuple.value
@@ -90,6 +155,8 @@ def test_gridcell_min_max(tolerance=0.001):
         elif harvested_tuple.statistic == 'minimum':
             assert minimum <= (1 + tolerance) * harvested_tuple.value
             assert minimum >= (1 - tolerance) * harvested_tuple.value
+            
+    gridcell_area_data.close()
 
 def test_units():
     data1 = harvest(VALID_CONFIG_DICT)
@@ -102,7 +169,7 @@ def test_cycletime():
     returned by daily_bfg.py
     """
     data1 = harvest(VALID_CONFIG_DICT)
-    expected_datetime = datetime.strptime("1994-01-01 12:00:00",
+    expected_datetime = datetime.strptime("2023-03-21 12:00:00",
                                           "%Y-%m-%d %H:%M:%S")
     assert data1[0].mediantime == expected_datetime
 
@@ -122,10 +189,11 @@ def main():
     test_variable_names()
     test_units()
     test_global_mean_values_offline()
+    test_global_mean_values_netCDF4()
     test_gridcell_variance()
     test_gridcell_min_max()
     test_cycletime() 
     test_longname()
 
 if __name__=='__main__':
-    main()    
+    main()
