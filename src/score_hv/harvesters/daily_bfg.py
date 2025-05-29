@@ -22,7 +22,7 @@ from score_hv.mask_utils import MaskCatalog
 from score_hv.variable_utils import VarUtilsCatalog
 
 HARVESTER_NAME = 'daily_bfg'
-VALID_STATISTICS = ('mean', 'variance', 'minimum', 'maximum')
+VALID_STATISTICS = ('mean', 'variance', 'minimum', 'maximum', 'integral')
 VALID_REGION_BOUND_KEYS = ('south_lat', 'north_lat', 'west_lon', 'east_lon')
 VALID_RESOLUTIONS = ('1536x768')
 
@@ -55,17 +55,17 @@ VALID_VARIABLES = (
     'prateb_ave',   # bucket surface precip rate (mm weq. s^-1)
     'prate_ave',   # surface precip rate (mm weq. s^-1)
     'pressfc',     # surface pressure (Pa)
-    #'snowc_ave',   # snow cover - GFS lsm
-    #'snod',        # surface snow depth (m)
-    #'soilm',       # total column soil moisture content (mm weq.)
-    #'soilt4',      # soil temperature unknown layer 4 (K)
+    'snowc_ave',   # snow cover - GFS lsm
+    'snod',        # surface snow depth (m)
+    'soilm',       # total column soil moisture content (mm weq.)
+    'soilt4',      # soil temperature unknown layer 4 (K)
     'sst',         # sea surface temperature (K), using tmpsfc over the ocean 
                    # only
-    #'tg3',         # deep soil temperature (K)
+    'tg3',         # deep soil temperature (K)
     'tmp2m',       # 2m (surface air) temperature (K)
-    #'tsnowp',      # accumulated surface snow (kg/m**2)
+    'tsnowp',      # accumulated surface snow (kg/m**2)
     'ulwrf_avetoa', # top of atmosphere upward longwave flux (W m^-2)
-    #'weasd',       # surface snow water equivalent (kg/m**2)
+    'weasd',       # surface snow water equivalent (kg/m**2)
 )
 
 VALID_SEGMENTS = ('background', 'first guess', 'first_guess', 'fg', 'predictor',
@@ -491,6 +491,13 @@ class DailyBFGHv(object):
                         elif statistic == 'minimum':
                             #value = self.config.regions[region_name]['minimum']
                             value = np.ma.min(temporal_mean_regional_variable_data)
+                        elif statistic == 'integral':
+                            value = stats_utils.area_weighted_integral(
+                                temporal_mean_regional_variable_data,
+                                region_gridcell_area_weights,
+                                region_global=region_global,
+                                is_masked=is_masked
+                                )
 
                         harvested_data.append(HarvestedData(
                             self.config.harvest_filenames,

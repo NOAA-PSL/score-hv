@@ -10,13 +10,15 @@ The functions generally take the following two input variables:
 
 import numpy as np
 
+WGS84_EARTH_SEMI_MAJOR_AXIS = 6378137.0 # meters
+
 def area_weighted_mean(xarray_variable, gridcell_area_weights,
                        region_global=True, is_masked=False):
     """Returns the gridcell area weighted mean of xarray_variable and checks
     that gridcell_area_weights are valid.
 
     Args:
-        xarray_variable: The data variable to calculate the weighted mean for.
+        xarray_variable: The data variable for which to calculate the weighted mean.
         gridcell_area_weights: The area weights (steradians) for the grid cells
         region_global (bool): If True, checks if the sum of the weights is
             approximately 4*pi steradians (for global regions). Defaults to True.
@@ -55,7 +57,7 @@ def area_weighted_variance(xarray_variable, gridcell_area_weights,
     interest R with normalized gridcell area weights w_i and weighted mean xbar.
 
     Args:
-        xarray_variable: The data variable to calculate the weighted variance for.
+        xarray_variable: The data variable for which to calculate the weighted variance.
         gridcell_area_weights: The normalized weights for the grid cells.
         region_global (bool): If True, can check if the sum of the weights is
             approximately 4*pi steradians (for global regions). Defaults to True.                           
@@ -87,3 +89,38 @@ def area_weighted_variance(xarray_variable, gridcell_area_weights,
     )
     
     return weighted_variance
+    
+def area_weighted_integral(xarray_variable, gridcell_area_weights,
+                           region_global=True, is_masked=False):
+    """Returns the gridcell area weighted integral of xarray_variable and checks
+    that gridcell_area_weights are valid.
+
+    Args:
+        xarray_variable: The data variable for which to calculate the weighted integral.
+        gridcell_area_weights: The area weights (steradians) for the grid cells
+        region_global (bool): If True, checks if the sum of the weights is
+            approximately 4*pi steradians (for global regions). Defaults to True.
+
+    Returns:
+        weighted_integral: The area-weighted integral of the xarray_variable.
+
+    Raises:
+        ValueError: If the sum of the gridcell area weights does not equal
+                    approximately 4 pi steradians when region=global
+    """    
+    
+    weighted_integral = float('%.3g' % WGS84_EARTH_SEMI_MAJOR_AXIS**2 *
+                              np.ma.sum(xarray_variable *
+                                        gridcell_area_weights)) # meters 3 sig figs
+    if region_global and not is_masked:
+        # Explicit check for the sum of weights
+        sumweights = np.sum(gridcell_area_weights)
+        if not (0.999 * 4 * np.pi <= sumweights <= 1.001 * 4 * np.pi):
+            msg = (
+                f'expected region is global and {gridcell_area_weights}'
+                '(gridcell area weights) sum does not equal 4 pi steradians; '
+                'cannot calculate accurate gridcell weighted statistics'
+            )
+            raise ValueError(msg)
+
+    return weighted_integral
