@@ -133,7 +133,8 @@ def test_mean_values_regions(tolerance=0.001):
 
       When averaged together, these files represent a 24 hour mean.
       In this test there are four regions.  The daily_bfg harvester will return
-      the values of all three regions at once.  
+      the values of all three regions at once.  A NCAR Command Language script
+      read in the values and then calculated the temporal mean.
       """
     data1 = harvest(VALID_CONFIG_DICT1)
      
