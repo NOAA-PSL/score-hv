@@ -124,6 +124,25 @@ def read_MetaData_group(dataset):
 
     return(latitude,longitude)
 
+def read_EffectiveQC_groups(dataset,QClevel):
+    """This method reads the EffectiveQC0 and EffectiveQC1
+       groups from the SOCA dataset"
+       Parameters:
+                dataset - Opened Netcdf4 file.   
+                QClevel - Either 0 or 1.
+                          If QClevel is 0 then the EffectiveQC0 group is read from the dataset.
+                             QClevel = 0. Represents basic or first-level quality control.
+
+                          If QClevel is 1 then the EffectiveQC1 group is read from the dataset.
+                             QClevel = 1. Represents additional or second-level QC applied during 
+                                          assimilation.
+        Returns: Values from EffectiveQC0 group or values from EffectiveQC1 group.
+        """
+    if QClevel == 0:
+       return  dataset.groups['EffectiveQC0']  
+    else:
+       return  dataset.groups['EffectiveQC1']
+
 @dataclass
 class SOCADiagsConfig(ConfigInterface):
 
@@ -224,7 +243,16 @@ class SOCADiagsHv(object):
             satellite = filename_info['satellite']
             level = filename_info['level']
             latitude,longitude = read_MetaData_group(dataset)
-            
+            """
+              EffectiveQC groups are data values that are used to determine
+              the results of different stages of quality control applied to 
+              observations.  
+            """
+            QClevel = 0
+            EffectiveQC0 = read_EffectiveQC_groups(dataset,QClevel)
+            QClevel = 1                                       
+            EffectiveQC1 = read_EffectiveQC_groups(dataset,QClevel)
+                        
             """
               We can now loop through the list of wanted groups.
               We get the values from the wanted groups and the FillValue.
