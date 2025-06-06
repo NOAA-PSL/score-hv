@@ -87,6 +87,7 @@ class MaskCatalog:
         
         return(masked_variable, masked_frac)
 
+    '''
     def replace_bad_values_with_nan(self,variable_data):
         """
           Check for _FillValue or missing_values in the variable data.
@@ -119,7 +120,8 @@ class MaskCatalog:
        # Apply the mask
         masked_variable = variable_data.where(mask,np.nan)
         return(masked_variable)
-
+    '''
+    
     def user_mask(self, mask_type, variable_data, fraction_data, lfrac,
                   sotyp_data, icec=None):
         """The user has requested a mask. Supported masks include: land, water,
@@ -132,6 +134,7 @@ class MaskCatalog:
             )
             masked_frac = lfrac.where(
                 (sotyp_data != 0) & (sotyp_data != 16) & (fraction_data.notnull())
+                & (fraction_data != 0)
             )
         
         elif mask_type == 'ice':
@@ -139,15 +142,16 @@ class MaskCatalog:
            """
            masked_variable = variable_data.where(icec > 0)
            masked_frac = icec.where(
-               (icec > 0) & (fraction_data.notnull())
+               (icec > 0) & (fraction_data.notnull()) & (fraction_data != 0)
            )
            
         elif mask_type == 'water' or mask_type == 'sea':
             masked_variable = variable_data.where(
                 (sotyp_data == 0) & (icec == 0)
             )
-            masked_frac = 1. - lfrac.where((icec==0) & (fraction_data.notnull()))
-            
+            masked_frac = 1. - lfrac.where((icec==0) & (fraction_data.notnull())
+                                           & (fraction_data != 0))
+        
         return(masked_variable, masked_frac)
      
     def check_surface_mask(self,user_surface_mask):

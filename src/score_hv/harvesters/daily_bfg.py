@@ -413,7 +413,8 @@ class DailyBFGHv(object):
                     if not is_masked:
                         """No masking applied
                         """
-                        region_gridcell_area_weights = regions_catalog.gridcell_area_weights[region_name]['data']
+                        region_gridcell_area_weights = np.ma.masked_invalid(
+                            regions_catalog.gridcell_area_weights[region_name]['data'])
                         
                         temporal_mean_regional_variable_data = np.ma.masked_invalid(
                             regional_variable_data.mean(
@@ -429,8 +430,10 @@ class DailyBFGHv(object):
                         ) / float(masked_fraction_data.time.size)
                     
                         region_gridcell_area_weights = np.ma.masked_invalid(
-                            temporal_mean_fraction_data *
-                            regions_catalog.gridcell_area_weights[region_name]['data']
+                            np.ma.masked_values(temporal_mean_fraction_data *
+                            regions_catalog.gridcell_area_weights[region_name]['data'],
+                                             0.
+                            )
                         )
                         
                         temporal_mean_regional_variable_data = np.ma.masked_invalid(
@@ -446,7 +449,7 @@ class DailyBFGHv(object):
                         
                         user_masked_variable, user_masked_fraction_data = mask_catalog.user_mask(
                             surface_mask, masked_variable, masked_fraction_data,
-                            land_fraction_data, soil_type_data
+                            land_fraction_data, soil_type_data, icec=icec_data
                         )
                         
                         temporal_mean_fraction_data = user_masked_fraction_data.sum(
@@ -454,8 +457,10 @@ class DailyBFGHv(object):
                         ) / float(user_masked_fraction_data.time.size)
                     
                         region_gridcell_area_weights = np.ma.masked_invalid(
-                            temporal_mean_fraction_data *
-                            regions_catalog.gridcell_area_weights[region_name]['data']
+                            np.ma.masked_values(temporal_mean_fraction_data *
+                            regions_catalog.gridcell_area_weights[region_name]['data'],
+                                                0.
+                            )
                         )
                         
                         temporal_mean_regional_variable_data = np.ma.masked_invalid(
@@ -475,10 +480,7 @@ class DailyBFGHv(object):
                                 region_global=region_global,
                                 is_masked=is_masked
                             )
-                        
-                            #value = self.config.regions[region_name]['mean']
                         elif statistic == 'variance':
-                            #value = self.config.regions[region_name]['variance']
                             value = stats_utils.area_weighted_variance(
                                 temporal_mean_regional_variable_data,
                                 region_gridcell_area_weights,
@@ -486,10 +488,8 @@ class DailyBFGHv(object):
                                 is_masked=is_masked
                             )
                         elif statistic == 'maximum':
-                            #value = self.config.regions[region_name]['maximum']
                             value = np.ma.max(temporal_mean_regional_variable_data)
                         elif statistic == 'minimum':
-                            #value = self.config.regions[region_name]['minimum']
                             value = np.ma.min(temporal_mean_regional_variable_data)
                         elif statistic == 'integral':
                             value = stats_utils.area_weighted_integral(
