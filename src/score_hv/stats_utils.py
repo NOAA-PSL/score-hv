@@ -84,9 +84,8 @@ def area_weighted_variance(xarray_variable, gridcell_area_weights,
         raise ValueError(msg)
 
     # Calculate the weighted variance
-    weighted_variance = -expected_value**2 + np.ma.sum(
-        xarray_variable**2 * (gridcell_area_weights / gridcell_area_weights.sum())
-    )
+    weighted_variance = -expected_value**2 + np.ma.average(
+        xarray_variable**2, weights=gridcell_area_weights)
     
     return weighted_variance
     
