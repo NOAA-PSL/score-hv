@@ -212,7 +212,7 @@ class SOCADiagsHv(object):
      
     def get_data(self):
         depths = self.config.depths
-        groups_wanted = ['ObsValue','oman','ombg']
+        groups_wanted = ('ObsValue','oman','ombg', 'ObsError')
         units = None
         for filename in self.config.harvest_filenames:
             harvested_data = list()
@@ -225,10 +225,8 @@ class SOCADiagsHv(object):
             """The information about the file from the 
             file name.
             """
-            variable = filename_info['variable_type']  
             filetime_str = filename_info['datetime']
-            dt_obj = dt.strptime(filetime_str, "%Y%m%d%H")
-            filetime = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+            filetime_dt = dt.strptime(filetime_str, "%Y%m%d%H")
             sensor = filename_info['sensor']
             file_region = filename_info['region']
             satellite = filename_info['satellite']
@@ -250,8 +248,8 @@ class SOCADiagsHv(object):
                         if "units" in var.ncattrs():
                             units = str(var.getncattr("units"))
    
-                        if '_FillValue' in groupvalue_variable.ncattrs():
-                            fill_value = groupvalue_variable.getncattr('_FillValue')
+                        if '_FillValue' in var.ncattrs():
+                            fill_value = var.getncattr('_FillValue')
                             masked_var = np.ma.masked_where(var[:] == fill_value, 
                                                             var[:])
                         else:   
@@ -288,13 +286,13 @@ class SOCADiagsHv(object):
                                                   sensor,
                                                   satellite,
                                                   level,
-                                                  variable,
+                                                  var_name,
                                                   group,
                                                   longname,
                                                   units,
                                                   statistic,
                                                   float(value),
-                                                  filetime,
+                                                  filetime_dt,
                                                   file_region))
             dataset.close()               
             return(harvested_data)

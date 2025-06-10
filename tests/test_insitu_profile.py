@@ -46,21 +46,20 @@ def test_verify_filename_components():
     for item in data1:
         if item.variables not in expected_variable_names:
            raise ValueError(f"Error: {item.variable} is not in the expected variable list.") 
-        assert item.sensor == None   
-        assert item.satellite == 'argo'
-        assert item.level == None   
+        assert item.sensor == 'argo'   
+        assert item.satellite == None
+        assert item.level == None
 
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
     date_str = "2021070300"
     date_obj = datetime.strptime(date_str, "%Y%m%d%H")
-    filetime_str = data1[0].filetime
-    filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
-    assert date_obj == filetime_dt 
+    for item in data1:
+        assert date_obj == item.filetime
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
-    groups_wanted = ['ObsValue', 'oman', 'ombg']
+    groups_wanted = ('ObsValue', 'oman', 'ombg', 'ObsError')
     for data in data1:
         assert data.group in groups_wanted, f"Unexpected group: {data.group}"
    
