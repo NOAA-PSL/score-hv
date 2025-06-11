@@ -18,7 +18,7 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
-                     'statistics': ['rms', 'mean'],
+                     'statistics': ['rms', 'mean', 'count'],
                      'variables': ['waterTemperature'],
                      }
 
@@ -34,7 +34,7 @@ def test_waterTemperature(tolerance=0.001):
         assert item.satellite == None
         assert item.level == None
         assert item.variables == 'waterTemperature'
-        assert item.statistics == 'rms' or item.statistics == 'mean'
+        assert item.statistics == 'rms' or item.statistics == 'mean' or item.statistics == 'count'
         assert item.filetime == dt
         assert item.file_region == 'global'
         

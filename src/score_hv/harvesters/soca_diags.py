@@ -17,7 +17,7 @@ from netCDF4 import Dataset
 from score_hv.config_base import ConfigInterface
 
 HARVESTER_NAME = 'soca_diags'
-VALID_STATISTICS = ('rms', 'RMS', 'mean', 'median', 'StdDev','minimum', 'maximum')
+VALID_STATISTICS = ('rms', 'RMS', 'mean', 'median', 'StdDev','minimum', 'maximum', 'n', 'nobs', 'count')
 
 """Variables of interest that come from the background forecast data.
 Commented out variables can be uncommented to generate gridcell weighted
@@ -266,7 +266,10 @@ class SOCADiagsHv(object):
                             if statistic == 'rms' or statistic == 'RMS':
                                 value = np.sqrt(np.ma.mean(masked_var**2))
                            
-                            if statistic == 'mean':
+                            elif statistic == 'n' or statistic == 'nobs' or statistic == 'count':
+                                value = np.ma.count(masked_var)
+                            
+                            elif statistic == 'mean':
                                 value = np.ma.mean(masked_var)
                                
                             elif statistic == 'median':
@@ -291,7 +294,7 @@ class SOCADiagsHv(object):
                                                   longname,
                                                   units,
                                                   statistic,
-                                                  float(value),
+                                                  value,
                                                   filetime_dt,
                                                   file_region))
             dataset.close()               
