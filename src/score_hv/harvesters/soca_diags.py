@@ -29,7 +29,6 @@ VALID_VARIABLES  =  ('sst', #sea surface temperature
                      'waterTemperature',
                      'seaSurfaceSalinity',
                      'seaSurfaceTemperature',
-                     ''
                     )
 HarvestedData = namedtuple(
     #TODO: implement depths as harvested coordinate array
