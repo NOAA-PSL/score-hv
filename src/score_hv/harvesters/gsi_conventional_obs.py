@@ -212,8 +212,82 @@ class GSIConvObsHv(object):
                 self.results[variable][stat][line_part] = {'column_index': column_idx,
                                                            'values': list()}
     
+    def extract_fit_obs_plevs(self, line_parts, variable_name):
+        """extract fit to uv wind, temperature, or humidity stats from a
+        given line of the fort.202 file
+        """
+        if line_parts[0] == 'current' and line_parts[1] == 'vfit':
+            self.read_fit_ps = False
+            self.read_fit_uv = True
+            self.read_fit_t = False
+            self.read_fit_q = False
+            
+        elif line_parts[0] == 'current' and line_parts[3] == 'temperature':
+            self.read_fit_ps = False
+            self.read_fit_uv = False
+            self.read_fit_t = True
+            self.read_fit_q = False
+            
+        elif line_parts[0] == 'current' and line_parts[3] == 'q':
+            self.read_fit_ps = False
+            self.read_fit_uv = False
+            self.read_fit_t = False
+            self.read_fit_q = True
+        
+        elif line_parts[0] == 'o-g' and line_parts[1] == 'ptop':
+            self.results[variable_name]['plevs_top'].append(list())
+            self.results[variable_name]['plevs_bot'].append(list())
+            for plev, ptop in enumerate(line_parts[2:]):
+                self.results[variable_name]['plevs_top'][-1].append(float(ptop))
+        elif line_parts[0] == 'o-g' and line_parts[1] == 'it':
+            read_pbot = False
+            for col, part in enumerate(line_parts):
+                if read_pbot:
+                    self.results[variable_name]['plevs_bot'][-1].append(
+                        float(part)
+                    )
+                else:
+                    for results_key, results_values in self.results[variable_name].items():
+                        if part=='it' or part=='obs' or part=='use' or part=='typ' or part=='styp':
+                            self.store_column_info(variable_name, col, part)
+                
+                if part == 'pbot':
+                    read_pbot=True
+                    
+            if len(self.results[variable_name]['plevs_top'][-1]) != len(
+                self.results[variable_name]['plevs_bot'][-1]):
+                raise RuntimeError(f'extracted inconsistent number of pressure '
+                    f'levels (ptop and pbot) from {variable_name} data in '
+                    f'{self.config.harvest_filename}')
+        elif line_parts[0] == 'o-g' and (line_parts[2] == 'uv' or line_parts[2] == 't' or line_parts[2] == 'q'):
+            stat = line_parts[6]
+            for results_key, column_values in self.results[variable_name][stat].items():
+                if results_key == stat:
+                    if stat == 'count':
+                        self.results[variable_name][stat][stat]['values'].append([int(x) for x in line_parts[7:]])
+                    else:
+                        self.results[variable_name][stat][stat]['values'].append([float(x) for x in line_parts[7:]])
+                else:
+                    column_index = self.results[variable_name][stat][results_key]['column_index']
+                    self.results[variable_name][stat][results_key]['values'].append(
+                        line_parts[column_index]
+                    )
+                
+        elif line_parts[0] == 'o-g' and line_parts[3] == 'all':
+            # stats for all observation types
+            stat = line_parts[4]
+            self.results[variable_name][stat]['it']['values'].append(line_parts[1])
+            self.results[variable_name][stat]['use']['values'].append(line_parts[2])
+            self.results[variable_name][stat]['typ']['values'].append(line_parts[3])
+            self.results[variable_name][stat]['styp']['values'].append(None)
+            if stat=='count':
+                self.results[variable_name][stat][stat]['values'].append([int(x) for x in line_parts[5:]])
+            else:
+                self.results[variable_name][stat][stat]['values'].append([float(x) for x in line_parts[5:]])
+    
+    '''
     def extract_fit_uv(self, line_parts, variable_name='fit_uv_data'):
-        """ extract fit to u, v wind stats from a given line of the fort.202
+        """ extract fit to uv wind stats from a given line of the fort.202
         file
         """
         if line_parts[0] == 'current' and line_parts[1] == 'vfit':
@@ -265,6 +339,7 @@ class GSIConvObsHv(object):
     
         elif line_parts[0] == 'current' and line_parts[3] == 'temperature':
             self.read_fit_uv = False
+    '''
             
     def extract_fit_ps(self, line_parts, variable_name='fit_psfc_data'):
         """ extract fit to surface pressure stats from a given line of the
@@ -272,6 +347,9 @@ class GSIConvObsHv(object):
         """
         if line_parts[0] == 'pressure' and line_parts[1] == 'levels':
             self.read_fit_ps = True
+            self.read_fit_uv = False
+            self.read_fit_t = False
+            self.read_fit_q = False
             self.results[variable_name]['plevs_units'].append(
                 line_parts[2][1:-2]
             )
@@ -361,24 +439,34 @@ class GSIConvObsHv(object):
         
         elif line_parts[0] == 'current' and line_parts[1] == 'vfit':
             self.read_fit_ps = False
+            self.read_fit_uv = True
+            self.read_fit_t = False
+            self.read_fit_q = False
     
     def parse_fit_file(self):
         """ parse lines of fit file and extract statistics
         """
         self.read_fit_ps = False
         self.read_fit_uv = False
+        self.read_fit_t = False
+        self.read_fit_q = False
         
         for line_number, line in enumerate(self.lines):
             line_parts = line.split()
             if 'fit_psfc_data' in self.config.vars_to_harvest and len(line_parts) > 2:
                 self.extract_fit_ps(line_parts, variable_name='fit_psfc_data')
-            if 'fit_uv_data' in self.config.vars_to_harvest and len(line_parts) > 2:
-                self.extract_fit_uv(line_parts, variable_name='fit_uv_data')
+            if 'fit_uv_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_uv:
+                self.extract_fit_obs_plevs(line_parts, variable_name='fit_uv_data')
+            if 'fit_t_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_t:
+                self.extract_fit_obs_plevs(line_parts, variable_name='fit_t_data')
+            if 'fit_q_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_q:
+                self.extract_fit_obs_plevs(line_parts, variable_name='fit_q_data')
                 
-                
+"""
 def test(gsistats_test_file):
     test_datetime = datetime.strptime(
         gsistats_test_file.split('.')[-1].split('_')[0], '%Y%m%d%H')
     import ipdb
     ipdb.set_trace()
     print(test_datetime)
+"""                
