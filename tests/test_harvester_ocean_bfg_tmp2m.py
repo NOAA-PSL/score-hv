@@ -54,16 +54,16 @@ def test_mean_values(tolerance=0.001):
     
     for item in data1:
         if item.statistic == 'mean':
-           calculated_means = 289.5156062703238 
+           calculated_means = 292.7030162914144 
            assert calculated_means <= (1 + tolerance) * item.value
            assert calculated_means >= (1 - tolerance) * item.value
-    
+     
 def test_gridcell_variance(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
 
     for item in data1:
         if item.statistic == 'variance':
-           calculated_variance = 140.59315093732124
+           calculated_variance = 61.35743560071569
            assert calculated_variance <= (1 + tolerance) * item.value
            assert calculated_variance >= (1 - tolerance) * item.value
 
@@ -72,7 +72,7 @@ def test_gridcell_min_max(tolerance=0.001):
     
     for item in data1:
         if item.statistic == 'minimum':
-           calculated_min  = 231.94033432006833 
+           calculated_min  = 246.11906 
            assert calculated_min <= (1 + tolerance) * item.value
            assert calculated_min >= (1 - tolerance) * item.value
         if item.statistic == 'maximum':

@@ -37,8 +37,12 @@ BFG_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                      'filenames' : BFG_PATH,
-                     'statistic': ['mean','variance', 'minimum', 'maximum'],
-                     'variable': ['nsst','sst'],
+                     'statistic': ['mean','variance', 'minimum', 'maximum', 'integral'],
+                     'variable': ['icetk'],
+                     'regions': {
+                               'north_hemi': {'north_lat': 90.0, 'south_lat': 24.0, 'west_long': 0.0, 'east_long': 360.0},
+                               'south_hemi': {'north_lat': -24., 'south_lat': -90.0, 'west_long': 0.0, 'east_long': 360.0},
+                               }
                      }
 
 def test_gridcell_area_conservation(tolerance=0.001):
@@ -54,10 +58,9 @@ def test_variable_names():
     """Here we are testing two variables.  The daily_bfg harvester
        should return values for both variables at once.
        """
-    expected_variables = ['nsst', 'sst'] 
-    assert VALID_CONFIG_DICT['variable'] == expected_variables
+    assert  'icetk' in  VALID_CONFIG_DICT['variable']
 
-def test_global_mean_values(tolerance=0.001):
+def test_mean_values(tolerance=0.001):
     """ 
         The values of the calculated_means list were 
         calculated from these eight forecast files:
@@ -74,73 +77,75 @@ def test_global_mean_values(tolerance=0.001):
         When averaged together, these files represent a 24 hour mean. The 
         average values hard-coded in this test was calculated from 
         forecast files using a separate python code.
-
-        In this test there are four regions.  The daily_bfg harvester will return
-        the values of all four regions at once.  
     """
     data1 = harvest(VALID_CONFIG_DICT)
-
+    
+    calculated_means = [1.596892502663418,1.135915170864442]
+    index = 0
     for item in data1:
-        if item.variable == 'nsst' and item.statistic == 'mean':
-           calculated_means = 291.24683220759823
-           assert calculated_means <= (1 + tolerance) * item.value
-           assert calculated_means >= (1 - tolerance) * item.value
-        elif item.variable == 'sst' and item.statistic == 'mean':
-           calculated_means = 290.5971362792539
-           assert calculated_means <= (1 + tolerance) * item.value
-           assert calculated_means >= (1 - tolerance) * item.value
-
+        if item.statistic == 'mean':
+           assert calculated_means[index] <= (1 + tolerance) * item.value
+           assert calculated_means[index] >= (1 - tolerance) * item.value
+           index = index + 1
+           
 def test_gridcell_variance(tolerance=0.001):
     """
       The values of the calculated_variances list were calculated
       from the forecast files listed above in a separate python script.
       """
     data1 = harvest(VALID_CONFIG_DICT)
-     
+      
+    calculated_variances = [0.9560287247727502,0.2331268950323252]  
+    index = 0
     for item in data1:
-        if item.variable == 'nsst4' and item.statistic == 'variance':
-           calculated_variances = 99.88760798914969
-           assert calculated_variances <= (1 + tolerance) * item.value
-           assert calculated_variances >= (1 - tolerance) * item.value
-        elif item.variable == 'sst' and item.statistic == 'variance':
-           calculated_variances = 145.90406096430016 
-           assert calculated_variances <= (1 + tolerance) * item.value
-           assert calculated_variances >= (1 - tolerance) * item.value
-  
-def test_gridcell_min_max(tolerance=0.001):
+        if item.statistic == 'variance':
+           assert calculated_variances[index] <= (1 + tolerance) * item.value
+           assert calculated_variances[index] >= (1 - tolerance) * item.value
+           index = index + 1
+
+def test_gridcell_min(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
-     
-    for item in data1:
-        if item.variable == 'nsst' and item.statistic == 'minimum':
-           calculated_min  = 241.88905334472656
-           assert calculated_min <= (1 + tolerance) * item.value
-           assert calculated_min >= (1 - tolerance) * item.value
-
-        elif item.variable == 'nsst' and item.statistic == 'maximum':
-           calculated_max = 304.51293182373047
-           assert calculated_max <= (1 + tolerance) * item.value
-           assert calculated_max >= (1 - tolerance) * item.value
-
-        elif item.variable == 'sst' and item.statistic == 'minimum':
-           calculated_min = 232.33126258850098 
-           assert calculated_min <= (1 + tolerance) * item.value
-           assert calculated_min >= (1 - tolerance) * item.value
-
-        elif item.variable == 'sst' and item.statistic == 'maximum':
-           calculated_max = 304.88085556030273 
-           assert calculated_max <= (1 + tolerance) * item.value
-           assert calculated_max >= (1 - tolerance) * item.value               
     
+    calculated_min  = [1.10535e-05,9.75443e-06]
+    index = 0
+    for item in data1:
+        if item.statistic == 'minimum':
+           assert calculated_min[index] <= (1 + tolerance) * item.value
+           assert calculated_min[index] >= (1 - tolerance) * item.value
+           index = index + 1
+
+def test_gridcell_max(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+
+    calculated_max = [5.48487,4.00551]
+    index = 0
+    for item in data1:
+        if item.statistic == 'maximum':
+           assert calculated_max[index] <= (1 + tolerance) * item.value
+           assert calculated_max[index] >= (1 - tolerance) * item.value
+           index = index + 1 
+
+def test_weighted_integral(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+
+    calculated_integral = [23100000000000.0,5260000000000.0]
+    index = 0
+    for item in data1:
+        if item.statistic == 'integral':
+           assert calculated_integral[index] <= (1 + tolerance) * item.value
+           assert calculated_integral[index] >= (1 - tolerance) * item.value
+           index = index + 1
+  
 def test_units():
     variable_dictionary = {}
     data1 = harvest(VALID_CONFIG_DICT)
 
     for item in data1:
-        if item.variable == 'nsst':
-           expected_units = 'K'
+        if item.variable == 'snod':
+           expected_units = 'm'
            assert expected_units == item.units 
-        elif item.variable == 'sst':
-           expected_units = 'K'
+        elif item.variable == 'weasd':
+           expected_units = 'kg/m**2'
            assert expected_units == item.units 
 
 def test_cycletime():
@@ -159,27 +164,29 @@ def test_longname():
     data1 = harvest(VALID_CONFIG_DICT)
 
     for item in data1:
-        if item.variable == 'snowiceoceant4':
-           expected_longname = 'snowiceocean temperature unknown layer 4'
+        if item.variable == 'snod':
+           expected_longname = 'surface snow depth'
            assert expected_longname == item.longname 
-        elif item.variable == 'tg3':
-           expected_longname = 'deep snowiceocean temperature'
+        elif item.variable == 'weasd':
+           expected_longname = 'surface snow water equivalent'
            assert expected_longname == item.longname
 
-def test_snowiceocean_moisture_level4_harvester():
+def test_harvester():
     data1 = harvest(VALID_CONFIG_DICT) 
     assert type(data1) is list
     assert len(data1) > 0
     assert data1[0].filenames==BFG_PATH
 
 def main():
+    test_harvester()
     test_gridcell_area_conservation()
-    test_snowiceocean_moisture_level4_harvester()
     test_variable_names()
     test_units()
-    test_global_mean_values()
+    test_mean_values()
     test_gridcell_variance()
-    test_gridcell_min_max()
+    test_gridcell_min()
+    test_gridcell_max()
+    test_weighted_integral()
     test_cycletime() 
     test_longname()
 

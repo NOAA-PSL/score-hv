@@ -89,8 +89,8 @@ def test_global_mean_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     print("data1  ",data1)
 
-    soilt_means = [283.39312230347826,298.0164576940641,287.4417380555854,286.83712118855755,287.231900730573]
-    tg3_means = [284.79130915122187,294.553246977907,287.49533152594,287.08787370517393,287.3539198918497]
+    soilt_means = [283.4950313548459,298.0673269460295,287.2188306995889,287.3751007870096,287.3220423733729]
+    tg3_means = [284.8864000107648,294.5476408207901,287.49533152594,287.4409813716198,287.4236581113843]
     soilt_index = 0
     tg3_index = 0
     for item in data1:
@@ -111,8 +111,8 @@ def test_gridcell_variance(tolerance=0.001):
       """
     data1 = harvest(VALID_CONFIG_DICT)
     
-    soilt_variances = [159.27152912176592,20.987013339986156,168.20701798859776,156.91227453651263,164.3699225807664]
-    tg3_variances = [160.23127318696643,18.239349630567105,139.84038834454338,144.2430235934427,141.40598164295744]
+    soilt_variances = [154.9559463660619,20.16370718889254,167.237497719552,148.17847008059,160.6788095331342]
+    tg3_variances = [157.5049295667159,17.03588310812582,139.0858378997505,137.981529999713,138.6899964497896]
     soilt_index = 0
     tg3_index = 0
     for item in data1:
@@ -125,7 +125,7 @@ def test_gridcell_variance(tolerance=0.001):
             assert tg3_variances[tg3_index] <= (1 + tolerance) * item.value
             assert tg3_variances[tg3_index] >= (1 - tolerance) * item.value
             tg3_index = tg3_index + 1
-
+    
 def test_gridcell_min(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
    

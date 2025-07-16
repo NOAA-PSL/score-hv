@@ -37,12 +37,14 @@ BFG_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                      'filenames' : BFG_PATH,
-                     'statistic': ['mean','variance', 'minimum', 'maximum'],
-                     'variable': ['icetk'],
+                     'statistic': ['mean','variance', 'minimum', 'maximum','integral'],
+                     'variable': ['snod','weasd'],
                      'regions': {
-                               'north_hemi': {'north_lat': 90.0, 'south_lat': 24.0, 'west_long': 0.0, 'east_long': 360.0},
-                               'south_hemi': {'north_lat': -24., 'south_lat': -90.0, 'west_long': 0.0, 'east_long': 360.0},
+                               'north_hemi': {'north_lat': 90.0, 'south_lat': 0.0, 'west_long': 0.0, 'east_long': 360.0},
+                               'west_hemi': {'north_lat':90, 'south_lat':-90, 'west_long':180, 'east_long':360},
+                               'south_hemi': {'north_lat':0, 'south_lat':-90, 'west_long':0, 'east_long':360},
                                }
+
                      }
 
 def test_gridcell_area_conservation(tolerance=0.001):
@@ -58,10 +60,10 @@ def test_variable_names():
     """Here we are testing two variables.  The daily_bfg harvester
        should return values for both variables at once.
        """
-    print("in test variable names")   
-    assert  'icetk' in  VALID_CONFIG_DICT['variable']
+    expected_variables = ['snod','weasd'] 
+    assert VALID_CONFIG_DICT['variable'] == expected_variables
 
-def test_mean_values(tolerance=0.001):
+def test_global_mean_values(tolerance=0.001):
     """ 
         The values of the calculated_means list were 
         calculated from these eight forecast files:
@@ -81,51 +83,105 @@ def test_mean_values(tolerance=0.001):
     """
     data1 = harvest(VALID_CONFIG_DICT)
 
-    calculated_means = [0.14929623501925735,0.05702953727861002]
-    index = 0
+    snod_means = [0.1187623217437368,0.09948296253129492,0.0009546454345915825]
+    weasd_means = [24.52393639612293,21.54652866075145,0.4101186790391977]
+    snod_index = 0;
+    weasd_index = 0
     for item in data1:
-        if item.statistic == 'mean':
-           assert calculated_means[index] <= (1 + tolerance) * item.value
-           assert calculated_means[index] >= (1 - tolerance) * item.value
-           index = index + 1
-               
+        if item.variable == 'snod' and item.statistic == 'mean':
+           assert snod_means[snod_index] <= (1 + tolerance) * item.value
+           assert snod_means[snod_index] >= (1 - tolerance) * item.value                
+           snod_index = snod_index + 1
+
+        elif item.variable == 'weasd' and item.statistic == 'mean':
+             assert weasd_means[weasd_index] <= (1 + tolerance) * item.value
+             assert weasd_means[weasd_index] >= (1 - tolerance) * item.value
+             weasd_index = weasd_index + 1
+
 def test_gridcell_variance(tolerance=0.001):
     """
       The values of the calculated_variances list were calculated
       from the forecast files listed above in a separate python script.
       """
     data1 = harvest(VALID_CONFIG_DICT)
-      
-    calculated_variances = [0.277846268686431,0.05878632288856643]  
-    index = 0
+  
+    snod_variance = [0.0415432724459786,0.04591085062170463,0.003400360547982462]
+    weasd_variance = [2339.522045153808,3235.120468097893,661.3939365142375] 
+    snod_index = 0
+    weasd_index = 0
+
     for item in data1:
-        if item.statistic == 'variance':
-           assert calculated_variances[index] <= (1 + tolerance) * item.value
-           assert calculated_variances[index] >= (1 - tolerance) * item.value
-           index = index + 1
+        if item.variable == 'snod' and item.statistic == 'variance':
+           assert snod_variance[snod_index] <= (1 + tolerance) * item.value
+           assert snod_variance[snod_index] >= (1 - tolerance) * item.value
+           snod_index = snod_index + 1
+        
+        elif item.variable == 'weasd' and item.statistic == 'variance':
+          assert weasd_variance[weasd_index] <= (1 + tolerance) * item.value
+          assert weasd_variance[weasd_index] >= (1 - tolerance) * item.value
+          weasd_index = weasd_index + 1
 
 def test_gridcell_min(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
-    
-    calculated_min  = [5.967400007991776e-06,8.364692032651244e-06]
-    index = 0
+   
+    snod_min = [0.0,0.0,0.0]
+    weasd_min = [0.0,0.0,0.0]
+    snod_index = 0
+    weasd_index = 0
+
     for item in data1:
-        if item.statistic == 'minimum':
-           assert calculated_min[index] <= (1 + tolerance) * item.value
-           assert calculated_min[index] >= (1 - tolerance) * item.value
-           index = index + 1
+        if item.variable == 'snod' and item.statistic == 'minimum':
+           assert snod_min[snod_index] <= (1 + tolerance) * item.value
+           assert snod_min[snod_index] >= (1 - tolerance) * item.value
+           snod_index = snod_index + 1
+
+        elif item.variable == 'weasd' and item.statistic == 'minimum':
+             assert weasd_min[weasd_index] <= (1 + tolerance) * item.value
+             assert weasd_min[weasd_index] >= (1 - tolerance) * item.value
+             weasd_index = weasd_index + 1
 
 def test_gridcell_max(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
 
-    calculated_max = [5.368260566834775,3.4056593791028917]
-    index = 0
-    for item in data1:
-        if item.statistic == 'maximum':
-           assert calculated_max[index] <= (1 + tolerance) * item.value
-           assert calculated_max[index] >= (1 - tolerance) * item.value
-           index = index + 1 
+    snod_max = [4.501649975776672,6.169768452644348,6.169768452644348]
+    weasd_max = [1630.2353464365858,2832.920043945312,2832.920043945312]
+    snod_index = 0
+    weasd_index = 0
 
+    for item in data1:
+        if item.variable == 'snod' and item.statistic == 'maximum':
+           assert snod_max[snod_index] <= (1 + tolerance) * item.value
+           assert snod_max[snod_index] >= (1 - tolerance) * item.value
+           snod_index = snod_index + 1
+
+        elif item.variable == 'weasd' and item.statistic == 'maximum':
+             print(item.value,"  ",weasd_max[weasd_index])
+             assert weasd_max[weasd_index] <= (1 + tolerance) * item.value
+             assert weasd_max[weasd_index] >= (1 - tolerance) * item.value
+             weasd_index = weasd_index + 1
+
+def test_weighted_integral(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+
+    snod_integral = [1.15e+13,4.51e+12 ,3.3e+10]
+    weasd_integral = [2.38e+15,9.77e+14,1.42e+13]
+    snod_index = 0
+    weasd_index = 0
+
+    for item in data1:
+        if item.variable == 'snod' and item.statistic == 'integral':
+           print(item.value,"  ",snod_integral) 
+           assert snod_integral[snod_index] <= (1 + tolerance) * item.value
+           assert snod_integral[snod_index] >= (1 - tolerance) * item.value
+           snod_index = snod_index + 1
+        elif item.variable == 'weasd' and item.statistic == 'integral':
+           print(item.value,"  ",weasd_integral)   
+           assert weasd_integral[weasd_index] <= (1 + tolerance) * item.value
+           assert weasd_integral[weasd_index] >= (1 - tolerance) * item.value
+           weasd_index = weasd_index + 1
+
+
+    
 def test_units():
     variable_dictionary = {}
     data1 = harvest(VALID_CONFIG_DICT)
@@ -161,24 +217,24 @@ def test_longname():
            expected_longname = 'surface snow water equivalent'
            assert expected_longname == item.longname
 
-def test_harvester():
+def test_snowiceocean_harvester():
     data1 = harvest(VALID_CONFIG_DICT) 
     assert type(data1) is list
     assert len(data1) > 0
     assert data1[0].filenames==BFG_PATH
 
 def main():
-    print("in main")
-    test_harvester()
     test_gridcell_area_conservation()
     test_variable_names()
     test_units()
-    test_mean_values()
+    test_global_mean_values()
     test_gridcell_variance()
     test_gridcell_min()
     test_gridcell_max()
+    test_weighted_integral()
     test_cycletime() 
     test_longname()
+    test_snowiceocean_harvester()
 
 if __name__=='__main__':
     main()

@@ -46,13 +46,7 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                                   'china': {'north_lat':53, 'south_lat':18, 'west_long':73, 'east_long':135},
                                   'global':{}
                                  },
-                      'surface_mask': ['land'],
                       }
-                      
-def test_surface_mask_name():
-    data1 = harvest(VALID_CONFIG_DICT)
-    for item in data1:
-        assert item.surface_mask == 'land'
                       
 def test_mean_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
@@ -62,19 +56,18 @@ def test_mean_values(tolerance=0.001):
         if item.statistic == 'mean':
             count += 1
             if item.region['name'] == 'africa':
-                offline_value = 293.84432481817294
+                offline_value = 294.8423867978033 
             elif item.region['name'] == 'south_ameri':
-                offline_value = 295.97600820798084
+                offline_value = 294.0046580025675 
             elif item.region['name'] == 'china':
-                offline_value = 269.8268092281486
+                offline_value = 273.355559219607 
             elif item.region['name'] == 'global':
                 offline_value = 285.527800538339
-                
+    
             assert item.value <= (1 + tolerance) * offline_value
             assert item.value >= (1 - tolerance) * offline_value
-                
     assert count == expected_count
-    
+     
 def test_gridcell_variance(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     expected_count = 4
@@ -83,19 +76,19 @@ def test_gridcell_variance(tolerance=0.001):
         if item.statistic == 'variance':
             count += 1
             if item.region['name'] == 'africa':
-                offline_value = 36.81673569843839
+                offline_value =  28.53235414209546
             elif item.region['name'] == 'south_ameri':
-                offline_value = 27.590578082078203
+                offline_value = 42.03888308741612 
             elif item.region['name'] == 'china':
-                offline_value = 212.6945822526307
+                offline_value = 240.814026301364 
             elif item.region['name'] == 'global':
                 offline_value = 273.2249248235133
-                
+            
             assert item.value <= (1 + tolerance) * offline_value
             assert item.value >= (1 - tolerance) * offline_value
     
     assert count == expected_count
-
+    
 def test_gridcell_min(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
     expected_count = 4
@@ -104,7 +97,7 @@ def test_gridcell_min(tolerance=0.001):
         if item.statistic == 'minimum':
             count += 1
             if item.region['name'] == 'africa':
-                offline_value = 272.69139099121094
+                offline_value = 271.8699607849121 
             elif item.region['name'] == 'south_ameri':
                 offline_value = 271.61420180096843
             elif item.region['name'] == 'china':
@@ -125,14 +118,14 @@ def test_gridcell_max(tolerance=0.001):
         if item.statistic == 'maximum':
             count += 1
             if item.region['name'] == 'africa':
-                offline_value = 306.265567779541
+                offline_value = 306.265567779541 
             elif item.region['name'] == 'south_ameri':
                 offline_value = 305.3447341918945
             elif item.region['name'] == 'china':
                 offline_value = 300.0520133972168
             elif item.region['name'] == 'global':
-                offlien_value = 309.8211364746094
-                
+                offline_value = 309.8211364746094
+               
             assert item.value <= (1 + tolerance) * offline_value
             assert item.value >= (1 - tolerance) * offline_value
     
@@ -150,7 +143,6 @@ def test_cycletime():
     assert data1[-1].mediantime == expected_datetime
 
 def main():
-    test_surface_mask_name()
     test_mean_values()
     test_gridcell_variance()
     test_gridcell_min()

@@ -2,7 +2,6 @@
 
 import os
 import sys
-import math
 from pathlib import Path 
 
 import numpy as np
@@ -16,14 +15,14 @@ from score_hv.harvester_base import harvest
 from score_hv.yaml_utils import YamlLoader
 from score_hv.harvesters.innov_netcdf import Region, InnovStatsCfg
 
-TEST_DATA_FILE_NAMES = ['bfg_1994010100_fhr09_fluxes_control.nc',
-                        'bfg_1994010106_fhr06_fluxes_control.nc',
-                        'bfg_1994010106_fhr09_fluxes_control.nc',
-                        'bfg_1994010112_fhr06_fluxes_control.nc',
-                        'bfg_1994010112_fhr09_fluxes_control.nc',
-                        'bfg_1994010118_fhr06_fluxes_control.nc',
-                        'bfg_1994010118_fhr09_fluxes_control.nc',
-                        'bfg_1994010200_fhr06_fluxes_control.nc']
+TEST_DATA_FILE_NAMES = ['bfg_1994010100_fhr09_soil_control.nc',
+                        'bfg_1994010106_fhr06_soil_control.nc',
+                        'bfg_1994010106_fhr09_soil_control.nc',
+                        'bfg_1994010112_fhr06_soil_control.nc',
+                        'bfg_1994010112_fhr09_soil_control.nc',
+                        'bfg_1994010118_fhr06_soil_control.nc',
+                        'bfg_1994010118_fhr09_soil_control.nc',
+                        'bfg_1994010200_fhr06_soil_control.nc']
 
 DATA_DIR = os.path.join(Path(__file__).parent.parent.resolve(), 'src', 'score_hv', 'data')
 GRIDCELL_AREA_DATA_PATH = os.path.join(DATA_DIR,
@@ -39,85 +38,90 @@ BFG_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                      'filenames' : BFG_PATH,
-                     'statistic': ['mean', 'variance', 'minimum', 'maximum'],
-                     'variable': ['netrf_avetoa']}
+                     'statistic': ['mean','variance', 'minimum', 'maximum'],
+                     'variable': ['soilm'],
+                     }
 
 def test_gridcell_area_conservation(tolerance=0.001):
 
     gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
-    
     assert gridcell_area_data['area'].units == 'steradian'
-    
     sum_gridcell_area = np.sum(gridcell_area_data.variables['area'])
-    
     assert sum_gridcell_area < (1 + tolerance) * 4 * np.pi
     assert sum_gridcell_area > (1 - tolerance) * 4 * np.pi
-    
     gridcell_area_data.close()
 
 def test_variable_names():
-    data1 = harvest(VALID_CONFIG_DICT)
-    assert data1[0].variable == 'netrf_avetoa'
+    #The daily_bfg harvester should return 'soilm'.
+    assert 'soilm' in VALID_CONFIG_DICT['variable'] 
 
 def test_global_mean_values(tolerance=0.001):
-    """The value of 3.117e-05 is the mean value of the global means 
-    calculated from eight forecast files:
+    """ 
+        The values of the calculated_means list were 
+        calculated from these eight forecast files:
+
+        bfg_1994010100_fhr09_soil_control.nc
+        bfg_1994010106_fhr06_soil_control.nc
+        bfg_1994010106_fhr09_soil_control.nc
+        bfg_1994010112_fhr06_soil_control.nc
+        bfg_1994010112_fhr09_soil_control.nc
+        bfg_1994010118_fhr06_soil_control.nc
+        bfg_1994010118_fhr09_soil_control.nc
+        bfg_1994010200_fhr06_soil_control.nc
         
-        bfg_1994010100_fhr09_fluxes_control.nc
-        bfg_1994010106_fhr06_fluxes_control.nc
-        bfg_1994010106_fhr09_fluxes_control.nc
-        bfg_1994010112_fhr06_fluxes_control.nc
-        bfg_1994010112_fhr09_fluxes_control.nc
-        bfg_1994010118_fhr06_fluxes_control.nc
-        bfg_1994010118_fhr09_fluxes_control.nc
-        bfg_1994010200_fhr06_fluxes_control.nc
-        
-    When averaged together, these files represent a 24 hour mean. The 
-    average value hard-coded in this test was calculated from 
-    these forecast files using a separate python code.
+        When averaged together, these files represent a 24 hour mean. The 
+        average values hard-coded in this test was calculated from 
+        forecast files using a separate python code.  
+
+        In this test there are four regions.  The daily_bfg harvester will return
+        the values of all four regions at once.  
     """
     data1 = harvest(VALID_CONFIG_DICT)
-
-    global_mean = 10.022175217028826 
+    
     for item in data1:
         if item.statistic == 'mean':
-           assert item.value <= (1 + tolerance) * global_mean
-           assert item.value >= (1 - tolerance) * global_mean
-
+           calculated_means = 589.0065273161169 
+           assert calculated_means <= (1 + tolerance) * item.value
+           assert calculated_means >= (1 - tolerance) * item.value
+    
 def test_gridcell_variance(tolerance=0.001):
+    """
+      The values of the calculated_variances list were calculated
+      from the forecast files listed above in a separate python script.
+      """
     data1 = harvest(VALID_CONFIG_DICT)
-
-    variance = 13045.626086699116 
     for item in data1:
         if item.statistic == 'variance':
-           assert item.value <= (1 + tolerance) * variance 
-           assert item.value >= (1 - tolerance) * variance 
-    
+          calculated_variances = 17783.25703244676 
+          assert calculated_variances <= (1 + tolerance) * item.value
+          assert calculated_variances >= (1 - tolerance) * item.value
+  
 def test_gridcell_min_max(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
-    """The following offline min and max were calculated from an external 
-    python code
-    """
-    offline_min = -233.25042343139648
-    offline_max = 231.6799678802491 
+     
     for item in data1:
         if item.statistic == 'minimum':
-           assert abs(item.value) <= (1 + tolerance) * abs(offline_min) 
-           assert abs(item.value) >= (1 - tolerance) * abs(offline_min)
+           calculated_min = 89.12118895217337 
+           assert calculated_min <= (1 + tolerance) * item.value
+           assert calculated_min >= (1 - tolerance) * item.value
+           
         elif item.statistic == 'maximum':
-            assert item.value <= (1 + tolerance) * offline_max 
-            assert item.value >= (1 - tolerance) * offline_max
-            
+           calculated_max = 922.972348182115
+           assert calculated_max <= (1 + tolerance) * item.value
+           assert calculated_max >= (1 - tolerance) * item.value               
+           
 def test_units():
     data1 = harvest(VALID_CONFIG_DICT)
-    assert data1[0].units == "W/m**2"
+
+    for item in data1:
+        assert 'kg/m**2' == item.units 
 
 def test_cycletime():
     """ The hard coded datetimestr 1994-01-01 12:00:00
         is the median midpoint time of the filenames defined above in the 
         BFG_PATH.  We have to convert this into a datetime object in order
         to compare this string to what is returned by 
-        daily_bfg.py
+        global_bucket_precip_ave.py
     """
     data1 = harvest(VALID_CONFIG_DICT)
     expected_datetime = datetime.strptime("1994-01-01 12:00:00",
@@ -126,18 +130,20 @@ def test_cycletime():
 
 def test_longname():
     data1 = harvest(VALID_CONFIG_DICT)
-    var_longname = "Top of atmosphere net radiative energy flux"
-    assert data1[0].longname == var_longname
 
-def test_toa_radiative_flux():
-    data1 = harvest(VALID_CONFIG_DICT)  
+    for item in data1:
+        expected_longname = 'total column soil moisture content'
+        assert expected_longname == item.longname
+
+def test_soil_moisture_harvester():
+    data1 = harvest(VALID_CONFIG_DICT) 
     assert type(data1) is list
     assert len(data1) > 0
     assert data1[0].filenames==BFG_PATH
 
 def main():
     test_gridcell_area_conservation()
-    test_toa_radiative_flux()
+    test_soil_moisture_harvester()
     test_variable_names()
     test_units()
     test_global_mean_values()

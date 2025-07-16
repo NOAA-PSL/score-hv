@@ -38,7 +38,15 @@ BFG_PATH = [os.path.join(TEST_DATA_PATH,
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.DAILY_BFG,
                      'filenames' : BFG_PATH,
                      'statistic': ['mean','variance', 'minimum', 'maximum'],
-                     'variable': ['soilt4','tg3'],
+                     'variable': ['soilm'],
+                     'regions': {
+                               'north_hemis': {'north_lat': 90.0, 'south_lat': 0.0, 'west_long': 0.0, 'east_long': 360.0},
+                               'south_hemis': {'north_lat': 0.0, 'south_lat': -90.0, 'west_long': 0.0, 'east_long': 360.0},
+                               'eastern_hemis': {'north_lat': 90.0, 'south_lat': -90.0, 'west_long': 0.0, 'east_long': 180.0},
+                               'western_hemis': {'north_lat': 90.0, 'south_lat': -90.0, 'west_long': 180.0, 'east_long': 360.0},
+                               'global': {'north_lat': 90.0, 'south_lat': -90.0, 'west_long': 0.0, 'east_long': 360.0},
+                               }
+ 
                      }
 
 def test_gridcell_area_conservation(tolerance=0.001):
@@ -51,11 +59,8 @@ def test_gridcell_area_conservation(tolerance=0.001):
     gridcell_area_data.close()
 
 def test_variable_names():
-    """Here we are testing two variables.  The daily_bfg harvester
-       should return values for both variables at once.
-       """
-    expected_variables = ['soilt4', 'tg3'] 
-    assert VALID_CONFIG_DICT['variable'] == expected_variables
+    #The daily_bfg harvester should return 'soilm'.
+    assert 'soilm' in VALID_CONFIG_DICT['variable'] 
 
 def test_global_mean_values(tolerance=0.001):
     """ 
@@ -73,23 +78,21 @@ def test_global_mean_values(tolerance=0.001):
         
         When averaged together, these files represent a 24 hour mean. The 
         average values hard-coded in this test was calculated from 
-        forecast files using a separate python code.
+        forecast files using a separate python code.  
 
         In this test there are four regions.  The daily_bfg harvester will return
         the values of all four regions at once.  
     """
     data1 = harvest(VALID_CONFIG_DICT)
 
+    calculated_means = [583.8141194621018,603.585502850038,582.8096516301121,600.8300724360581,589.0065273161169]
+    index = 0
     for item in data1:
-        if item.variable == 'soilt4' and item.statistic == 'mean':
-           calculated_means = 287.231900730573
-           assert calculated_means <= (1 + tolerance) * item.value
-           assert calculated_means >= (1 - tolerance) * item.value
-        elif item.variable == 'tg3' and item.statistic == 'mean':
-           calculated_means = 287.3539198918497
-           assert calculated_means <= (1 + tolerance) * item.value
-           assert calculated_means >= (1 - tolerance) * item.value
-
+        if item.statistic == 'mean':
+           assert calculated_means[index] <= (1 + tolerance) * item.value
+           assert calculated_means[index] >= (1 - tolerance) * item.value
+           index = index + 1
+    
 def test_gridcell_variance(tolerance=0.001):
     """
       The values of the calculated_variances list were calculated
@@ -97,51 +100,41 @@ def test_gridcell_variance(tolerance=0.001):
       """
     data1 = harvest(VALID_CONFIG_DICT)
      
+    calculated_variances = [16771.93495061461,20334.54860940846,16582.59611123971,19858.13845750256,17783.25703244676 ]  
+    index = 0
     for item in data1:
-        if item.variable == 'soilt4' and item.statistic == 'variance':
-          calculated_variances = 164.3699225807664
-          assert calculated_variances <= (1 + tolerance) * item.value
-          assert calculated_variances >= (1 - tolerance) * item.value
-        elif item.variable == 'tg3' and item.statistic == 'variance':
-          calculated_variances = 141.40598164295744
-          assert calculated_variances <= (1 + tolerance) * item.value
-          assert calculated_variances >= (1 - tolerance) * item.value
-  
-def test_gridcell_min_max(tolerance=0.001):
+        if item.statistic == 'variance':
+           assert calculated_variances[index] <= (1 + tolerance) * item.value
+           assert calculated_variances[index] >= (1 - tolerance) * item.value
+           index = index + 1
+
+def test_gridcell_min(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT)
-     
-    for item in data1:
-        if item.variable == 'soilt4' and item.statistic == 'minimum':
-           calculated_min  = 240.5829497518155
-           assert calculated_min <= (1 + tolerance) * item.value
-           assert calculated_min >= (1 - tolerance) * item.value
-
-        elif item.variable == 'soilt4' and item.statistic == 'maximum':
-           calculated_max = 308.44702529907227
-           assert calculated_max <= (1 + tolerance) * item.value
-           assert calculated_max >= (1 - tolerance) * item.value
-
-        elif item.variable == 'tg3' and item.statistic == 'minimum':
-           calculated_min = 250.65328979492188
-           assert calculated_min <= (1 + tolerance) * item.value
-           assert calculated_min >= (1 - tolerance) * item.value
-
-        elif item.variable == 'tg3' and item.statistic == 'maximum':
-           calculated_max = 302.3920593261719 
-           assert calculated_max <= (1 + tolerance) * item.value
-           assert calculated_max >= (1 - tolerance) * item.value               
     
+    calculated_min = [93.80237579345703,89.12118895217337,108.01729583740236,89.12118895217337,89.12118895217337]
+    index = 0
+    for item in data1:
+        if item.statistic == 'minimum':
+           assert calculated_min[index] <= (1 + tolerance) * item.value
+           assert calculated_min[index] >= (1 - tolerance) * item.value
+           index = index + 1
+
+def test_gridcell_max(tolerance=0.001):           
+    data1 = harvest(VALID_CONFIG_DICT)
+
+    calculated_max = [913.8987358976223,922.972348182115,922.972348182115,922.3683547973632,922.972348182115]
+    index = 0
+    for item in data1:
+        if item.statistic == 'maximum':
+           assert calculated_max[index] <= (1 + tolerance) * item.value
+           assert calculated_max[index] >= (1 - tolerance) * item.value               
+           index = index + 1
+
 def test_units():
-    variable_dictionary = {}
     data1 = harvest(VALID_CONFIG_DICT)
 
     for item in data1:
-        if item.variable == 'soilt4':
-           expected_units = 'K'
-           assert expected_units == item.units 
-        elif item.variable == 'tg3':
-           expected_units = 'K'
-           assert expected_units == item.units 
+        assert 'kg/m**2' == item.units 
 
 def test_cycletime():
     """ The hard coded datetimestr 1994-01-01 12:00:00
@@ -159,14 +152,10 @@ def test_longname():
     data1 = harvest(VALID_CONFIG_DICT)
 
     for item in data1:
-        if item.variable == 'soilt4':
-           expected_longname = 'soil temperature unknown layer 4'
-           assert expected_longname == item.longname 
-        elif item.variable == 'tg3':
-           expected_longname = 'deep soil temperature'
-           assert expected_longname == item.longname
+        expected_longname = 'total column soil moisture content'
+        assert expected_longname == item.longname
 
-def test_soil_moisture_level4_harvester():
+def test_soil_moisture_harvester():
     data1 = harvest(VALID_CONFIG_DICT) 
     assert type(data1) is list
     assert len(data1) > 0
@@ -174,12 +163,13 @@ def test_soil_moisture_level4_harvester():
 
 def main():
     test_gridcell_area_conservation()
-    test_soil_moisture_level4_harvester()
+    test_soil_moisture_harvester()
     test_variable_names()
     test_units()
     test_global_mean_values()
     test_gridcell_variance()
-    test_gridcell_min_max()
+    test_gridcell_min()
+    test_gridcell_max()
     test_cycletime() 
     test_longname()
 
