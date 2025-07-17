@@ -94,6 +94,11 @@ def parse_filename(filename):
         filename_info['sensor'] = parts[1]
         filename_info['satellite'] = parts[2]
         filename_info['level'] = parts[3]
+    elif parts[0] == 'icoads':
+        # source is ICOADS
+        filename_info['data_source'] = parts[0]
+        filename_info['variable_type'] = parts[1]
+        filename_info['sensor'] = 'misc_icoads'
     
     elif False and len(parts) == 5:
         # disabled until further information provided and boolean made more specific
