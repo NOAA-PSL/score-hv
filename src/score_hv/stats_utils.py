@@ -108,9 +108,9 @@ def area_weighted_integral(xarray_variable, gridcell_area_weights,
                     approximately 4 pi steradians when region=global
     """    
     
-    weighted_integral = float('%.3g' % WGS84_EARTH_SEMI_MAJOR_AXIS**2 *
+    weighted_integral = float('%.3g' % (WGS84_EARTH_SEMI_MAJOR_AXIS**2 *
                               np.ma.sum(xarray_variable *
-                                        gridcell_area_weights)) # meters 3 sig figs
+                                        gridcell_area_weights))) # meters 3 sig figs
     if region_global and not is_masked:
         # Explicit check for the sum of weights
         sumweights = np.sum(gridcell_area_weights)
