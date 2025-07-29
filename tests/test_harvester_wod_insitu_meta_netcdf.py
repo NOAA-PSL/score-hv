@@ -14,6 +14,7 @@ WOD_GLD_DATA = 'wod_gld_2013-06-02T06.nc'
 WOD_MBT_DATA = 'wod_mbt_1989-12-13T00.nc'
 WOD_MRB_DATA = 'wod_mrb_1983-06-03T12.nc'
 WOD_OSD_DATA = 'wod_osd_1998-05-02T00.nc'
+WOD_OSD_DATA_1995 = 'wod_osd_1995-01-01T00.nc'
 WOD_PFL_DATA = 'wod_pfl_2019-10-01T18.nc'
 WOD_UOR_DATA = 'wod_uor_2002-10-06T18.nc'
 WOD_XBT_DATA = 'wod_xbt_2009-08-02T18.nc'
@@ -28,6 +29,7 @@ file_path_wod_gld_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_GLD_DATA
 file_path_wod_mbt_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_MBT_DATA)
 file_path_wod_mrb_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_MRB_DATA)
 file_path_wod_osd_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_OSD_DATA)
+file_path_wod_osd_1995_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_OSD_DATA_1995)
 file_path_wod_pfl_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_PFL_DATA)
 file_path_wod_uor_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_UOR_DATA)
 file_path_wod_xbt_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, WOD_XBT_DATA)
@@ -65,6 +67,11 @@ VALID_CONFIG_WOD_MRB = {
 VALID_CONFIG_WOD_OSD = {
     'harvester_name': hv_registry.WOD_INSITU_META_NETCDF,
     'filename': file_path_wod_osd_data
+}
+
+VALID_CONFIG_WOD_OSD_1995 = {
+    'harvester_name': hv_registry.WOD_INSITU_META_NETCDF,
+    'filename': file_path_wod_osd_1995_data
 }
 
 VALID_CONFIG_WOD_PFL = {
@@ -203,6 +210,23 @@ def test_wod_osd_meta():
     assert cfc11_obs.var_count == 8651
     assert cfc11_obs.sensor == "osd"
     assert cfc11_obs.casts == 35
+
+def test_wod_osd_1995_meta():
+    data = harvest(VALID_CONFIG_WOD_OSD_1995)
+    cfc11_obs = data[11]
+    assert cfc11_obs.filename == WOD_OSD_DATA_1995
+    assert cfc11_obs.obs_day == "1995-01-01 00:00:00"
+    assert cfc11_obs.min_date_time == None
+    assert cfc11_obs.max_date_time == None
+    assert cfc11_obs.min_depth == None
+    assert cfc11_obs.max_depth == None
+    assert cfc11_obs.min_file_depth == None
+    assert cfc11_obs.max_file_depth == None
+    assert cfc11_obs.num_vars == 21
+    assert cfc11_obs.variable_name == "CFC11"
+    assert cfc11_obs.var_count == 53766
+    assert cfc11_obs.sensor == "osd"
+    assert cfc11_obs.casts == 8
 
 def test_wod_pfl_meta():
     data = harvest(VALID_CONFIG_WOD_PFL)
