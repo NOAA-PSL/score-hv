@@ -94,12 +94,12 @@ class OzoneMetaHv:
         valid_ozone_count = np.count_nonzero(~np.isnan(ozone))
 
         # --- Read profile-level datetime components ---
-        year   = np.ma.filled(dataset.variables['year'][:], np.nan)
-        month  = np.ma.filled(dataset.variables['month'][:], np.nan)
-        day    = np.ma.filled(dataset.variables['day'][:], np.nan)
-        hour   = np.ma.filled(dataset.variables['hour'][:], np.nan)
-        minute = np.ma.filled(dataset.variables['minute'][:], np.nan)
-        second = np.ma.filled(dataset.variables['second'][:], np.nan)
+        year   = np.ma.filled(dataset.variables['yy'][:], np.nan)
+        month  = np.ma.filled(dataset.variables['mm'][:], np.nan)
+        day    = np.ma.filled(dataset.variables['dd'][:], np.nan)
+        hour   = np.ma.filled(dataset.variables['hh'][:], np.nan)
+        minute = np.ma.filled(dataset.variables['min'][:], np.nan)
+        second = np.ma.filled(dataset.variables['ss'][:], np.nan)
         press = np.ma.filled(dataset.variables['press'][:], np.nan) 
 
 
@@ -158,7 +158,7 @@ def parse_filename(file_path):
     filename = os.path.basename(file_path)
     
     # Regular expression to match the filename pattern
-    pattern = r'^(?P<sensor>[^.]+)\.(?P<date>\d{8})_(?P<hour>\d{2})z\.nc$'
+    pattern = r'^(?P<sensor>.+)\.(?P<date>\d{8})_(?P<hour>\d{2})z\.nc$'
     
     match = re.match(pattern, filename)
     if match:
