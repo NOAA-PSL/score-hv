@@ -84,6 +84,7 @@ class GSIConvObsConfig(ConfigInterface):
         self.harvest_filename = self.config_data.get('filename')
         self.set_variables()
         self.set_statistics()
+        self.set_plev_bounds()
     
     def set_variables(self):
         self.vars_to_harvest = self.config_data.get('variables')
@@ -112,6 +113,45 @@ class GSIConvObsConfig(ConfigInterface):
                        "Please reconfigure the input dictionary using only the "
                        f"following statistics: {VALID_STATISTICS}")
                 raise KeyError(msg)
+                
+    def set_plev_bounds(self):
+        """
+        Set and validate pressure level bounds from config.
+
+        Expects 'plev_bounds' in self.config_data as:
+            [(plev_bot, plev_top), (plev1_bot, plev1_top), ..., (plevN_bot, plevN_top)]
+
+        Validates structure, ensures numeric types, sorts by plev_bot,
+        and checks for overlapping pressure layers.
+
+        Raises:
+            ValueError: If format is wrong or bounds overlap.
+        """
+        self.plev_bounds = self.config_data.get('plev_bounds')
+        if self.plev_bounds is None:
+            raise ValueError("Must provide pressure level bounds to harvest.")
+
+        if not isinstance(self.plev_bounds, list):
+            raise ValueError("'plevs' must be a list of (plev_bot, plev_top) tuples.")
+
+        # Validate each item
+        cleaned_bounds = []
+        for i, bounds in enumerate(self.plev_bounds):
+            if not (isinstance(bounds, (list, tuple)) and len(bounds) == 2):
+                raise ValueError(f"Invalid entry at index {i}: {bounds}. "
+                                 "Each item must be a 2-element tuple or list.")
+            bot, top = bounds
+            if not all(isinstance(val, (int, float)) for val in (bot, top)):
+                raise ValueError(f"Invalid pressure levels at index {i}: ({bot}, {top}) must be numeric.")
+            if bot <= top:
+                raise ValueError(f"Invalid range at index {i}: bottom ({bot}) must be less than top ({top}).")
+            cleaned_bounds.append((bot, top))
+
+        self.plevs_bot = list()
+        self.plevs_top = list()
+        for i, bounds in enumerate(cleaned_bounds):
+            self.plevs_bot.append(bounds[0])
+            self.plevs_top.append(bounds[1])
                 
 @dataclass
 class GSIConvObsHv(object):
@@ -178,7 +218,7 @@ class GSIConvObsHv(object):
         self.parse_fit_file()
         
         harvested_data = list()
-        for var in self.config.vars_to_harvest:
+        for var in self.config.vars_to_harvest:    
             
             longname = get_longname(var)
             
@@ -188,25 +228,57 @@ class GSIConvObsHv(object):
                 
                 for row_idx, value in enumerate(
                                     self.results[var][stat][stat]['values']):
-                
+                    return_value = value
+                    return_iteration = int(self.results[
+                                            var][
+                                                stat][
+                                                    'it'][
+                                                        'values'][
+                                                            row_idx]
+                                        )
+                    return_plevs_top = self.results[var]['plevs_top']
+                    return_plevs_bot = self.results[var]['plevs_bot']
+                    
+                    if var == 'fit_uv_data' or var == 'fit_t_data' or var == 'fit_q_data':
+                        # only return data on requested pressure levels
+                        
+                        return_value = list()
+                        return_plevs_top = list()
+                        return_plevs_bot = list()
+                        for plev_idx, plev_bot in enumerate(self.config.plevs_bot):
+                            if plev_bot in self.results[var]['plevs_bot'][return_iteration - 1]: 
+                                harvested_plev_bot_idx = self.results[var]['plevs_bot'][return_iteration - 1].index(plev_bot)
+                                harvested_plev_top = self.results[var]['plevs_top'][return_iteration - 1][harvested_plev_bot_idx]
+                        
+                                if harvested_plev_top == self.config.plevs_top[plev_idx]:
+                                    # harvested pressure bounds match requested pressure bounds
+                                    return_value.append(value[harvested_plev_bot_idx])
+                                    return_plevs_top.append(self.results[var]['plevs_top'][return_iteration - 1][harvested_plev_bot_idx])
+                                    return_plevs_bot.append(self.results[var]['plevs_bot'][return_iteration - 1][harvested_plev_bot_idx])
+                                else:
+                                    # harvested pressure bounds do not match requested pressure bounds
+                                    return_value.append(None)
+                                    return_plevs_top.append(self.config.plevs_top[plev_idx])
+                                    return_plevs_bot.append(plev_bot)
+                            else:
+                                # harvested pressure bound does not exist in harvested pressure bounds
+                                return_value.append(None)
+                                return_plevs_top.append(self.config.plevs_top[plev_idx])
+                                return_plevs_bot.append(plev_bot)    
+                    
                     harvested_data.append(
                         HarvestedData(
                             self.datetime,
                             self.ensemble_member,
-                            self.results[var]['plevs_top'],
-                            self.results[var]['plevs_bot'],
+                            return_plevs_top,
+                            return_plevs_bot,
                             self.results[var]['plevs_units'],
                             var,
                             stat,
-                            value,
+                            return_value,
                             units,
                             longname,
-                            int(self.results[
-                                var][
-                                    stat][
-                                        'it'][
-                                            'values'][
-                                                row_idx]),
+                            return_iteration,
                             self.results[var][stat]['use']['values'][row_idx],
                             self.results[var][stat]['typ']['values'][row_idx],
                             self.results[var][stat]['styp']['values'][row_idx],
@@ -234,31 +306,7 @@ class GSIConvObsHv(object):
         """extract fit to uv wind, temperature, or humidity stats from a
         given line of the fort.202 file
         """
-        if line_parts[0] == 'current' and line_parts[1] == 'vfit':
-            self.read_fit_ps = False
-            self.read_fit_uv = True
-            self.read_fit_t = False
-            self.read_fit_q = False
-            
-        elif line_parts[0] == 'current' and line_parts[3] == 'temperature':
-            self.read_fit_ps = False
-            self.read_fit_uv = False
-            self.read_fit_t = True
-            self.read_fit_q = False
-            
-        elif line_parts[0] == 'current' and line_parts[3] == 'q':
-            self.read_fit_ps = False
-            self.read_fit_uv = False
-            self.read_fit_t = False
-            self.read_fit_q = True
-            
-        elif line_parts[0] == 'OZINFO_READ:' or line_parts[0] == 'RADINFO_READ':
-            self.read_fit_ps = False
-            self.read_fit_uv = False
-            self.read_fit_t = False
-            self.read_fit_q = False
-        
-        elif line_parts[0] == 'o-g' and line_parts[1] == 'ptop':
+        if line_parts[0] == 'o-g' and line_parts[1] == 'ptop':
             self.results[variable_name]['plevs_top'].append(list())
             self.results[variable_name]['plevs_bot'].append(list())
             for plev, ptop in enumerate(line_parts[2:]):
@@ -418,14 +466,46 @@ class GSIConvObsHv(object):
         self.read_fit_uv = False
         self.read_fit_t = False
         self.read_fit_q = False
-        
+
         for line_number, line in enumerate(self.lines):
             line_parts = line.split()
-            if 'fit_psfc_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_ps:
-                self.extract_fit_ps(line_parts, variable_name='fit_psfc_data')
-            if 'fit_uv_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_uv:
-                self.extract_fit_obs_plevs(line_parts, variable_name='fit_uv_data')
-            if 'fit_t_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_t:
-                self.extract_fit_obs_plevs(line_parts, variable_name='fit_t_data')
-            if 'fit_q_data' in self.config.vars_to_harvest and len(line_parts) > 2 and self.read_fit_q:
-                self.extract_fit_obs_plevs(line_parts, variable_name='fit_q_data')            
+
+            if len(line_parts) >= 2:
+
+                # Handle mode-switching lines
+                if line_parts[0] == 'current' and line_parts[1] == 'vfit':
+                    self.read_fit_ps = False
+                    self.read_fit_uv = True
+                    self.read_fit_t = False
+                    self.read_fit_q = False
+
+                elif len(line_parts) > 3 and line_parts[0] == 'current' and line_parts[3] == 'temperature':
+                    self.read_fit_ps = False
+                    self.read_fit_uv = False
+                    self.read_fit_t = True
+                    self.read_fit_q = False
+
+                elif len(line_parts) > 3 and line_parts[0] == 'current' and line_parts[3] == 'q':
+                    self.read_fit_ps = False
+                    self.read_fit_uv = False
+                    self.read_fit_t = False
+                    self.read_fit_q = True
+
+                elif line_parts[0] in {'OZINFO_READ:', 'RADINFO_READ'}:
+                    self.read_fit_ps = False
+                    self.read_fit_uv = False
+                    self.read_fit_t = False
+                    self.read_fit_q = False
+
+                # Only dispatch to extractors for non-mode lines
+                elif self.read_fit_ps and 'fit_psfc_data' in self.config.vars_to_harvest:
+                    self.extract_fit_ps(line_parts, variable_name='fit_psfc_data')
+
+                elif self.read_fit_uv and 'fit_uv_data' in self.config.vars_to_harvest:
+                    self.extract_fit_obs_plevs(line_parts, variable_name='fit_uv_data')
+
+                elif self.read_fit_t and 'fit_t_data' in self.config.vars_to_harvest:
+                    self.extract_fit_obs_plevs(line_parts, variable_name='fit_t_data')
+
+                elif self.read_fit_q and 'fit_q_data' in self.config.vars_to_harvest:
+                    self.extract_fit_obs_plevs(line_parts, variable_name='fit_q_data')

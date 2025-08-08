@@ -30,7 +30,51 @@ VALID_CONFIG_DICT = {
         'rms', # root mean squre error of obs departure for each outer loop (it)
         'cpen', # obs part of penalty (cost function)
         'qcpen' # nonlinear qc penalty
-        )
+        ),
+        
+    'plev_bounds': [
+        (0.120E+04, 0.100E+04),
+        (0.100E+04, 0.900E+03),
+        (0.900E+03, 0.800E+03),
+        (0.800E+03, 0.600E+03),
+        (0.600E+03, 0.400E+03),
+        (0.400E+03, 0.300E+03),
+        (0.300E+03, 0.250E+03),
+        (0.250E+03, 0.200E+03),
+        (0.200E+03, 0.150E+03),
+        (0.150E+03, 0.100E+03),
+        (0.100E+03, 0.500E+02),
+        (0.200E+04, 0.000E+00),
+    ]
+    }
+    
+VALID_CONFIG_DICT_QSAT = {
+    'harvester_name': hv_registry.GSI_CONVENTIONAL_OBS,
+    'filename': FIT_FILE_PATH,
+    'variables': ('fit_q_data', # fit of moisture data (% of qsaturation guess)
+                  ),
+    'statistics': (
+        'count', # number of obs summed under obs types and vertical layers
+        'bias', # bias of obs departure for each outer loop (it)
+        'rms', # root mean squre error of obs departure for each outer loop (it)
+        'cpen', # obs part of penalty (cost function)
+        'qcpen' # nonlinear qc penalty
+        ),
+        
+    'plev_bounds': [
+        (0.120E+04, 0.100E+04),
+        (0.100E+04, 0.950E+03),
+        (0.950E+03, 0.900E+03),
+        (0.900E+03, 0.850E+03),
+        (0.850E+03, 0.800E+03),
+        (0.800E+03, 0.700E+03),
+        (0.700E+03, 0.600E+03),
+        (0.600E+03, 0.500E+03),
+        (0.500E+03, 0.400E+03),
+        (0.400E+03, 0.300E+03),
+        (0.300E+03, 0.000E+02),
+        (0.200E+04, 0.000E+00),
+    ]
     }
                     
 def test_datetime():
@@ -110,11 +154,11 @@ def test_bad_config():
     assert exception_caught
 
 def test_qsat_plevs():
-    data_list = harvest(VALID_CONFIG_DICT)
+    data_list = harvest(VALID_CONFIG_DICT_QSAT)
     test_complete = False
     for i, data_i in enumerate(data_list):
         if data_i.variable == 'fit_q_data':
-            assert data_i.plevs_top[1] == [0.100E+04,
+            assert data_i.plevs_top == [0.100E+04,
                                            0.950E+03,
                                            0.900E+03,
                                            0.850E+03,
@@ -126,7 +170,7 @@ def test_qsat_plevs():
                                            0.300E+03,
                                            0.000E+00,
                                            0.000E+00]
-            assert data_i.plevs_bot[1] == [0.120E+04,
+            assert data_i.plevs_bot == [0.120E+04,
                                            0.100E+04,
                                            0.950E+03,
                                            0.900E+03,
@@ -145,7 +189,7 @@ def test_qsat_plevs():
     assert test_complete
 
 def test_qsat_asm():
-    data_list = harvest(VALID_CONFIG_DICT)
+    data_list = harvest(VALID_CONFIG_DICT_QSAT)
     test_stage1_count = False
     test_stage1_bias = False
     test_stage1_rms = False
@@ -257,7 +301,7 @@ def test_temperature_plevs():
     test_complete = False
     for i, data_i in enumerate(data_list):
         if data_i.variable == 'fit_t_data':
-            assert data_i.plevs_top[0] == [0.100E+04,
+            assert data_i.plevs_top == [0.100E+04,
                                            0.900E+03,
                                            0.800E+03,
                                            0.600E+03,
@@ -269,7 +313,7 @@ def test_temperature_plevs():
                                            0.100E+03,
                                            0.500E+02,
                                            0.000E+00]
-            assert data_i.plevs_bot[0] == [0.120E+04,
+            assert data_i.plevs_bot == [0.120E+04,
                                            0.100E+04,
                                            0.900E+03,
                                            0.800E+03,
@@ -874,7 +918,7 @@ def test_fit_of_uv_wind_data():
     
     for i, data_i in enumerate(data_list):
         if data_i.variable == 'fit_uv_data':
-            assert data_i.plevs_top == [[0.100E+04, # start of stage 1 data
+            assert data_i.plevs_top == [0.100E+04,
                                          0.900E+03,
                                          0.800E+03,
                                          0.600E+03,
@@ -885,20 +929,9 @@ def test_fit_of_uv_wind_data():
                                          0.150E+03,
                                          0.100E+03,
                                          0.500E+02,
-                                         0.000E+00],
-                                        [0.100E+04, # start of stage 2 data
-                                         0.900E+03,
-                                         0.800E+03,
-                                         0.600E+03,
-                                         0.400E+03,
-                                         0.300E+03,
-                                         0.250E+03,
-                                         0.200E+03,
-                                         0.150E+03,
-                                         0.100E+03,
-                                         0.500E+02,
-                                         0.000E+00]]
-            assert data_i.plevs_bot == [[0.120E+04, # start of stage 1 data
+                                         0.000E+00
+                                    ]
+            assert data_i.plevs_bot == [0.120E+04,
                                          0.100E+04,
                                          0.900E+03,
                                          0.800E+03,
@@ -909,19 +942,7 @@ def test_fit_of_uv_wind_data():
                                          0.200E+03,
                                          0.150E+03,
                                          0.100E+03,
-                                         0.200E+04],
-                                        [0.120E+04, # start of stage 2 data
-                                         0.100E+04,
-                                         0.900E+03,
-                                         0.800E+03,
-                                         0.600E+03,
-                                         0.400E+03,
-                                         0.300E+03,
-                                         0.250E+03,
-                                         0.200E+03,
-                                         0.150E+03,
-                                         0.100E+03,
-                                         0.200E+04]]
+                                         0.200E+04]
             #assert data_i.plevs_units == ['hPa', 'hPa']
             test_plevs = True
             
