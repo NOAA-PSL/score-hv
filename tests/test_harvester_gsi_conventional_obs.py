@@ -51,7 +51,10 @@ VALID_CONFIG_DICT = {
 VALID_CONFIG_DICT_QSAT = {
     'harvester_name': hv_registry.GSI_CONVENTIONAL_OBS,
     'filename': FIT_FILE_PATH,
-    'variables': ('fit_q_data', # fit of moisture data (% of qsaturation guess)
+    'variables': ('fit_psfc_data', # fit of surface pressure data (mb)
+                  'fit_uv_data', # fit of u, v wind data (m/s),
+                  'fit_t_data', # fit of temperature data (K)
+                  'fit_q_data', # fit of moisture data (% of qsaturation guess)
                   ),
     'statistics': (
         'count', # number of obs summed under obs types and vertical layers
@@ -567,9 +570,9 @@ def test_fit_of_surface_pressure_data():
 
     for i, data_i in enumerate(data_list):
         if data_i.variable == 'fit_psfc_data':
-            assert data_i.plevs_top == [[0.], [0.]]
-            assert data_i.plevs_bot == [[2000.], [2000.]]
-            assert data_i.plevs_units == ['hPa', 'hPa']
+            assert data_i.plevs_top == [0.]
+            assert data_i.plevs_bot == [2000]
+            assert data_i.plevs_units == 'hPa'
             test_plevs = True
             
             if data_i.iteration == 1:

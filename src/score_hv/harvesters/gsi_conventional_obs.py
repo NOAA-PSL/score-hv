@@ -228,7 +228,6 @@ class GSIConvObsHv(object):
                 
                 for row_idx, value in enumerate(
                                     self.results[var][stat][stat]['values']):
-                    return_value = value
                     return_iteration = int(self.results[
                                             var][
                                                 stat][
@@ -236,11 +235,14 @@ class GSIConvObsHv(object):
                                                         'values'][
                                                             row_idx]
                                         )
-                    return_plevs_top = self.results[var]['plevs_top']
-                    return_plevs_bot = self.results[var]['plevs_bot']
                     
                     if var == 'fit_uv_data' or var == 'fit_t_data' or var == 'fit_q_data':
                         # only return data on requested pressure levels
+                        
+                        # assume same pressure level units provided for
+                        # surface pressure data, since none are provided for
+                        # other variables
+                        return_plevs_units = self.results['fit_psfc_data']['plevs_units'][return_iteration - 1]
                         
                         return_value = list()
                         return_plevs_top = list()
@@ -264,7 +266,13 @@ class GSIConvObsHv(object):
                                 # harvested pressure bound does not exist in harvested pressure bounds
                                 return_value.append(None)
                                 return_plevs_top.append(self.config.plevs_top[plev_idx])
-                                return_plevs_bot.append(plev_bot)    
+                                return_plevs_bot.append(plev_bot)
+                                
+                    else:
+                        return_plevs_units = self.results[var]['plevs_units'][return_iteration - 1]
+                        return_plevs_top = self.results[var]['plevs_top'][return_iteration - 1]
+                        return_plevs_bot = self.results[var]['plevs_bot'][return_iteration - 1]
+                        return_value = value
                     
                     harvested_data.append(
                         HarvestedData(
@@ -272,7 +280,7 @@ class GSIConvObsHv(object):
                             self.ensemble_member,
                             return_plevs_top,
                             return_plevs_bot,
-                            self.results[var]['plevs_units'],
+                            return_plevs_units,
                             var,
                             stat,
                             return_value,
