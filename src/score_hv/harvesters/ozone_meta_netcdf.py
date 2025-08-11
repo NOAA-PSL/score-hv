@@ -24,6 +24,8 @@ HarvestedData = namedtuple(
         'obs_day',
         'min_date_time',
         'max_date_time',
+        'levels',
+        'profiles',
         'min_pressure',
         'max_pressure',
         'ozone_count',
@@ -90,8 +92,14 @@ class OzoneMetaHv:
 
 
         # --- Get ozone data (2D: nprofiles x nlevs) ---
-        ozone = dataset.variables['ozone'][:]  # shape: (nprofiles, nlevs)
-        valid_ozone_count = np.count_nonzero(~np.isnan(ozone))
+        if 'ozone' in dataset.variables:
+            ozone = dataset.variables['ozone'][:]  # shape: (nprofiles, nlevs)
+            valid_ozone_count = np.count_nonzero(~np.isnan(ozone))
+        
+        # --- Get ozone data in 1D nrec 
+        if 'toz' in dataset.variables:
+            ozone = dataset.variables['toz'][:]  # shape: (nrec)
+            valid_ozone_count = np.count_nonzero(~np.isnan(ozone))
 
         # --- Read profile-level datetime components ---
         year   = np.ma.filled(dataset.variables['yy'][:], np.nan)
@@ -100,8 +108,6 @@ class OzoneMetaHv:
         hour   = np.ma.filled(dataset.variables['hh'][:], np.nan)
         minute = np.ma.filled(dataset.variables['min'][:], np.nan)
         second = np.ma.filled(dataset.variables['ss'][:], np.nan)
-        press = np.ma.filled(dataset.variables['press'][:], np.nan) 
-
 
         # --- Build datetime objects safely ---
         nprofiles = len(year)
@@ -124,10 +130,23 @@ class OzoneMetaHv:
             min_dt = format_datetime_string(min(datetimes))
             max_dt = format_datetime_string(max(datetimes))
 
-        # --- Compute min and max pressure, excluding NaNs ---
-        min_press = np.nanmin(press)
-        max_press = np.nanmax(press)
-       
+        min_press = None
+        max_press = None
+        if 'press' in dataset.variables:
+            press = np.ma.filled(dataset.variables['press'][:], np.nan) 
+            # --- Compute min and max pressure, excluding NaNs ---
+            min_press = np.nanmin(press)
+            max_press = np.nanmax(press)
+
+        levels = None
+        if 'nlevs' in dataset.dimensions:
+            levels = len(dataset.dimensions['nlevs'])
+
+        profiles = None
+        if 'nrec' in dataset.dimensions:
+            profiles = len(dataset.dimensions['nrec'])
+        elif 'nprofiles' in dataset.dimensions:
+            profiles = len(dataset.dimensions['nprofiles'])
 
         filename_parsed = parse_filename(self.config.harvest_filename) 
         sensor = filename_parsed['sensor']
@@ -140,6 +159,8 @@ class OzoneMetaHv:
                 obs_day,
                 min_dt,
                 max_dt,
+                levels,
+                profiles,
                 min_press, 
                 max_press,
                 valid_ozone_count,
