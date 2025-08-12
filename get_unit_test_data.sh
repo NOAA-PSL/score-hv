@@ -1,6 +1,5 @@
 #!/bin/bash --posix
+#The test data files for running the tests of the score-hv repository
+#To copy a file to a local directory. cd to local directory then type:
+aws s3 sync s3://noaa-reanalyses-pds/score_suite/test_data/ tests/data/ --no-sign-request
 
-# grab select aws files stored in the bdp
-aws s3 cp s3://noaa-reanalyses-pds/ufsrnr.baselines/ufsrnr.v1.0.linux_hera/C96L64.UFSRNR.GSI_SOCA_3DVAR.012016/gsi/innov_stats.uvwind.2016010300.nc data/innov_stats.uvwind.2016010300.nc --no-sign-request
-aws s3 cp s3://noaa-reanalyses-pds/ufsrnr.baselines/ufsrnr.v1.0.linux_hera/C96L64.UFSRNR.GSI_SOCA_3DVAR.012016/gsi/innov_stats.uvwind.2016010300.nc data/innov_stats.temperature.2016010300.nc --no-sign-request
-aws s3 cp s3://noaa-reanalyses-pds/ufsrnr.baselines/ufsrnr.v1.0.linux_hera/C96L64.UFSRNR.GSI_SOCA_3DVAR.012016/gsi/innov_stats.uvwind.2016010300.nc data/innov_stats.spechumid.2016010300.nc --no-sign-request
