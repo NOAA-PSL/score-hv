@@ -180,8 +180,7 @@ class IncrementsHv(object):
                 if statistic == 'mean':
                     values = expected_values
                 elif statistic == 'variance':
-                    for 
-            
+                    pass 
                 harvested_data.append(HarvestedData(
                                         self.config.harvest_filename,
                                         'NEED_CYCLETIME',

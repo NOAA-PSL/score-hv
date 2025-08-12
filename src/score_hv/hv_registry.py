@@ -53,11 +53,12 @@ harvester_registry = {INNOV_NETCDF: Harvester(
                       DAILY_BFG: Harvester(
                           'Daily mean statistics from background forecast',
                           DailyBFGConfig,
-                          DailyBFGHv),
+                          DailyBFGHv
+                          ),
                       REPLAY_ANALYSIS_INCREMENTS: Harvester(
                           'Analysis increments from replay (fv3_increment6.nc)',
                           IncrementsConfig,
-                          IncrementsHv)
+                          IncrementsHv
                           ),
                       SOCA_DIAGS: Harvester(
                           'Statistics from SOCA diagnostics files',
