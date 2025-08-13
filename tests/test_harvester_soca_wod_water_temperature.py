@@ -12,7 +12,7 @@ TEST_DATA_FILE_NAMES = [
                        ]
 
 PYTEST_CALLING_DIR = Path(__file__).parent.resolve()
-TEST_DATA_PATH = os.path.join(PYTEST_CALLING_DIR, 'data_dev')
+TEST_DATA_PATH = os.path.join(PYTEST_CALLING_DIR, 'data')
 SOCA_PATH = [os.path.join(TEST_DATA_PATH,
                          file_name) for file_name in TEST_DATA_FILE_NAMES]
 
