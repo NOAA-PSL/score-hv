@@ -266,8 +266,10 @@ class SOCADiagsHv(object):
                        
                         # Calculate the requested statistics
                         for k, statistic in enumerate(self.config.get_stats()):
-                           
-                            if statistic == 'rms' or statistic == 'RMS':
+                            if masked_var.size < 1:
+                                value = np.nan
+                            
+                            elif statistic == 'rms' or statistic == 'RMS':
                                 value = np.sqrt(np.ma.mean(masked_var**2))
                            
                             elif statistic == 'n' or statistic == 'nobs' or statistic == 'count':
@@ -288,6 +290,7 @@ class SOCADiagsHv(object):
                             elif statistic == 'maximum':
                                 value = np.ma.max(masked_var)
                                 
+                            
                             harvested_data.append(HarvestedData(
                                                   filename,
                                                   sensor,
