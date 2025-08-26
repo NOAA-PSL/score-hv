@@ -341,29 +341,31 @@ class GSIConvObsHv(object):
                     f'{self.config.harvest_filename}')
         elif line_parts[0] == 'o-g' and (line_parts[2] == 'uv' or line_parts[2] == 't' or line_parts[2] == 'q'):
             stat = line_parts[6]
-            for results_key, column_values in self.results[variable_name][stat].items():
-                if results_key == stat:
-                    if stat == 'count':
-                        self.results[variable_name][stat][stat]['values'].append([self.parse_value(x, prefer_int=True) for x in line_parts[7:]])
+            if stat in self.config.stats_to_harvest:
+                for results_key, column_values in self.results[variable_name][stat].items():
+                    if results_key == stat:
+                        if stat == 'count':
+                            self.results[variable_name][stat][stat]['values'].append([self.parse_value(x, prefer_int=True) for x in line_parts[7:]])
+                        else:
+                            self.results[variable_name][stat][stat]['values'].append([self.parse_value(x) for x in line_parts[7:]])
                     else:
-                        self.results[variable_name][stat][stat]['values'].append([self.parse_value(x) for x in line_parts[7:]])
-                else:
-                    column_index = self.results[variable_name][stat][results_key]['column_index']
-                    self.results[variable_name][stat][results_key]['values'].append(
-                        line_parts[column_index]
-                    )
+                        column_index = self.results[variable_name][stat][results_key]['column_index']
+                        self.results[variable_name][stat][results_key]['values'].append(
+                            line_parts[column_index]
+                        )
                 
         elif line_parts[0] == 'o-g' and line_parts[3] == 'all':
             # stats for all observation types
             stat = line_parts[4]
-            self.results[variable_name][stat]['it']['values'].append(line_parts[1])
-            self.results[variable_name][stat]['use']['values'].append(line_parts[2])
-            self.results[variable_name][stat]['typ']['values'].append(line_parts[3])
-            self.results[variable_name][stat]['styp']['values'].append(None)
-            if stat=='count':
-                self.results[variable_name][stat][stat]['values'].append([self.parse_value(x, prefer_int=True) for x in line_parts[5:]])
-            else:
-                self.results[variable_name][stat][stat]['values'].append([self.parse_value(x) for x in line_parts[5:]])
+            if stat in self.config.stats_to_harvest:
+                self.results[variable_name][stat]['it']['values'].append(line_parts[1])
+                self.results[variable_name][stat]['use']['values'].append(line_parts[2])
+                self.results[variable_name][stat]['typ']['values'].append(line_parts[3])
+                self.results[variable_name][stat]['styp']['values'].append(None)
+                if stat=='count':
+                    self.results[variable_name][stat][stat]['values'].append([self.parse_value(x, prefer_int=True) for x in line_parts[5:]])
+                else:
+                    self.results[variable_name][stat][stat]['values'].append([self.parse_value(x) for x in line_parts[5:]])
             
     def extract_fit_ps(self, line_parts, variable_name='fit_psfc_data'):
         """ extract fit to surface pressure stats from a given line of the

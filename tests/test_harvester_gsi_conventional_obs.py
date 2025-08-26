@@ -60,8 +60,8 @@ VALID_CONFIG_DICT_QSAT = {
         'count', # number of obs summed under obs types and vertical layers
         'bias', # bias of obs departure for each outer loop (it)
         'rms', # root mean squre error of obs departure for each outer loop (it)
-        'cpen', # obs part of penalty (cost function)
-        'qcpen' # nonlinear qc penalty
+        #'cpen', # obs part of penalty (cost function)
+        #'qcpen' # nonlinear qc penalty
         ),
         
     'plev_bounds': [
