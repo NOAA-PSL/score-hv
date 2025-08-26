@@ -17,7 +17,7 @@ from netCDF4 import Dataset
 from score_hv.config_base import ConfigInterface
 
 HARVESTER_NAME = 'soca_diags'
-VALID_STATISTICS = ('mean', 'median', 'StdDev','minimum', 'maximum')
+VALID_STATISTICS = ('rms', 'RMS', 'mean', 'median', 'StdDev','minimum', 'maximum', 'n', 'nobs', 'count')
 
 """Variables of interest that come from the background forecast data.
 Commented out variables can be uncommented to generate gridcell weighted
@@ -30,7 +30,10 @@ VALID_VARIABLES  =  ('sst', #sea surface temperature
                      'seaSurfaceSalinity',
                      'seaSurfaceTemperature',
                     )
-HarvestedData = namedtuple('HarvestedData', ['filenames',
+HarvestedData = namedtuple(
+    #TODO: implement depths as harvested coordinate array
+    'HarvestedData',
+                                            ['filenames',
                                              'sensor',
                                              'satellite',
                                              'level',
@@ -62,36 +65,48 @@ def parse_filename(filename):
       """
     base = os.path.basename(filename)
     try:
-       name_part, datetime_part, ext = base.rsplit('.', 2)
+        name_part, datetime_part, ext = base.rsplit('.', 2)
     except ValueError:
-       raise ValueError(f"Filename format unexpected: {filename}")
+        raise ValueError(f"Filename format unexpected: {filename}")
 
     parts = name_part.split('_')
     # Initialize dictionary with default values
-    filename_info = {
-              'variable_type': parts[0],
-              'sensor':  parts[1],
-    }        
-    if filename_info['variable_type'] == 'insitu':
-       filename_info['sensor'] = None
-
-    filename_info['datetime'] = datetime_part 
-    filename_info['region'] = 'global'
-    filename_info['satellite'] = None
-    filename_info['level'] = None
-    if len(parts) == 3:
-       if filename_info['variable_type'] == 'insitu':
-          filename_info['satellite'] = parts[2]
-       else:
-          filename_info['region'] = parts[2]
-    elif len(parts) == 4:
-       filename_info['satellite'] = parts[2]
-       filename_info['level'] = parts[3]
-    elif len(parts) == 5:
-       filename_info['level'] = parts[3]
-       filename_info['region'] = parts[4]
+    filename_info = {'datetime': datetime_part,
+                     'region': 'global',
+                     'satellite': None,
+                     'level': None,
+                     'variable_type': parts[0],
+                     'data_source': None,
+                     'sensor': parts[1]}
+    
+    if parts[0] == 'wod' and parts[1] == 't':
+        # source is World Ocean Data
+        filename_info['data_source'] = parts[0]
+        filename_info['variable_type'] = parts[1]
+        filename_info['sensor'] = parts[2]
+    elif parts[0] == 'insitu':
+        # defaults for insitu data
+        filename_info['sensor'] = parts[2]
+    elif parts[0] == 'icec':
+        filename_info['sensor'] = parts[1]
+        filename_info['region'] = parts[2]
+    elif parts[0] == 'sst':
+        filename_info['sensor'] = parts[1]
+        filename_info['satellite'] = parts[2]
+        filename_info['level'] = parts[3]
+    elif parts[0] == 'icoads':
+        # source is ICOADS
+        filename_info['data_source'] = parts[0]
+        filename_info['variable_type'] = parts[1]
+        filename_info['sensor'] = 'misc_icoads'
+    
+    elif False and len(parts) == 5:
+        # disabled until further information provided and boolean made more specific
+        filename_info['level'] = parts[3]
+        filename_info['region'] = parts[4]
+    
     else:
-       raise ValueError(f"Unexpected number of parts in filename: {filename}")
+        raise ValueError(f"ocean diags file not supported in score-hv: {filename}")
 
     return filename_info
 
@@ -106,21 +121,21 @@ def read_MetaData_group(dataset):
                 from the MetadData group.
        """
     if 'MetaData' not in dataset.groups:
-       latitude = None
-       longitude = None
+        latitude = None
+        longitude = None
     else: 
-       metadata_group = dataset.groups['MetaData'] 
-       if 'latitude' in metadata_group.variables:
-          latitude = metadata_group['latitude'][:]
-       else:
-          latitude = None 
-          print("'latitude' not found in metadata_vars")
+        metadata_group = dataset.groups['MetaData'] 
+        if 'latitude' in metadata_group.variables:
+            latitude = metadata_group['latitude'][:]
+        else:
+            latitude = None 
+            print("'latitude' not found in metadata_vars")
 
-       if 'longitude' in metadata_group.variables:
-          longitude = metadata_group['longitude'][:]
-       else:
-          longitude = None 
-          print("'longitude' not found in metadata_vars")
+        if 'longitude' in metadata_group.variables:
+            longitude = metadata_group['longitude'][:]
+        else:
+           longitude = None 
+           print("'longitude' not found in metadata_vars")
 
     return(latitude,longitude)
 
@@ -201,95 +216,90 @@ class SOCADiagsHv(object):
      
     def get_data(self):
         depths = self.config.depths
-        groups_wanted = ['ObsValue','oman','ombg']
+        groups_wanted = ('ObsValue','oman','ombg', 'ObsError')
         units = None
         for filename in self.config.harvest_filenames:
             harvested_data = list()
             filename_info = parse_filename(filename)
             try:
-               dataset = netCDF4.Dataset(filename, 'r')
+                dataset = netCDF4.Dataset(filename, 'r')
             except Exception as e: 
-               raise OSError (f"Failed to open NetCDF file {filename}: {e}")
+                raise OSError (f"Failed to open NetCDF file {filename}: {e}")
 
+            """The information about the file from the 
+            file name.
             """
-              The information about the file from the 
-              file name.
-              """
-            variable = filename_info['variable_type']  
             filetime_str = filename_info['datetime']
-            dt_obj = dt.strptime(filetime_str, "%Y%m%d%H")
-            filetime = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+            filetime_dt = dt.strptime(filetime_str, "%Y%m%d%H")
             sensor = filename_info['sensor']
             file_region = filename_info['region']
             satellite = filename_info['satellite']
             level = filename_info['level']
             latitude,longitude = read_MetaData_group(dataset)
             
+            """We can now loop through the list of wanted groups.
+            We get the values from the wanted groups and the FillValue.
             """
-              We can now loop through the list of wanted groups.
-              We get the values from the wanted groups and the FillValue.
-              """
             for group in groups_wanted:
                 if group not in dataset.groups:
-                   raise ValueError(f"{group} is not in dataset.groups: {dataset.groups}")   
+                    raise ValueError(f"{group} is not in dataset.groups: {dataset.groups}")   
                 else:     
-                   requested_group = dataset.groups[group]
-                   group_name = group
-                   num_variables = len(requested_group.variables)
-                   for var_name in requested_group.variables:
-                       variable = var_name
-                       var = requested_group.variables[var_name]
-                       longname = var_name 
-                       if "units" in var.ncattrs():
-                          units = str(var.getncattr("units"))
+                    requested_group = dataset.groups[group]
+                    num_variables = len(requested_group.variables)
+                    for var_name in requested_group.variables:
+                        var = requested_group.variables[var_name]
+                        longname = var_name 
+                        if "units" in var.ncattrs():
+                            units = str(var.getncattr("units"))
    
-                       groupvalue_variable = requested_group.variables[var_name]
-
-                       if '_FillValue' in groupvalue_variable.ncattrs():
-                          fill_value = groupvalue_variable.getncattr('_FillValue')
-                          var_values = np.ma.masked_where(groupvalue_variable[:] == fill_value,groupvalue_variable[:])
-                       else:   
-                          var_values =  np.ma.array(groupvalue_variable[:])
-                       """
-                         Mask out the nans in place.
-                         """
-                       np.ma.masked_where(var_values == np.nan,var_values,copy=False)
+                        if '_FillValue' in var.ncattrs():
+                            fill_value = var.getncattr('_FillValue')
+                            masked_var = np.ma.masked_where(var[:] == fill_value, 
+                                                            var[:])
+                        else:   
+                            masked_var =  np.ma.array(var[:])
+                        """
+                        Mask out the nans in place.
+                        """
+                        np.ma.masked_where(masked_var == np.nan, masked_var,
+                                          copy=False)
                        
-                       """
-                          Calculate the requested statistics. Our var_values arrays are 
-                          all of type <class 'numpy.ndarray'>.  We have used the fill_value
-                          to put np.nan's in the for all values to to the fill_values so we 
-                          can calculate the statistics.
-                          """
-                       for j, statistic in enumerate(self.config.get_stats()):
-                           group = group_name
-                           if statistic == 'mean':
-                               value = np.ma.mean(var_values)
-                               
-                           elif statistic == 'median':
-                               value = np.ma.median(var_values)
-                                
-                           elif statistic == 'StdDev':
-                               value = np.ma.std(var_values)
-                               
-                           elif statistic == 'minimum':
-                               value = np.ma.min(var_values)
+                        # Calculate the requested statistics
+                        for k, statistic in enumerate(self.config.get_stats()):
                            
-                           elif statistic == 'maximum':
-                               value = np.ma.max(var_values)
+                            if statistic == 'rms' or statistic == 'RMS':
+                                value = np.sqrt(np.ma.mean(masked_var**2))
+                           
+                            elif statistic == 'n' or statistic == 'nobs' or statistic == 'count':
+                                value = np.ma.count(masked_var)
+                            
+                            elif statistic == 'mean':
+                                value = np.ma.mean(masked_var)
+                               
+                            elif statistic == 'median':
+                                value = np.ma.median(masked_var)
                                 
-                           harvested_data.append(HarvestedData(
-                                                 filename,
-                                                 sensor,
-                                                 satellite,
-                                                 level,
-                                                 variable,
-                                                 group,
-                                                 longname,
-                                                 units,
-                                                 statistic,
-                                                 np.float32(value),
-                                                 filetime,
-                                                 file_region))
+                            elif statistic == 'StdDev':
+                                value = np.ma.std(masked_var)
+                               
+                            elif statistic == 'minimum':
+                                value = np.ma.min(masked_var)
+                           
+                            elif statistic == 'maximum':
+                                value = np.ma.max(masked_var)
+                                
+                            harvested_data.append(HarvestedData(
+                                                  filename,
+                                                  sensor,
+                                                  satellite,
+                                                  level,
+                                                  var_name,
+                                                  group,
+                                                  longname,
+                                                  units,
+                                                  statistic,
+                                                  value,
+                                                  filetime_dt,
+                                                  file_region))
             dataset.close()               
             return(harvested_data)
