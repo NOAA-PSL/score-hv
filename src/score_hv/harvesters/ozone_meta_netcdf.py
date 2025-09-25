@@ -90,7 +90,7 @@ class OzoneMetaHv:
         harvested_data = []
         dataset = Dataset(self.config.harvest_filename, 'r')
 
-
+        ozone = None
         # --- Get ozone data (2D: nprofiles x nlevs) ---
         if 'ozone' in dataset.variables:
             ozone = dataset.variables['ozone'][:]  # shape: (nprofiles, nlevs)
@@ -100,6 +100,28 @@ class OzoneMetaHv:
         if 'toz' in dataset.variables:
             ozone = dataset.variables['toz'][:]  # shape: (nrec)
             valid_ozone_count = np.count_nonzero(~np.isnan(ozone))
+
+        filename_parsed = parse_filename(self.config.harvest_filename) 
+        sensor = filename_parsed['sensor']
+        filename = filename_parsed['filename']
+        obs_day = filename_parsed['formatted_datetime_str']
+
+        if ozone is None: # file is empty 
+            harvested_data.append(
+                HarvestedData(
+                    filename,
+                    obs_day,
+                    None,
+                    None,
+                    0,
+                    0,
+                    None, 
+                    None,
+                    0,
+                    sensor, 
+                )
+            ) 
+            return harvested_data
 
         # --- Read profile-level datetime components ---
         year   = np.ma.filled(dataset.variables['yy'][:], np.nan)
@@ -147,11 +169,6 @@ class OzoneMetaHv:
             profiles = len(dataset.dimensions['nrec'])
         elif 'nprofiles' in dataset.dimensions:
             profiles = len(dataset.dimensions['nprofiles'])
-
-        filename_parsed = parse_filename(self.config.harvest_filename) 
-        sensor = filename_parsed['sensor']
-        filename = filename_parsed['filename']
-        obs_day = filename_parsed['formatted_datetime_str']
 
         harvested_data.append(
             HarvestedData(

@@ -15,12 +15,14 @@ OZONE_OMI_EFF_DATA = 'OMIeff-adj.20130512_06z.nc'
 OZONE_OMPSLP_DATA = 'OMPS-LPoz-Vis.20181003_18z.nc'
 OZONE_OMPSNM_DATA = 'OMPSNM.20121203_00z.nc'
 OZONE_OMPSNP_DATA = 'OMPSNP.20211002_18z.nc'
+OZONE_OMPSNP_ZERO_DATA = 'OMPSNP.20130106_06z.nc'
 
 file_path_ozone_mls_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, OZONE_MLS_DATA)
 file_path_ozone_omi_eff_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, OZONE_OMI_EFF_DATA)
 file_path_ozone_omsplp_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, OZONE_OMPSLP_DATA)
 file_path_ozone_ompsnm_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, OZONE_OMPSNM_DATA)
 file_path_ozone_ompsnp_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, OZONE_OMPSNP_DATA)
+file_path_ozone_ompsnp_zero_data = os.path.join(PYTEST_CALLING_DIR, DATA_DIR, OZONE_OMPSNP_ZERO_DATA)
 
 VALID_CONFIG_OZONE_MLS = {
     'harvester_name': hv_registry.OZONE_META_NETCDF,
@@ -45,6 +47,11 @@ VALID_CONFIG_OZONE_OMPSNM = {
 VALID_CONFIG_OZONE_OMPSNP = {
     'harvester_name': hv_registry.OZONE_META_NETCDF,
     'filename': file_path_ozone_ompsnp_data
+}
+
+VALID_CONFIG_OZONE_OMPSNP_ZERO = {
+    'harvester_name': hv_registry.OZONE_META_NETCDF,
+    'filename': file_path_ozone_ompsnp_zero_data
 }
 
 def test_ozone_mls_meta():
@@ -115,4 +122,18 @@ def test_ozone_ompsnp_meta():
     assert ozone_data.min_pressure == None
     assert ozone_data.max_pressure == None
     assert ozone_data.ozone_count == 5250
+    assert ozone_data.sensor == 'OMPSNP'
+
+def test_ozone_ompsnp_zero_meta():
+    data = harvest(VALID_CONFIG_OZONE_OMPSNP_ZERO)
+    ozone_data = data[0]
+    assert ozone_data.filename == OZONE_OMPSNP_ZERO_DATA
+    assert ozone_data.obs_day == '2013-01-06 06:00:00'
+    assert ozone_data.min_date_time == None
+    assert ozone_data.max_date_time == None
+    assert ozone_data.levels == 0
+    assert ozone_data.profiles == 0
+    assert ozone_data.min_pressure == None
+    assert ozone_data.max_pressure == None
+    assert ozone_data.ozone_count == 0
     assert ozone_data.sensor == 'OMPSNP'
