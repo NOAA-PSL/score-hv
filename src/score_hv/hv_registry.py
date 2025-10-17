@@ -15,6 +15,7 @@ from score_hv.harvesters.gsi_satellite_radiance_channel import GSISatelliteRadia
 from score_hv.harvesters.gsi_conventional_obs import GSIConvObsConfig, GSIConvObsHv
 from score_hv.harvesters.ioda_meta_netcdf import IodaMetaCfg, IodaMetaHv
 from score_hv.harvesters.wod_insitu_meta_netcdf import WodInsituMetaCfg, WodInsituMetaHv
+from score_hv.harvesters.ozone_meta_netcdf import OzoneMetaCfg, OzoneMetaHv
 
 NAMED_TUPLES_LIST = 'tuples_list'
 PANDAS_DATAFRAME = 'pandas_dataframe'
@@ -27,6 +28,7 @@ GSI_SATELLITE_RADIANCE_CHANNEL = 'gsi_satellite_radiance_channel'
 GSI_CONVENTIONAL_OBS = 'gsi_conventional_obs'
 IODA_META_NETCDF = 'ioda_meta_netcdf'
 WOD_INSITU_META_NETCDF = 'wod_insitu_meta_netcdf'
+OZONE_META_NETCDF = 'ozone_meta_netcdf'
 
 Harvester = namedtuple('Harvester', ('name', 'config_handler', 'data_parser'),)
 
@@ -79,5 +81,9 @@ harvester_registry = {INNOV_NETCDF: Harvester(
                       WOD_INSITU_META_NETCDF: Harvester(
                           'meta data contained in wod insitu netcdf files',
                           WodInsituMetaCfg,
-                          WodInsituMetaHv)
+                          WodInsituMetaHv),
+                      OZONE_META_NETCDF: Harvester(
+                          'meta data in netcdf files containing ozone data',
+                          OzoneMetaCfg,
+                          OzoneMetaHv),
                       }
