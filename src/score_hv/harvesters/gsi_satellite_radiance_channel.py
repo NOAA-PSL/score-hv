@@ -242,11 +242,15 @@ class GSISatelliteRadianceChannelHv(object):
         series_number = int(line_parts[0]) # from satinfo file, index from 1 
         channel_number = int(line_parts[1])
         observation_type = line_parts[2]
+
+        # patch for airs281SUBSET_aqua
+        if observation_type == 'airs281SUBSET_aq':
+            observation_type = 'airs281SUBSET_aqua'
         
         # make sure we have the correct channel
         if self.channels[series_number]['observation_type'] != observation_type:
             raise ValueError(f"Expected observation type "
-                      "{self.channels[series_number]['observation_type']}, "
+                      f"{self.channels[series_number]['observation_type']}, "
                       f"but got {observation_type}")
 
         if self.channels[series_number]['channel'] != channel_number:
