@@ -246,6 +246,10 @@ class GSISatelliteRadianceChannelHv(object):
         # patch for airs281SUBSET_aqua
         if observation_type == 'airs281SUBSET_aq':
             observation_type = 'airs281SUBSET_aqua'
+            
+        # patch for iasi616_metop-a
+        if observation_type == 'iasi616_metop-a':
+            observation_type = 'iasi_metop-a'
         
         # make sure we have the correct channel
         if self.channels[series_number]['observation_type'] != observation_type:
