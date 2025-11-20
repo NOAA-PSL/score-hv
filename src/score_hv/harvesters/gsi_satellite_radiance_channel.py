@@ -247,7 +247,7 @@ class GSISatelliteRadianceChannelHv(object):
         if observation_type == 'airs281SUBSET_aq':
             observation_type = 'airs281SUBSET_aqua'
             
-        # patch for iasi616_metop-a
+        # patch for iasi616_metop-a (CFSR)
         if observation_type == 'iasi616_metop-a':
             observation_type = 'iasi_metop-a'
         
@@ -315,6 +315,9 @@ class GSISatelliteRadianceChannelHv(object):
 
                 series_number = int(line_parts[0])
                 observation_type = line_parts[1]
+                # patch for iasi616_metop-a (CFSR)
+                if observation_type == 'iasi616_metop-a':
+                    observation_type = 'iasi_metop-a'
                 
                 line2list = line.split('=')
                 channel = int(line2list[1].split()[0])    
