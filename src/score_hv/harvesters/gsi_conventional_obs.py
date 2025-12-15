@@ -191,6 +191,16 @@ class GSIConvObsHv(object):
                 self.results[var][stat] = dict()
                 self.results[var][stat][stat] = {'column_index': None,
                                                  'values': list()}
+        if 'fit_psfc_data' not in self.results:
+            self.results['fit_psfc_data'] = {
+                'plevs_top': list(),
+                'plevs_bot': list(),
+                'plevs_units': list(),
+            }
+            for stat in self.config.stats_to_harvest:
+                self.results['fit_psfc_data'][stat] = dict()
+                self.results['fit_psfc_data'][stat][stat] = {'column_index': None,
+                                                 'values': list()}
                 
         # get the datetime from the input file name
         try: # format is gsistats.YYYYMMDDHH_control
@@ -508,7 +518,7 @@ class GSIConvObsHv(object):
                     self.read_fit_q = False
 
                 # Only dispatch to extractors for non-mode lines
-                elif self.read_fit_ps and 'fit_psfc_data' in self.config.vars_to_harvest:
+                elif self.read_fit_ps:
                     self.extract_fit_ps(line_parts, variable_name='fit_psfc_data')
 
                 elif self.read_fit_uv and 'fit_uv_data' in self.config.vars_to_harvest:
