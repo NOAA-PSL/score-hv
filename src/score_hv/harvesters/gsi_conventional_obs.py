@@ -3,7 +3,7 @@
 conventional observations
 """
 
-import os
+import os,sys
 import warnings
 from collections import namedtuple
 from dataclasses import dataclass
@@ -159,7 +159,8 @@ class GSIConvObsHv(object):
     config: GSIConvObsConfig = field(default_factory = GSIConvObsConfig)
     
     def parse_value(self, value, prefer_int=False):
-        if value == r"********":
+#        if value == r"********":
+        if value is None or (isinstance(value, str) and (value.strip() == "" or value.strip() == "******")):
             return_value = None
 
         elif prefer_int:
@@ -273,7 +274,6 @@ class GSIConvObsHv(object):
                         return_plevs_top = self.results[var]['plevs_top'][return_iteration - 1]
                         return_plevs_bot = self.results[var]['plevs_bot'][return_iteration - 1]
                         return_value = value
-                    
                     harvested_data.append(
                         HarvestedData(
                             self.datetime,
@@ -341,11 +341,13 @@ class GSIConvObsHv(object):
                     f'{self.config.harvest_filename}')
         elif line_parts[0] == 'o-g' and (line_parts[2] == 'uv' or line_parts[2] == 't' or line_parts[2] == 'q'):
             stat = line_parts[6]
+            print("the field ",line_parts[2])
             if stat in self.config.stats_to_harvest:
                 for results_key, column_values in self.results[variable_name][stat].items():
                     if results_key == stat:
                         if stat == 'count':
                             self.results[variable_name][stat][stat]['values'].append([self.parse_value(x, prefer_int=True) for x in line_parts[7:]])
+                            print(self.results[variable_name][stat][stat]['values'].append)
                         else:
                             self.results[variable_name][stat][stat]['values'].append([self.parse_value(x) for x in line_parts[7:]])
                     else:
@@ -385,8 +387,7 @@ class GSIConvObsHv(object):
             self.results[variable_name]['plevs_bot'].append(
                 [float(line_parts[4])]
             )
-
-        elif self.read_fit_ps and line_parts[0] == 'o-g' and line_parts[1] == 'it':
+        elif self.read_fit_ps and ((line_parts[0] == 'o-g' and line_parts[1] == 'it') or (line_parts[0] == 'it' and line_parts[1] == 'obs')):
             for col, part in enumerate(line_parts):
                 if part=='it' or part=='obs' or part=='use' or part=='typ' or part=='styp' or part in self.config.stats_to_harvest: 
                     self.store_column_info(variable_name, col, part)
