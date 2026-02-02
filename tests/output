@@ -1,0 +1,282 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.6, pytest-8.3.3, pluggy-1.5.0
+rootdir: /Users/sfredrick/adam/score-hv-dev
+collected 2 items
+
+test_sst_soca.py FF                                                      [100%]
+
+=================================== FAILURES ===================================
+______________________ test_soca_harvester[SST_No_Filter] ______________________
+
+test_id = 'SST_No_Filter'
+
+    @pytest.mark.parametrize("test_id", TEST_REGISTRY.keys())
+    def test_soca_harvester(test_id):
+        """Main test entry point parameterized by TEST_REGISTRY."""
+        meta = TEST_REGISTRY[test_id]
+        file_path = DATA_DIR / meta['filename']
+    
+        if not file_path.exists():
+            pytest.fail(f"Test data missing: {file_path}")
+    
+        # Build the config for the harvester
+        config_dict = {
+            'harvester_name': hv_registry.SOCA_DIAGS,
+            'filenames': [str(file_path)],
+            'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'],
+            'variables': [meta['variable']],
+            'QC_threshold': meta['QC_threshold'],
+        }
+    
+        # 1. Execute Harvester
+>       all_data = harvest(config_dict)
+
+test_sst_soca.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../src/score_hv/harvester_base.py:53: in harvest
+    return harvester.data_parser(config).get_data()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SOCADiagsHv(config=SOCADiagsConfig(config_data={'harvester_name': 'soca_diags', 'filenames': ['/Users/sfredrick/adam/s...'], 'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'], 'variables': ['sst'], 'QC_threshold': 999999.0}))
+
+    def get_data(self):
+        harvested_results = []
+        data_groups = ['ObsValue', 'oman', 'ombg']
+    
+        for filename in self.config.harvest_filenames:
+            if not os.path.exists(filename):
+                raise FileNotFoundError(f"The file '{filename}' does not exist in the current directory.")
+            try:
+                with netCDF4.Dataset(filename, 'r') as ds:
+                    file_info = parse_filename(filename)
+    
+                    try:
+                        obs_metadata = extract_soca_metadata(ds)
+                        lats = obs_metadata['latitude']
+                        lons = obs_metadata['longitude']
+                        times = obs_metadata['dateTime']
+                        depths = obs_metadata['depth']
+                    except KeyError as e:
+                        print(f"Error: The variable {e} was not found in the metadata group.")
+    
+                    time_metadata = ds.groups['MetaData'].variables['dateTime']
+                    dates = netCDF4.num2date(times, units=time_metadata.units,
+                            calendar=getattr(time_metadata, 'calendar', 'standard'))
+                    file_time = dt.fromisoformat(dates[0].strftime("%Y-%m-%d %H:%M:%S"))
+    
+                    """
+                      Read the ObsValue goup in the data set. Exit if it
+                      does not exits.
+                      """
+                    obs_group = ds.groups.get('ObsValue')
+                    if not obs_group:
+                        raise RuntimeError(
+                                           f"Data processing failed: {filename}"
+                                           "does not contain an 'ObsValue' group.")
+    
+                    for var_name in obs_group.variables.keys():
+                        #Build QC Mask once per variable
+                        qc_group = ds.groups.get('EffectiveQC0')
+                        if qc_group and var_name in qc_group.variables:
+                            qc_flags = qc_group.variables[var_name][:]
+                            qc_mask = (qc_flags > self.config.qc_threshold)
+                        else:
+                            qc_mask = np.zeros(obs_group.variables[var_name].shape, dtype=bool)
+    
+                        for group_name in data_groups:
+                            if group_name not in ds.groups or var_name not in ds.groups[group_name].variables:
+                               raise ValueError(
+                                     f"Missing data group '{group_name}' in {os.path.basename(filename)}.")
+    
+                            var_obj = ds.groups[group_name].variables[var_name]
+                            stats = calculate_masked_stats(var_obj, qc_mask, self.config.stats)
+                            if not stats:
+                                print("no stats")
+    
+                            long_name, units = get_variable_metadata(
+                                file_info['file_type'], var_name, mean_val=stats.get('mean')
+                            )
+                            for stat_name, stat_val in stats.items():
+                                if stat_val is None: continue
+                                print(stat_val,"  ",stat_name,"  ",group_name,"  ",self.config.qc_threshold)
+                                harvested_results.append(HarvestedData(
+                                    filenames=filename,
+                                    sensor=file_info['sensor'],
+                                    satellite=file_info['satellite'],
+                                    level=file_info['level'],
+                                    variables=var_name,
+                                    group=group_name,
+                                    longname=long_name,
+                                    units=units,
+                                    statistics=stat_name,
+                                    value=np.float32(stat_val),
+                                    filetime=file_time,
+                                    file_region=file_info['file_region'],
+                                    QC_threshold=self.config.qc_threshold
+                                ))
+    
+            except Exception as e:
+                print(f"Error processing {os.path.basename(filename)}: {e}")
+>       sys.exit(0)
+E       SystemExit: 0
+
+../src/score_hv/harvesters/soca_diags.py:259: SystemExit
+----------------------------- Captured stdout call -----------------------------
+running harvester: soca_diags
+18.917865741653607    mean    ObsValue    999999.0
+21.956811904907227    median    ObsValue    999999.0
+8.742099683021559    StdDev    ObsValue    999999.0
+-2.002044677734375    minimum    ObsValue    999999.0
+31.499406814575195    maximum    ObsValue    999999.0
+-0.022735618263781874    mean    oman    999999.0
+-0.00784428883343935    median    oman    999999.0
+0.2420871178054575    StdDev    oman    999999.0
+-5.484813213348389    minimum    oman    999999.0
+4.796906471252441    maximum    oman    999999.0
+-0.018309653345885482    mean    ombg    999999.0
+0.0009183410438708961    median    ombg    999999.0
+0.5164351704163938    StdDev    ombg    999999.0
+-9.026327133178711    minimum    ombg    999999.0
+4.357113838195801    maximum    ombg    999999.0
+____________________ test_soca_harvester[SST_Strict_Filter] ____________________
+
+test_id = 'SST_Strict_Filter'
+
+    @pytest.mark.parametrize("test_id", TEST_REGISTRY.keys())
+    def test_soca_harvester(test_id):
+        """Main test entry point parameterized by TEST_REGISTRY."""
+        meta = TEST_REGISTRY[test_id]
+        file_path = DATA_DIR / meta['filename']
+    
+        if not file_path.exists():
+            pytest.fail(f"Test data missing: {file_path}")
+    
+        # Build the config for the harvester
+        config_dict = {
+            'harvester_name': hv_registry.SOCA_DIAGS,
+            'filenames': [str(file_path)],
+            'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'],
+            'variables': [meta['variable']],
+            'QC_threshold': meta['QC_threshold'],
+        }
+    
+        # 1. Execute Harvester
+>       all_data = harvest(config_dict)
+
+test_sst_soca.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../src/score_hv/harvester_base.py:53: in harvest
+    return harvester.data_parser(config).get_data()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SOCADiagsHv(config=SOCADiagsConfig(config_data={'harvester_name': 'soca_diags', 'filenames': ['/Users/sfredrick/adam/s...u.nc'], 'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'], 'variables': ['sst'], 'QC_threshold': 10.0}))
+
+    def get_data(self):
+        harvested_results = []
+        data_groups = ['ObsValue', 'oman', 'ombg']
+    
+        for filename in self.config.harvest_filenames:
+            if not os.path.exists(filename):
+                raise FileNotFoundError(f"The file '{filename}' does not exist in the current directory.")
+            try:
+                with netCDF4.Dataset(filename, 'r') as ds:
+                    file_info = parse_filename(filename)
+    
+                    try:
+                        obs_metadata = extract_soca_metadata(ds)
+                        lats = obs_metadata['latitude']
+                        lons = obs_metadata['longitude']
+                        times = obs_metadata['dateTime']
+                        depths = obs_metadata['depth']
+                    except KeyError as e:
+                        print(f"Error: The variable {e} was not found in the metadata group.")
+    
+                    time_metadata = ds.groups['MetaData'].variables['dateTime']
+                    dates = netCDF4.num2date(times, units=time_metadata.units,
+                            calendar=getattr(time_metadata, 'calendar', 'standard'))
+                    file_time = dt.fromisoformat(dates[0].strftime("%Y-%m-%d %H:%M:%S"))
+    
+                    """
+                      Read the ObsValue goup in the data set. Exit if it
+                      does not exits.
+                      """
+                    obs_group = ds.groups.get('ObsValue')
+                    if not obs_group:
+                        raise RuntimeError(
+                                           f"Data processing failed: {filename}"
+                                           "does not contain an 'ObsValue' group.")
+    
+                    for var_name in obs_group.variables.keys():
+                        #Build QC Mask once per variable
+                        qc_group = ds.groups.get('EffectiveQC0')
+                        if qc_group and var_name in qc_group.variables:
+                            qc_flags = qc_group.variables[var_name][:]
+                            qc_mask = (qc_flags > self.config.qc_threshold)
+                        else:
+                            qc_mask = np.zeros(obs_group.variables[var_name].shape, dtype=bool)
+    
+                        for group_name in data_groups:
+                            if group_name not in ds.groups or var_name not in ds.groups[group_name].variables:
+                               raise ValueError(
+                                     f"Missing data group '{group_name}' in {os.path.basename(filename)}.")
+    
+                            var_obj = ds.groups[group_name].variables[var_name]
+                            stats = calculate_masked_stats(var_obj, qc_mask, self.config.stats)
+                            if not stats:
+                                print("no stats")
+    
+                            long_name, units = get_variable_metadata(
+                                file_info['file_type'], var_name, mean_val=stats.get('mean')
+                            )
+                            for stat_name, stat_val in stats.items():
+                                if stat_val is None: continue
+                                print(stat_val,"  ",stat_name,"  ",group_name,"  ",self.config.qc_threshold)
+                                harvested_results.append(HarvestedData(
+                                    filenames=filename,
+                                    sensor=file_info['sensor'],
+                                    satellite=file_info['satellite'],
+                                    level=file_info['level'],
+                                    variables=var_name,
+                                    group=group_name,
+                                    longname=long_name,
+                                    units=units,
+                                    statistics=stat_name,
+                                    value=np.float32(stat_val),
+                                    filetime=file_time,
+                                    file_region=file_info['file_region'],
+                                    QC_threshold=self.config.qc_threshold
+                                ))
+    
+            except Exception as e:
+                print(f"Error processing {os.path.basename(filename)}: {e}")
+>       sys.exit(0)
+E       SystemExit: 0
+
+../src/score_hv/harvesters/soca_diags.py:259: SystemExit
+----------------------------- Captured stdout call -----------------------------
+running harvester: soca_diags
+20.247601552227692    mean    ObsValue    10.0
+22.64992904663086    median    ObsValue    10.0
+7.433576757441979    StdDev    ObsValue    10.0
+-1.1881109476089478    minimum    ObsValue    10.0
+31.44783592224121    maximum    ObsValue    10.0
+-0.011572417181327524    mean    oman    10.0
+-0.005374964326620102    median    oman    10.0
+0.14116205549992755    StdDev    oman    10.0
+-2.1696481704711914    minimum    oman    10.0
+4.407961368560791    maximum    oman    10.0
+0.000774545869631855    mean    ombg    10.0
+0.006451743189245462    median    ombg    10.0
+0.44214249728158916    StdDev    ombg    10.0
+-4.986067771911621    minimum    ombg    10.0
+4.211721897125244    maximum    ombg    10.0
+=============================== warnings summary ===============================
+../src/score_hv/harvesters/innov_netcdf.py:30
+  /Users/sfredrick/adam/score-hv-dev/src/score_hv/harvesters/innov_netcdf.py:30: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    MAX_CYCLE_DATETIME = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED test_sst_soca.py::test_soca_harvester[SST_No_Filter] - SystemExit: 0
+FAILED test_sst_soca.py::test_soca_harvester[SST_Strict_Filter] - SystemExit: 0
+========================= 2 failed, 1 warning in 1.43s =========================

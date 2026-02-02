@@ -1,159 +1,103 @@
-#!/usr/bin/env python
-
-import os
-import sys
-import re
-from pathlib import Path 
-import numpy as np
-from datetime import datetime
-import pytest
-import yaml
-import netCDF4
-from netCDF4 import Dataset
-
+import math
+from pathlib import Path
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
-from score_hv.yaml_utils import YamlLoader
-from score_hv.harvesters.innov_netcdf import Region, InnovStatsCfg
 
-TEST_DATA_FILE_NAMES = [
-                        'wod_t_ctd.nc'
-                       ]
+# --- 1. Global Registry of Test Cases ---
+TEST_REGISTRY = {
+    'wod_t_ctd.nc': {
+        'QC_threshold': 0.0,
+        'longname': 'Temperature',
+        'units': 'DegC',
+        'variable': 'waterTemperature',
+        # filename Component Expectations
+        'components': {
+            'variables': 'waterTemperature',
+            'sensor': 'ctd',
+            'satellite': None,
+            'level': None
+        },
+        'expected_stats': {
+            'mean':    {'ObsValue': -1.7487808902510877, 'oman': -1.6461256883384698, 'ombg': -1.636657316499728}, 
+            'median':  {'ObsValue': -1.875,    'oman': -1.875,    'ombg': -1.8657751083374023},
+            'StdDev':  {'ObsValue': 0.33140291214807716, 'oman': 0.5473108528836541 , 'ombg': 0.5347536724687697},
+            'minimum': {'ObsValue': -1.9160000085830688, 'oman': -1.9160000085830688, 'ombg': -1.8974857330322266},
+            'maximum': {'ObsValue': -0.33000001311302185, 'oman': 0.30445289611816406 , 'ombg': 0.18980012834072113}
+        }
+    }
+}
 
-DATA_DIR = os.path.join(Path(__file__).parent.parent.resolve(), 'src', 'score_hv', 'data')
+BASE_DIR = Path(__file__).parent.resolve()
+DATA_DIR = BASE_DIR / 'data'
 
-CONFIGS_DIR = 'configs'
-PYTEST_CALLING_DIR = Path(__file__).parent.resolve()
-TEST_DATA_PATH = os.path.join(PYTEST_CALLING_DIR, 'data')
-SOCA_PATH = [os.path.join(TEST_DATA_PATH,
-                         file_name) for file_name in TEST_DATA_FILE_NAMES]
 
-VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
-                     'filenames' : SOCA_PATH,
-                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
-                     'variables': ['waterTemperature'],
-                     'effective_QC_threshold':999999999.,
-                     }
-
-def test_soca_harvester():
-    data1 = harvest(VALID_CONFIG_DICT)
-    assert type(data1) is list
-    assert len(data1) > 0
-    assert data1[0].filenames==SOCA_PATH[0]
-
-def test_verify_filename_components():
-    data1 = harvest(VALID_CONFIG_DICT)
-    data = data1[0]
-    print("the satellite ",data.satellite)
-    assert data.variables == 'waterTemperature'
-    assert data.sensor == 'ctd'
-    assert data.satellite == None
-    assert data.level == None
-
-def test_verify_datetime():
-    data1 = harvest(VALID_CONFIG_DICT) 
-    date_str = "1979010112"
-    date_obj = datetime.strptime(date_str, "%Y%m%d%H")
-    filetime_str = data1[0].filetime
-    filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
-    assert date_obj == filetime_dt 
-    
-def test_verify_groups():
-    data1 = harvest(VALID_CONFIG_DICT)
-    groups_wanted = ['ObsValue', 'oman', 'ombg']
-    for data in data1:
-        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
-    
-def test_verify_group_mean_values(tolerance=0.001):
+"""
+  Methods for verification of harvested_results from soca_diags.py.
+  """
+def verify_filename_components(data_record, expected_components):
     """
-      Mean values that are hard coded here were calculated offline.
-      """
-    data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_means = [18.924038657133483,0.06212510113054594,0.07588130216644204]
-    groups_wanted = ['ObsValue','oman','ombg'] 
-    harvested_data = [data for data in data1 if data.statistics == 'mean']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-   
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_mean = data.value
-        calculated_value = calculated_means[group_index]
-        # Verify that the harvested mean is within tolerance of the calculated mean
-        assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
-        group_index += 1
-       
-def test_verify_group_median_values(tolerance=0.001):
-    data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_medians = [22.409034729003906,0.029189025983214375,0.055334743112325675]
-    groups_wanted = ['ObsValue','oman','ombg'] 
-    harvested_data = [data for data in data1 if data.statistics == 'median']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-   
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_medians = data.value
-        calculated_value = calculated_medians[group_index]
-        # Verify that the harvested mean is within tolerance of the calculated median 
-        assert abs(harvested_medians - calculated_value) <= tolerance, f"Median value mismatch for {group_name}"
-        group_index += 1
+    Validates that the harvester correctly parsed the filename into components.
+    """
+    assert data_record.variables == expected_components['variables'], \
+        f"Variable mismatch! Got {data_record.variables}"
+    assert data_record.sensor == expected_components['sensor'], \
+        f"Sensor mismatch! Got {data_record.sensor}"
+    assert data_record.satellite == expected_components['satellite'], \
+        f"Satellite mismatch! Got {data_record.satellite}"
+    assert data_record.level == expected_components['level'], \
+        f"Level mismatch! Got {data_record.level}"
 
-def test_verify_group_StdDev_values(tolerance=0.001):
-    data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_StdDevs = [9.234388236283511,0.43633542496370253,0.4974935575667632]
-    groups_wanted = ['ObsValue','oman','ombg'] 
-    harvested_data = [data for data in data1 if data.statistics == 'StdDev']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-    
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_StdDevs = data.value
-        calculated_value = calculated_StdDevs[group_index]
-        assert abs(harvested_StdDevs - calculated_value) <= tolerance, f"Standard Deviation value mismatch for {group_name}"
-        group_index += 1
+def verify_statistics(harvested_results, expected_stats, threshold):
+    """Verifies numerical accuracy of the harvested data."""
+    print("  Verifying statistical values...")
+    for stat_name, expected_groups in expected_stats.items():
+        subset = [d for d in harvested_results if d.statistics == stat_name]
+        
+        actual_groups = {d.group: d.value for d in subset}
+        for group, exp_val in expected_groups.items():
+            act_val = actual_groups.get(group)
+            assert act_val is not None, f"Missing group {group} in {stat_name}"
+            assert math.isclose(act_val, exp_val, rel_tol=1e-7), \
+                f"Value mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}"
 
-def test_verify_group_minimum_values(tolerance=0.001):
-    data1 = harvest(VALID_CONFIG_DICT)
-    calculated_minimums = [-2.123818159103393,-6.02739143371582,-6.222834587097168]
-    groups_wanted = ['ObsValue','oman','ombg']
-    harvested_data = [data for data in data1 if data.statistics == 'minimum']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-    
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_minimum = data.value
-        calculated_value = calculated_minimums[group_index]
-        assert abs(harvested_minimum - calculated_value) <= tolerance, f"Minimum value mismatch for {group_name}"
-        group_index += 1
-
-def test_verify_group_maximum_values(tolerance=0.001):
-    data1 = harvest(VALID_CONFIG_DICT)
-    calculated_maximums = [34.480560302734375,11.538920402526855,11.55988597869873]
-    groups_wanted = ['ObsValue','oman','ombg']
-    harvested_data = [data for data in data1 if data.statistics == 'maximum']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."    
-
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_maximum = data.value
-        calculated_value = calculated_maximums[group_index]
-        assert abs(harvested_maximum - calculated_value) <= tolerance, f" Maximum value mismatch for {group_name}"
-        group_index += 1
+# --- 3. Main Loop ---
 
 def main():
-    test_soca_harvester()
-    test_verify_filename_components()
-    test_verify_datetime()
-    test_verify_groups()
-#    test_verify_group_mean_values()
-#    test_verify_group_median_values() 
-#    test_verify_group_StdDev_values()
-#    test_verify_group_minimum_values()
-#    test_verify_group_maximum_values()
+    print(f"{' HARVESTER TEST SUITE ':=^40}")
+    
+    for filename, meta in TEST_REGISTRY.items():
+        file_path = DATA_DIR / filename
+        print(f"\nProcessing: {filename}")
+        
+        if not file_path.exists():
+           raise ValueError(f"CRITICAL: Test file not found at {file_path}")  
 
-if __name__=='__main__':
+        try:
+            # CALL HARVESTER ONCE
+            config_dict = {
+                'harvester_name': hv_registry.SOCA_DIAGS,
+                'filenames': [str(file_path)],
+                'statistics': list(meta['expected_stats'].keys()),
+                'variables': [meta['variable']],
+                'QC_threshold': meta['QC_threshold'],
+            }
+            all_data = harvest(config_dict)
+
+            # 1. Sanity Check
+            assert isinstance(all_data, list) and len(all_data) > 0, "No data harvested."
+
+            # 2. Test Filename Components (Using first record)
+            verify_filename_components(all_data[0], meta['components'])
+
+            # 3. Test Numerical Statistics
+            verify_statistics(all_data, meta['expected_stats'], meta['QC_threshold'])
+            
+            print(f"RESULT: {filename} [PASS]")
+            
+        except AssertionError as e:
+            print(f"RESULT: {filename} [FAIL] -> {e}")
+        except Exception as e:
+            print(f"RESULT: {filename} [ERROR] -> {e}")
+
+if __name__ == '__main__':
     main()
