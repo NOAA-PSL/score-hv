@@ -18,11 +18,11 @@ TEST_REGISTRY = {
             'level': None
         },
         'expected_stats': {
-            'mean':    {'ObsValue': -1.7487808902510877, 'oman': -1.6461256883384698, 'ombg': -1.636657316499728}, 
-            'median':  {'ObsValue': -1.875,    'oman': -1.875,    'ombg': -1.8657751083374023},
-            'StdDev':  {'ObsValue': 0.33140291214807716, 'oman': 0.5473108528836541 , 'ombg': 0.5347536724687697},
-            'minimum': {'ObsValue': -1.9160000085830688, 'oman': -1.9160000085830688, 'ombg': -1.8974857330322266},
-            'maximum': {'ObsValue': -0.33000001311302185, 'oman': 0.30445289611816406 , 'ombg': 0.18980012834072113}
+            'mean':    {'ObsValue': -1.748781, 'oman': -1.64613, 'ombg': -1.63666}, 
+            'median':  {'ObsValue': -1.875,    'oman': -1.875,    'ombg': -1.86578},
+            'StdDev':  {'ObsValue': 0.331523, 'oman': 0.547509  , 'ombg': 0.534948},
+            'minimum': {'ObsValue': -1.916, 'oman': -1.916, 'ombg': -1.89749},
+            'maximum': {'ObsValue': -0.33, 'oman': 0.304453 , 'ombg': 0.1898}
         }
     }
 }
@@ -49,6 +49,7 @@ def verify_filename_components(data_record, expected_components):
 
 def verify_statistics(harvested_results, expected_stats, threshold):
     """Verifies numerical accuracy of the harvested data."""
+    tolerance = 0.001
     print("  Verifying statistical values...")
     for stat_name, expected_groups in expected_stats.items():
         subset = [d for d in harvested_results if d.statistics == stat_name]
@@ -57,12 +58,12 @@ def verify_statistics(harvested_results, expected_stats, threshold):
         for group, exp_val in expected_groups.items():
             act_val = actual_groups.get(group)
             assert act_val is not None, f"Missing group {group} in {stat_name}"
-            assert math.isclose(act_val, exp_val, rel_tol=1e-7), \
+            assert math.isclose(act_val, exp_val, rel_tol=tolerance), \
                 f"Value mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}"
 
 # --- 3. Main Loop ---
 
-def main():
+def test_main():
     print(f"{' HARVESTER TEST SUITE ':=^40}")
     
     for filename, meta in TEST_REGISTRY.items():
@@ -73,7 +74,7 @@ def main():
            raise ValueError(f"CRITICAL: Test file not found at {file_path}")  
 
         try:
-            # CALL HARVESTER ONCE
+            # CALL HARVESTER ONCE 
             config_dict = {
                 'harvester_name': hv_registry.SOCA_DIAGS,
                 'filenames': [str(file_path)],

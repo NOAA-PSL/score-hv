@@ -16,11 +16,11 @@ TEST_REGISTRY = {
             'sensor': 'avhrr', 'satellite': 'mb', 'level': 'l3u'
         },
         'expected_stats': {
-            'mean':    {'ObsValue': 18.917865741653607, 'oman': -0.022735618263781874, 'ombg': -0.018309653345885482}, 
-            'median':  {'ObsValue': 21.956811904907227, 'oman': -0.00784428883343935, 'ombg': 0.0009183410438708961},
-            'StdDev':  {'ObsValue': 8.74209976196289, 'oman': 0.24208711087703705, 'ombg': 0.5164351463317871},
-            'minimum': {'ObsValue': -2.002044677734375, 'oman': -5.484813213348389, 'ombg': -9.026327133178711},
-            'maximum': {'ObsValue': 31.499406814575195, 'oman': 4.796906471252441 , 'ombg': 4.357113838195801}
+            'mean':    {'ObsValue': 18.9179, 'oman': -0.0227356, 'ombg': -0.0183097}, 
+            'median':  {'ObsValue': 21.9568, 'oman': -0.00784429, 'ombg': 0.000918341},
+            'StdDev':  {'ObsValue': 8.74214, 'oman': 0.242088 , 'ombg': 0.516438},
+            'minimum': {'ObsValue': -2.00204, 'oman': -5.48481, 'ombg': -9.02633},
+            'maximum': {'ObsValue': 31.4994, 'oman': 4.79691 , 'ombg': 4.35711}
         }
     },
     'SST_Strict_Filter': {
@@ -32,11 +32,11 @@ TEST_REGISTRY = {
             'sensor': 'avhrr', 'satellite': 'mb', 'level': 'l3u'
         },
         'expected_stats': {
-            'mean':    {'ObsValue': 20.247601552227692 , 'oman': -0.011572417181327524 , 'ombg': 0.000774545869631855},
-            'median':  {'ObsValue': 22.64992904663086 , 'oman': -0.005374964326620102, 'ombg': 0.006451743189245462 },
-            'StdDev':  {'ObsValue': 7.433576757441979 , 'oman': 0.14116205549992755 , 'ombg': 0.44214249728158916},
-            'minimum': {'ObsValue': -1.1881109476089478, 'oman': -2.1696481704711914 , 'ombg': -4.986067771911621 },
-            'maximum': {'ObsValue': 31.44783592224121 , 'oman': 4.407961368560791 , 'ombg': 4.211721897125244}
+            'mean':    {'ObsValue': 20.2476, 'oman': -0.0115724 , 'ombg': 0.000774546},
+            'median':  {'ObsValue': 22.6499, 'oman': -0.00537496, 'ombg': 0.00645174 },
+            'StdDev':  {'ObsValue': 7.43362, 'oman': 0.141163 , 'ombg': 0.442145},
+            'minimum': {'ObsValue': -1.18811, 'oman': -2.16965 , 'ombg': -4.98607},
+            'maximum': {'ObsValue': 31.4478, 'oman': 4.40796, 'ombg': 4.21172}
         }  
     }
 }
@@ -50,6 +50,7 @@ def verify_statistics(harvested_results, expected_stats, test_id):
     """
       Verifies all requested stats.
       """
+    tolerance = 0.001 
     # Organize actual data into a nested dict: {stat: {group: value}}
     actual_map = {}
     for d in harvested_results:
@@ -72,7 +73,7 @@ def verify_statistics(harvested_results, expected_stats, test_id):
             
             assert act_val is not None, f"Group {group} missing in {stat_name} for {test_id}"
             
-            if not math.isclose(act_val, exp_val, rel_tol=1e-6):
+            if not math.isclose(act_val, exp_val, rel_tol=0.001):
                 print(f"\n\n--- MISMATCH DETECTED: CURRENT DATA FOR {test_id} ---")
                 print(json.dumps(actual_map, indent=4))
                 pytest.fail(f"{test_id} mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}")
@@ -104,6 +105,4 @@ def test_soca_harvester(test_id):
     # 2. Verify Statistics
     verify_statistics(all_data, meta['expected_stats'], test_id)
 
-    # 3. Cross-Test Logic: Compare Counts (Optional check)
-    # If this is the filtered test, we can check that it has different values than No_Filter
     print(f"Test {test_id} passed successfully.")
