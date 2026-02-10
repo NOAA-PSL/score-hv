@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os,sys
 import numpy as np
 import netCDF4
@@ -29,7 +27,7 @@ VALID_VARIABLES = ('sst', 'icec', 'salinity', 'waterTemperature',
 HarvestedData = namedtuple('HarvestedData', [
     'filenames', 'sensor', 'satellite', 'level', 'variables', 
     'group', 'longname', 'units', 'statistics', 'value', 
-    'filetime', 'file_region', 'QC_threshold',
+    'filetime', 'file_region', 'QC_threshold', 'ocean_depth_bins'
 ])
 
 
@@ -260,6 +258,7 @@ class SOCADiagsConfig:
         self.variables = self.config_data.get('variables', [])
         self.stats = self.config_data.get('statistics', ['mean'])
         self.qc_threshold = self.config_data.get('QC_threshold', 0.0)
+        self.ocean_depth_bins = self.config_data.get('ocean_depth_bins', [None])
 
 @dataclass
 class SOCADiagsHv:
@@ -267,8 +266,10 @@ class SOCADiagsHv:
 
     def get_data(self):
         harvested_results = []
+        print("in the harvester")
         data_groups = ['ObsValue', 'oman', 'ombg']
-
+        print(self.config.ocean_depth_bins)
+         
         for filename in self.config.harvest_filenames:
             if not os.path.exists(filename):
                 raise FileNotFoundError(f"The file '{filename}' does not exist in the current directory.")                 
@@ -309,39 +310,54 @@ class SOCADiagsHv:
                         else:
                             qc_mask = np.zeros(obs_group.variables[var_name].shape, dtype=bool)
 
-                        for group_name in data_groups:
-                            if group_name not in ds.groups or var_name not in ds.groups[group_name].variables:
-                               raise ValueError(
-                                     f"Missing data group '{group_name}' in {os.path.basename(filename)}.")
+                        for d_bin in self.config.ocean_depth_bins:
+                            # Handle potential depth masking
+                            if d_bin is not None and obs_metadata['depth'] is not None:
+                                d_min, d_max = d_bin
+                                print("the min and max ",d_min,d_max)
+                                # Mask data outside the current depth range
+                                depth_mask = (obs_metadata['depth'] < d_min) | (obs_metadata['depth'] > d_max)
+                                combined_mask = qc_mask | depth_mask
+                                bin_label = f"{d_min}-{d_max}m"
+                            else:
+                                # Fallback for surface data (SST/ICEC) or if no bins provided
+                                combined_mask = qc_mask
+                                bin_label = "surface"
+                                
+                            for group_name in data_groups:
+                                if group_name not in ds.groups or var_name not in ds.groups[group_name].variables:
+                                   raise ValueError(
+                                         f"Missing data group '{group_name}' in {os.path.basename(filename)}.")
                
-                            var_obj = ds.groups[group_name].variables[var_name]
-                            stats = calculate_masked_stats(var_obj, qc_mask, self.config.stats)
-                            if not stats:
-                                print("no stats") 
-                                continue
+                                var_obj = ds.groups[group_name].variables[var_name]
+                                stats = calculate_masked_stats(var_obj, combined_mask, self.config.stats)
+                                if not stats:
+                                    print("no stats") 
+                                    continue
 
-                            current_mean = stats.get('mean')
-                            long_name, units = get_variable_metadata(
-                                file_info['file_type'], var_name, mean_val=current_mean)
+                                current_mean = stats.get('mean')
+                                long_name, units = get_variable_metadata(
+                                    file_info['file_type'], var_name, mean_val=current_mean)
 
-                            for stat_name, stat_val in stats.items():
-                                if stat_val is None: continue
-                                print(stat_val,"  ",stat_name,"  ",group_name,"  ",self.config.qc_threshold) 
-                                harvested_results.append(HarvestedData(
-                                    filenames=filename,
-                                    sensor=file_info['sensor'],
-                                    satellite=file_info['satellite'],
-                                    level=file_info['level'],
-                                    variables=var_name,
-                                    group=group_name,
-                                    longname=long_name,
-                                    units=units,
-                                    statistics=stat_name,
-                                    value=np.float32(stat_val),
-                                    filetime=file_time,
-                                    file_region=file_info['file_region'],
-                                    QC_threshold=self.config.qc_threshold
-                                ))
+                                for stat_name, stat_val in stats.items():
+                                    if stat_val is None: continue
+                                        print(stat_val,"  ",stat_name,"  ",group_name,"  ",self.config.qc_threshold) 
+                                   
+                                     harvested_results.append(HarvestedData(
+                                        filenames=filename,
+                                        sensor=file_info['sensor'],
+                                        satellite=file_info['satellite'],
+                                        level=file_info['level'],
+                                        variables=var_name,
+                                        group=group_name,
+                                        longname=long_name,
+                                        units=units,
+                                        statistics=stat_name,
+                                        value=np.float32(stat_val),
+                                        filetime=file_time,
+                                        file_region=file_info['file_region'],
+                                        QC_threshold=self.config.qc_threshold
+                                   ))
 
             except Exception as e:
                 print(f"Error processing {os.path.basename(filename)}: {e}")

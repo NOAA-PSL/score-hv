@@ -10,6 +10,7 @@ TEST_REGISTRY = {
         'longname': 'Temperature',
         'units': 'DegC',
         'variable': 'waterTemperature',
+        'ocean_depth_bins': [(0, 20), (20, 100), (100, 500)],
         # filename Component Expectations
         'components': {
             'variables': 'waterTemperature',
@@ -81,6 +82,7 @@ def test_main():
                 'statistics': list(meta['expected_stats'].keys()),
                 'variables': [meta['variable']],
                 'QC_threshold': meta['QC_threshold'],
+                'ocean_depth_bins': meta.get('ocean_depth_bins', [None]),
             }
             all_data = harvest(config_dict)
 
