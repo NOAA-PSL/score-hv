@@ -53,12 +53,13 @@ def test_verify_filename_components():
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
     expected_file_dt = datetime.strptime("2021-07-02 22:12:00","%Y-%m-%d %H:%M:%S") 
-    harvester_file_dt = data1[0].filetime
-    assert expected_file_dt ==  harvester_file_dt 
+    for item in data1:
+        harvester_file_dt = item.filetime
+        assert expected_file_dt ==  harvester_file_dt 
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
-    groups_wanted = ['ObsValue', 'oman', 'ombg']
+    groups_wanted = ('ObsValue', 'oman', 'ombg', 'ObsError')
     for data in data1:
         assert data.group in groups_wanted, f"Unexpected group: {data.group}"
    

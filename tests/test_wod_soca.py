@@ -101,4 +101,4 @@ def test_main():
             print(f"RESULT: {filename} [ERROR] -> {e}")
 
 if __name__ == '__main__':
-    main()
+    test_main()
