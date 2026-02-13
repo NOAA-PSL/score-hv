@@ -46,14 +46,13 @@ def test_verify_filename_components():
     assert data.variables == 'seaIceFraction'
     assert data.sensor == 'amsr2'
     assert data.file_region == 'north'   
-
+    
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
-    date_str = "2021070300"
-    date_obj = datetime.strptime(date_str, "%Y%m%d%H")
-    filetime_str = data1[0].filetime
-    filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
-    assert date_obj == filetime_dt 
+    expected_file_dt = datetime.strptime("2021-07-02 23:16:58", "%Y-%m-%d %H:%M:%S")
+    harvester_file_dt = data1[0].filetime
+    print(expected_file_dt,"  ",harvester_file_dt)
+    assert expected_file_dt ==  harvester_file_dt 
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
@@ -91,6 +90,7 @@ def test_verify_group_mean_values(tolerance=0.001):
         harvested_mean = data.value
         calculated_value = calculated_means[group_index]
         # Verify that the harvested mean is within tolerance of the calculated mean
+        print(harvested_mean,"  ",calculated_value)
         assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
         group_index += 1
        
