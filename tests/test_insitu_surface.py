@@ -48,18 +48,16 @@ def test_verify_filename_components():
     for item in data1:
         if item.variables not in expected_variable_names:
            raise ValueError(f"Error: {item.variables} is not in the expected variable list.")  
-        assert item.sensor == None   
-        assert item.satellite == 'trkob'
+        assert item.sensor == 'trkob'  
+        assert item.satellite == None
         assert item.level == None
         assert item.file_region == 'global'
 
 def test_verify_datetime():
-    data1 = harvest(VALID_CONFIG_DICT)
-    date_str = "2021070300"
-    date_obj = datetime.strptime(date_str, "%Y%m%d%H")
-    filetime_str = data1[0].filetime
-    filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
-    assert date_obj == filetime_dt 
+    data1 = harvest(VALID_CONFIG_DICT) 
+    expected_file_dt = datetime.strptime("2021-07-02 23:15:00","%Y-%m-%d %H:%M:%S") 
+    harvester_file_dt = data1[0].filetime
+    assert expected_file_dt ==  harvester_file_dt 
 
 def test_verify_group_mean_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 
@@ -140,7 +138,6 @@ def test_verify_group_minimum_values(tolerance=.001):
            if item.group == 'ObsValue':
               if item.variables == 'seaSurfaceSalinity':
                  calc_value = 32.0 
-                 print(item.value)
                  assert calc_value <= (1 + tolerance) * item.value
                  assert calc_value >= (1 - tolerance) * item.value
               elif item.variables == 'seaSurfaceTemperature':
