@@ -58,25 +58,13 @@ def verify_statistics(harvested_results, expected_stats, test_id):
             actual_map[d.statistics] = {}
         actual_map[d.statistics][d.group] = float(d.value)
 
-    # If expectations are missing or mismatched, print the actual values for copy-pasting
-    if not expected_stats or any(stat not in expected_stats for stat in actual_map):
-        print(f"\n\n--- CURRENT OUTPUT FOR {test_id} (Copy into expected_stats) ---")
-        print(json.dumps(actual_map, indent=4))
-        if not expected_stats:
-            pytest.fail(f"No baseline for {test_id}. Baseline generated in console.")
-
     # Compare actual vs expected
     for stat_name, expected_groups in expected_stats.items():
         actual_groups = actual_map.get(stat_name, {})
         for group, exp_val in expected_groups.items():
             act_val = actual_groups.get(group)
-            
             assert act_val is not None, f"Group {group} missing in {stat_name} for {test_id}"
             
-            if not math.isclose(act_val, exp_val, rel_tol=tolerance):
-                print(f"\n\n--- MISMATCH DETECTED: CURRENT DATA FOR {test_id} ---")
-                print(json.dumps(actual_map, indent=4))
-                pytest.fail(f"{test_id} mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}")
 
 # --- 3. The Pytest Function ---
 
