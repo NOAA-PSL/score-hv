@@ -30,7 +30,7 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH,
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
-                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
+                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum', 'rmse'],
                      'variables': ['icec'],
                      }
 
@@ -69,10 +69,10 @@ def test_verify_group_mean_values(tolerance=0.001):
       calculated with the NCO function 
       ncwa -g groupname -v seaIceFraction -a Location icec_amsr2_north.2021070300.nc4 mean.nc
       mean.nc is then read with ncks -H -C -v seaIceFraction mean.nc to get the mean value.
-      calculated_values are 0.5933418, 0.06660749, 0.1327579
+      calculated_values are 0.5933418, 0.06660749, 0.1327579, 
       """
     data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_means = [0.5933418,0.06660749,0.1327579]
+    calculated_means = [0.5933418,0.06660749,0.1327579,0.09999996570055025]
     groups_wanted = groups_supported() 
     group_index = 0
     # Filter out only the data that has the "mean" statistic
@@ -83,18 +83,18 @@ def test_verify_group_mean_values(tolerance=0.001):
     group_index = 0
     for data in harvested_data:
         group_name = data.group
-        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg':
+        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg' or group_name == 'ObsError':
             harvested_mean = data.value
             calculated_value = calculated_means[group_index]
             # Verify that the harvested mean is within tolerance of the calculated mean
             assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
             group_index += 1
-            
-    assert group_index == 3
+             
+    assert group_index == 4
        
 def test_verify_group_median_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_medians = [0.949999988079071,0.01528690755367279,0.043333768844604485]
+    calculated_medians = [0.949999988079071,0.01528690755367279,0.043333768844604485,0.10000000149011612 ]
     groups_wanted = groups_supported() 
     group_index = 0
     harvested_data = [data for data in data1 if data.statistics == 'median']
@@ -103,19 +103,19 @@ def test_verify_group_median_values(tolerance=0.001):
     group_index = 0
     for data in harvested_data:
         group_name = data.group
-        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg':
+        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg' or group_name == 'ObsError':
             harvested_medians = data.value
             calculated_value = calculated_medians[group_index]
             # Verify that the harvested mean is within tolerance of the calculated median 
             assert abs(harvested_medians - calculated_value) <= tolerance, f"Median value mismatch for {group_name}"
             group_index += 1
             
-    assert group_index == 3
+    assert group_index == 4
             
 
 def test_verify_group_StdDev_values(tolerance=0.001):
     data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_StdDevs = [0.46483881994362,0.15594015101052516,0.20401885665594757]
+    calculated_StdDevs = [0.46483881994362,0.15594015101052516,0.20401885665594757,3.578956586647309e-08]
     groups_wanted = groups_supported() 
     group_index = 0
     harvested_data = [data for data in data1 if data.statistics == 'StdDev']
@@ -124,13 +124,13 @@ def test_verify_group_StdDev_values(tolerance=0.001):
     group_index = 0
     for data in harvested_data:
         group_name = data.group
-        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg':
+        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg' or group_name == 'ObsError':
             harvested_StdDevs = data.value
             calculated_value = calculated_StdDevs[group_index]
             assert abs(harvested_StdDevs - calculated_value) <= tolerance, f"Standard Deviation value mismatch for {group_name}"
             group_index += 1
             
-    assert group_index == 3
+    assert group_index == 4
 
 def test_verify_group_minimum_values(tolerance=0.001):
     """
@@ -141,7 +141,7 @@ def test_verify_group_minimum_values(tolerance=0.001):
       calculated_values are 0.5933418, 0.06660749, 0.1327579
       """
     data1 = harvest(VALID_CONFIG_DICT)
-    calculated_minimums = [0.0,-0.8637589812278748,-0.8629218339920045]
+    calculated_minimums = [0.0,-0.8637589812278748,-0.8629218339920045,0.10000000149011612]
     groups_wanted = groups_supported()
     group_index = 0
     harvested_data = [data for data in data1 if data.statistics == 'minimum']
@@ -150,13 +150,13 @@ def test_verify_group_minimum_values(tolerance=0.001):
     group_index = 0
     for data in harvested_data:
         group_name = data.group
-        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg':
+        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg' or group_name == 'ObsError':
             harvested_minimum = data.value
             calculated_value = calculated_minimums[group_index]
             assert abs(harvested_minimum - calculated_value) <= tolerance, f"Minimum value mismatch for {group_name}"
             group_index += 1
     
-    assert group_index == 3
+    assert group_index == 4
 
 def test_verify_group_maximum_values(tolerance=0.001):
     """
@@ -167,7 +167,7 @@ def test_verify_group_maximum_values(tolerance=0.001):
       calculated_values are 0.5933418, 0.06660749, 0.1327579
       """
     data1 = harvest(VALID_CONFIG_DICT)
-    calculated_maximums = [1.0,1.0,1.0]
+    calculated_maximums = [1.0,1.0,1.0,0.10000000149011612]
     groups_wanted = groups_supported()
     group_index = 0
     harvested_data = [data for data in data1 if data.statistics == 'maximum']
@@ -176,13 +176,35 @@ def test_verify_group_maximum_values(tolerance=0.001):
     group_index = 0
     for data in harvested_data:
         group_name = data.group
-        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg':
+        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg' or group_name == 'ObsError':
             harvested_maximum = data.value
             calculated_value = calculated_maximums[group_index]
             assert abs(harvested_maximum - calculated_value) <= tolerance, f" Maximum value mismatch for {group_name}"
             group_index += 1
             
-    assert group_index == 3
+    assert group_index == 4
+
+
+
+def test_verify_group_rmse_values(tolerance=0.001):
+    data1 = harvest(VALID_CONFIG_DICT)
+    calculated_rmse = [0.7537433,0.169569,0.24341,0.1]
+    groups_wanted = groups_supported()
+    group_index = 0
+    harvested_data = [data for data in data1 if data.statistics == 'rmse']
+    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
+
+    group_index = 0
+    for data in harvested_data:
+        group_name = data.group
+        if group_name == 'ObsValue' or group_name == 'oman' or group_name == 'ombg' or group_name == 'ObsError':
+            harvested_rmse = data.value
+            calculated_value = calculated_rmse[group_index]
+            # Verify that the harvested mean is within tolerance of the calculated median
+            assert abs(harvested_rmse - calculated_value) <= tolerance, f"rmse value mismatch for {group_name}"
+            group_index += 1
+
+    assert group_index == 4
 
 def main():
     test_soca_harvester()
@@ -194,6 +216,7 @@ def main():
     test_verify_group_StdDev_values()
     test_verify_group_minimum_values()
     test_verify_group_maximum_values()
+    test_verify_group_rmse_values()
 
 if __name__=='__main__':
     main()

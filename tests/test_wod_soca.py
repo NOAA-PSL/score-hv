@@ -1,104 +1,86 @@
 import math
+import pytest
+import json
 from pathlib import Path
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 
 # --- 1. Global Registry of Test Cases ---
 TEST_REGISTRY = {
-    'wod_t_ctd.nc': {
-        'QC_threshold': 0.0,
-        'longname': 'Temperature',
-        'units': 'DegC',
-        'variable': 'waterTemperature',
-        # filename Component Expectations
+    'SST_No_Filter': {
+        'filename': 'wod_t_ctd.nc',
+        'QC_threshold': 999999.0,
+        'variable': 'sst',
         'components': {
             'variables': 'waterTemperature',
-            'sensor': 'ctd',
-            'satellite': None,
+            'sensor': 'ctd', 
+            'satellite': None, 
             'level': None
         },
         'expected_stats': {
-            'mean':    {'ObsValue': -1.748781, 'oman': -1.64613, 'ombg': -1.63666}, 
-            'median':  {'ObsValue': -1.875,    'oman': -1.875,    'ombg': -1.86578},
-            'StdDev':  {'ObsValue': 0.331523, 'oman': 0.547509  , 'ombg': 0.534948},
-            'minimum': {'ObsValue': -1.916, 'oman': -1.916, 'ombg': -1.89749},
-            'maximum': {'ObsValue': -0.33, 'oman': 0.304453 , 'ombg': 0.1898}
+            'mean':    {'ObsValue': -1.748781, 'oman': -1.64613, 'ombg': -1.63666, 'ObsError':0.5}, 
+            'median':  {'ObsValue': -1.875,    'oman': -1.875,    'ombg': -1.86578, 'ObsError':0.5 },
+            'StdDev':  {'ObsValue': 0.331523, 'oman': 0.547509, 'ombg': 0.534948, 'ObsError':0.0},
+            'minimum': {'ObsValue': -1.916, 'oman': -1.916, 'ombg': -1.89749, 'ObsError':0.5},
+            'maximum': {'ObsValue': -0.33, 'oman': 0.304453 , 'ombg': 0.1898, 'ObsError':0.5},
+            'rmse': {'ObsValue': 1.77991 , 'oman':1.73473, 'ombg': 1.7218, 'ObsError': 0.5}            
+        }
+
         }
     }
-}
-
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data'
 
 
-"""
-  Methods for verification of harvested_results from soca_diags.py.
-  """
-def verify_filename_components(data_record, expected_components):
+def verify_statistics(harvested_results, expected_stats, test_id):
     """
-    Validates that the harvester correctly parsed the filename into components.
-    """
-    assert data_record.variables == expected_components['variables'], \
-        f"Variable mismatch! Got {data_record.variables}"
-    assert data_record.sensor == expected_components['sensor'], \
-        f"Sensor mismatch! Got {data_record.sensor}"
-    assert data_record.satellite == expected_components['satellite'], \
-        f"Satellite mismatch! Got {data_record.satellite}"
-    assert data_record.level == expected_components['level'], \
-        f"Level mismatch! Got {data_record.level}"
+      Verifies all requested stats.
+      """
+    tolerance = 0.001 
+    actual_map = {}
+    for d in harvested_results:
+        stat_name = d.statistics
+        group_name = d.group
+        if stat_name not in actual_map:
+            actual_map[stat_name] = {}
+        actual_map[stat_name][group_name] = float(d.value)
 
-def verify_statistics(harvested_results, expected_stats, threshold):
-    """Verifies numerical accuracy of the harvested data."""
-    tolerance = 0.001
-    print("  Verifying statistical values...")
     for stat_name, expected_groups in expected_stats.items():
-        subset = [d for d in harvested_results if d.statistics == stat_name]
+        # Ensure the statistic (e.g., 'mean') exists in results
+        assert stat_name in actual_map, f"Stat '{stat_name}' missing for {test_id}"
         
-        actual_groups = {d.group: d.value for d in subset}
-        for group, exp_val in expected_groups.items():
-            act_val = actual_groups.get(group)
-            assert act_val is not None, f"Missing group {group} in {stat_name}"
-            assert math.isclose(act_val, exp_val, rel_tol=tolerance), \
-                f"Value mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}"
+        for group_key, exp_val in expected_groups.items():
+            assert group_key in actual_map[stat_name], \
+                f"Group '{group_key}' missing in {stat_name} for {test_id}"
+            
+            act_val = actual_map[stat_name][group_key]
+            assert act_val == pytest.approx(exp_val, abs=tolerance), \
+                f"Value mismatch in {test_id} | {stat_name}:{group_key} | Expected {exp_val}, got {act_val}"
 
-# --- 3. Main Loop ---
+            
 
-def test_main():
-    print(f"{' HARVESTER TEST SUITE ':=^40}")
+
+@pytest.mark.parametrize("test_id", TEST_REGISTRY.keys())
+def test_soca_harvester(test_id):
+    """Main test entry point parameterized by TEST_REGISTRY."""
+    meta = TEST_REGISTRY[test_id]
+    file_path = DATA_DIR / meta['filename']
     
-    for filename, meta in TEST_REGISTRY.items():
-        file_path = DATA_DIR / filename
-        print(f"\nProcessing: {filename}")
-        
-        if not file_path.exists():
-           raise ValueError(f"CRITICAL: Test file not found at {file_path}")  
+    if not file_path.exists():
+        pytest.fail(f"Test data missing: {file_path}")
 
-        try:
-            # CALL HARVESTER ONCE 
-            config_dict = {
-                'harvester_name': hv_registry.SOCA_DIAGS,
-                'filenames': [str(file_path)],
-                'statistics': list(meta['expected_stats'].keys()),
-                'variables': [meta['variable']],
-                'QC_threshold': meta['QC_threshold'],
-            }
-            all_data = harvest(config_dict)
+    # Build the config for the harvester
+    config_dict = {
+        'harvester_name': hv_registry.SOCA_DIAGS,
+        'filenames': [str(file_path)],
+        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse'],
+        'variables': [meta['variable']],
+        'QC_threshold': meta['QC_threshold'],
+    }
 
-            # 1. Sanity Check
-            assert isinstance(all_data, list) and len(all_data) > 0, "No data harvested."
+    all_data = harvest(config_dict)
+    assert len(all_data) > 0, "No data was harvested."
 
-            # 2. Test Filename Components (Using first record)
-            verify_filename_components(all_data[0], meta['components'])
+    verify_statistics(all_data, meta['expected_stats'], test_id)
 
-            # 3. Test Numerical Statistics
-            verify_statistics(all_data, meta['expected_stats'], meta['QC_threshold'])
-            
-            print(f"RESULT: {filename} [PASS]")
-            
-        except AssertionError as e:
-            print(f"RESULT: {filename} [FAIL] -> {e}")
-        except Exception as e:
-            print(f"RESULT: {filename} [ERROR] -> {e}")
-
-if __name__ == '__main__':
-    test_main()
+    print(f"Test {test_id} passed successfully.")

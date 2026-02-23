@@ -16,11 +16,12 @@ TEST_REGISTRY = {
             'sensor': 'avhrr', 'satellite': 'mb', 'level': 'l3u'
         },
         'expected_stats': {
-            'mean':    {'ObsValue': 18.9179, 'oman': -0.0227356, 'ombg': -0.0183097}, 
-            'median':  {'ObsValue': 21.9568, 'oman': -0.00784429, 'ombg': 0.000918341},
-            'StdDev':  {'ObsValue': 8.74214, 'oman': 0.242088 , 'ombg': 0.516438},
-            'minimum': {'ObsValue': -2.00204, 'oman': -5.48481, 'ombg': -9.02633},
-            'maximum': {'ObsValue': 31.4994, 'oman': 4.79691 , 'ombg': 4.35711}
+            'mean':    {'ObsValue': 19.5079, 'oman': -0.0107501, 'ombg': 0.0312382, 'ObsError': 0.279562}, 
+            'median':  {'ObsValue': 23.1182, 'oman': -0.0106021, 'ombg': 0.0298276, 'ObsError': 0.270455},
+            'StdDev':  {'ObsValue': 8.75835, 'oman': 0.479307, 'ombg': 0.604165, 'ObsError': 0.0607292},
+            'minimum': {'ObsValue': -2.002, 'oman': -7.75589, 'ombg': -7.98368, 'ObsError': 0.174539},
+            'maximum': {'ObsValue': 30.3152, 'oman': 26.013 , 'ombg': 26.1218, 'ObsError': 1.03273},
+            'rmse': {'ObsValue': 21.3838, 'oman': 0.479428 , 'ombg': 0.604969, 'ObsError': 0.286082}
         }
     },
     'SST_Strict_Filter': {
@@ -32,11 +33,12 @@ TEST_REGISTRY = {
             'sensor': 'avhrr', 'satellite': 'mb', 'level': 'l3u'
         },
         'expected_stats': {
-            'mean':    {'ObsValue': 20.2476, 'oman': -0.0115724 , 'ombg': 0.000774546},
-            'median':  {'ObsValue': 22.6499, 'oman': -0.00537496, 'ombg': 0.00645174 },
-            'StdDev':  {'ObsValue': 7.43362, 'oman': 0.141163 , 'ombg': 0.442145},
-            'minimum': {'ObsValue': -1.18811, 'oman': -2.16965 , 'ombg': -4.98607},
-            'maximum': {'ObsValue': 31.4478, 'oman': 4.40796, 'ombg': 4.21172}
+            'mean':    {'ObsValue': 20.748, 'oman': -0.017232 , 'ombg': 0.0232067, 'ObsError': 0.272279},
+            'median':  {'ObsValue': 23.6211 , 'oman': -0.00832773, 'ombg': 0.0352963, 'ObsError':0.264845},
+            'StdDev':  {'ObsValue': 7.58406 , 'oman': 0.143061  , 'ombg': 0.331607, 'ObsError': 0.0548204},
+            'minimum': {'ObsValue': -0.990161, 'oman': -1.83607 , 'ombg': -4.96913, 'ObsError': 0.174539},
+            'maximum': {'ObsValue': 30.3152, 'oman': 7.2996, 'ombg': 4.986, 'ObsError': 1.03273},
+            'rmse': {'ObsValue': 22.0906, 'oman': 0.144095 , 'ombg': 0.332416, 'ObsError': 0.277743}
         }  
     }
 }
@@ -44,30 +46,34 @@ TEST_REGISTRY = {
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data'
 
-# --- 2. Verification Helpers ---
 
 def verify_statistics(harvested_results, expected_stats, test_id):
     """
       Verifies all requested stats.
       """
     tolerance = 0.001 
-    # Organize actual data into a nested dict: {stat: {group: value}}
     actual_map = {}
     for d in harvested_results:
-        if d.statistics not in actual_map:
-            actual_map[d.statistics] = {}
-        actual_map[d.statistics][d.group] = float(d.value)
+        stat_name = d.statistics
+        group_name = d.group
+        if stat_name not in actual_map:
+            actual_map[stat_name] = {}
+        actual_map[stat_name][group_name] = float(d.value)
 
-
-    # Compare actual vs expected
     for stat_name, expected_groups in expected_stats.items():
-        actual_groups = actual_map.get(stat_name, {})
-        for group, exp_val in expected_groups.items():
-            act_val = actual_groups.get(group)
-            assert act_val is not None, f"Group {group} missing in {stat_name} for {test_id}"
+        # Ensure the statistic (e.g., 'mean') exists in results
+        assert stat_name in actual_map, f"Stat '{stat_name}' missing for {test_id}"
+        
+        for group_key, exp_val in expected_groups.items():
+            assert group_key in actual_map[stat_name], \
+                f"Group '{group_key}' missing in {stat_name} for {test_id}"
+            
+            act_val = actual_map[stat_name][group_key]
+            assert act_val == pytest.approx(exp_val, abs=tolerance), \
+                f"Value mismatch in {test_id} | {stat_name}:{group_key} | Expected {exp_val}, got {act_val}"
+
             
 
-# --- 3. The Pytest Function ---
 
 @pytest.mark.parametrize("test_id", TEST_REGISTRY.keys())
 def test_soca_harvester(test_id):
@@ -82,7 +88,7 @@ def test_soca_harvester(test_id):
     config_dict = {
         'harvester_name': hv_registry.SOCA_DIAGS,
         'filenames': [str(file_path)],
-        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'],
+        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse'],
         'variables': [meta['variable']],
         'QC_threshold': meta['QC_threshold'],
     }

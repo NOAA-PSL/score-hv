@@ -16,11 +16,12 @@ TEST_REGISTRY = {
             'sensor': 'amsr2', 'satellite': None, 'level': None
         },
         'expected_stats': {
-            'mean':    {'ObsValue': 0.503423, 'oman': 0.00413683, 'ombg': 0.00636585}, 
-            'median':  {'ObsValue': 0.7, 'oman': 2.54409e-33, 'ombg': 0.0},
-            'StdDev':  {'ObsValue': 0.489884, 'oman': 0.0694154, 'ombg': 0.0876204},
-            'minimum': {'ObsValue': 0.0, 'oman': -0.979116, 'ombg': -1.0},
-            'maximum': {'ObsValue': 1.0, 'oman': 1.06013, 'ombg': 1.0}
+            'mean':    {'ObsValue': 0.503423, 'oman': 0.00413683, 'ombg': 0.00636585, 'ObsError':0.1}, 
+            'median':  {'ObsValue': 0.7, 'oman': 2.54409e-33, 'ombg': 0.0,  'ObsError': 0.1},
+            'StdDev':  {'ObsValue': 0.489884, 'oman': 0.0694154, 'ombg': 0.0876204, 'ObsError': 0.0},
+            'minimum': {'ObsValue': 0.0, 'oman': -0.979116, 'ombg': -1.0, 'ObsError': 0.1},
+            'maximum': {'ObsValue': 1.0, 'oman': 1.06013, 'ombg': 1.0, 'ObsError': 0.1},
+            'rmse': {'ObsValue': 0.702439 , 'oman':0.0695385, 'ombg': 0.0878513, 'ObsError': 0.1}
         }
     },
     'ICEC_Strict_Filter': {
@@ -32,11 +33,12 @@ TEST_REGISTRY = {
             'sensor': 'amsr2', 'satellite': None, 'level': None
         },
         'expected_stats': {
-            'mean':    {'ObsValue': 0.794636, 'oman':  -0.000387731, 'ombg': 0.00311572},
-            'median':  {'ObsValue': 1.0, 'oman': 0.000454241, 'ombg': 2.39292e-05},
-            'StdDev':  {'ObsValue': 0.389075, 'oman': 0.0325543, 'ombg': 0.0618738},
-            'minimum': {'ObsValue': 0.0, 'oman': -0.495688, 'ombg': -0.499915},
-            'maximum': {'ObsValue': 1.0, 'oman': 0.528345, 'ombg': 0.5}
+            'mean':    {'ObsValue': 0.794636, 'oman':  -0.000387731, 'ombg': 0.00311572, 'ObsError': 0.1},
+            'median':  {'ObsValue': 1.0, 'oman': 0.000454241, 'ombg': 2.39292e-05, 'ObsError': 0.1},
+            'StdDev':  {'ObsValue': 0.389075, 'oman': 0.0325543, 'ombg': 0.0618738, 'ObsError': 0.0},
+            'minimum': {'ObsValue': 0.0, 'oman': -0.495688, 'ombg': -0.499915, 'ObsError': 0.1},
+            'maximum': {'ObsValue': 1.0, 'oman': 0.528345, 'ombg': 0.5, 'ObsError': 0.1},
+            'rmse': {'ObsValue': 0.884774, 'oman':0.0325566, 'ombg': 0.0619521, 'ObsError': 0.1}
         }  
     }
 }
@@ -48,23 +50,34 @@ DATA_DIR = BASE_DIR / 'data'
 
 def verify_statistics(harvested_results, expected_stats, test_id):
     """
-      Verifies all requested stats.
-      """
-    tolerance = 0.001  
-    # Organize actual data into a nested dict: {stat: {group: value}}
+       Verifies harvested stats match expected values exactly by key.
+       """
+    tolerance = 0.001
     actual_map = {}
     for d in harvested_results:
         if d.statistics not in actual_map:
             actual_map[d.statistics] = {}
+        # Mapping exactly to d.group as it comes from the harvester
         actual_map[d.statistics][d.group] = float(d.value)
 
-    # Compare actual vs expected
+    # 2. Compare against Registry
     for stat_name, expected_groups in expected_stats.items():
-        actual_groups = actual_map.get(stat_name, {})
-        for group, exp_val in expected_groups.items():
-            act_val = actual_groups.get(group)
-            assert act_val is not None, f"Group {group} missing in {stat_name} for {test_id}"
+        # Check that the statistic itself was harvested
+        assert stat_name in actual_map, f"Stat '{stat_name}' missing for {test_id}"
+        
+        for group_key, exp_val in expected_groups.items():
+            # Check that the specific group (e.g. 'ObsValue') exists
+            assert group_key in actual_map[stat_name], \
+                f"Group '{group_key}' missing in {stat_name} for {test_id}"
             
+            act_val = actual_map[stat_name][group_key]
+            
+            # 3. The Actual Math Comparison
+            # We still use approx() because floating point math in NetCDF 
+            # rarely matches literal Python floats to 15 decimal places.
+            assert act_val == pytest.approx(exp_val, abs=1e-5), \
+                f"Value mismatch in {test_id} | {stat_name}:{group_key} | Expected {exp_val}, got {act_val}"
+
 
 # --- 3. The Pytest Function ---
 
@@ -81,7 +94,7 @@ def test_soca_harvester(test_id):
     config_dict = {
         'harvester_name': hv_registry.SOCA_DIAGS,
         'filenames': [str(file_path)],
-        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'],
+        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse'],
         'variables': [meta['variable']],
         'QC_threshold': meta['QC_threshold'],
     }
