@@ -15,7 +15,7 @@ Masking Logic:
     Combined Mask = (Data == FillValue) | (QC_Flag > Threshold)
 """
 
-VALID_STATISTICS = ('mean', 'median', 'StdDev', 'minimum', 'maximum')
+VALID_STATISTICS = ('mean', 'median', 'StdDev', 'minimum', 'maximum','rmse')
 VALID_VARIABLES = ('sst', 'icec', 'salinity', 'waterTemperature', 
                    'seaSurfaceSalinity', 'seaSurfaceTemperature', 'seaIceFraction')
 
@@ -111,6 +111,19 @@ def get_variable_metadata(file_type, var_name, mean_val=None):
             
     return var_name, units
 
+def calc_rmse(data):
+    """
+    Calculates root mean squated error on a masked array. 
+    The 'data' argument is received from the dictionary call below.
+    """
+    squared_data = data**2 
+    mean_squared = np.ma.mean(squared_data)
+    rmse = np.ma.sqrt(mean_squared)
+    print("the rmse ",rmse)
+   
+    return rmse
+
+
 def calculate_masked_stats(var_obj, qc_mask, requested_stats):
     raw_data = var_obj[:]
     if '_FillValue' in var_obj.ncattrs():
@@ -126,7 +139,8 @@ def calculate_masked_stats(var_obj, qc_mask, requested_stats):
 
     stat_map = {
         'mean': np.ma.mean, 'median': np.ma.median,
-        'StdDev': np.ma.std, 'minimum': np.ma.min, 'maximum': np.ma.max
+        'StdDev': np.ma.std, 'minimum': np.ma.min, 'maximum': np.ma.max,
+        'rmse': calc_rmse 
     }
 
     results = {}
@@ -134,6 +148,7 @@ def calculate_masked_stats(var_obj, qc_mask, requested_stats):
         if stat in stat_map:
             val = stat_map[stat](masked_data)
             results[stat] = float(val) if not np.ma.is_masked(val) else None
+
     return results
 
 @dataclass
@@ -159,7 +174,7 @@ class SOCADiagsHv:
 
     def get_data(self):
         harvested_results = []
-        data_groups = ['ObsValue', 'oman', 'ombg']
+        data_groups = ['ObsValue', 'oman', 'ombg', 'ObsError']
 
         for filename in self.config.harvest_filenames:
             if not os.path.exists(filename): continue
