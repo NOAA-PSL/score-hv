@@ -159,7 +159,7 @@ class GSIConvObsHv(object):
     config: GSIConvObsConfig = field(default_factory = GSIConvObsConfig)
     
     def parse_value(self, value, prefer_int=False):
-        if value == r"********" or value == r"******":
+        if value == r"********" or value == r"******" or value == r"*******":
             return_value = None
 
         elif prefer_int:
