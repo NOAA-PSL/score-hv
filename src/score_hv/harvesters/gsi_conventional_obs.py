@@ -462,10 +462,10 @@ class GSIConvObsHv(object):
                                     # observations than for stats by
                                     # observtion type
                         if column_name == 'count':
-                            return_value = [int(
-                                             line_parts[column_index])]
+                            return_value = [self.parse_value(
+                                             line_parts[column_index], prefer_int=True)]
                         else:
-                            return_value = [float(
+                            return_value = [self.parse_value(
                                               line_parts[column_index])]
                         
                         self.results[
