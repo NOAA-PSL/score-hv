@@ -160,7 +160,7 @@ class GSIConvObsHv(object):
     
     def parse_value(self, value, prefer_int=False):
         if value == r"********" or value == r"******" or value == r"*******" or value == r"*********":
-            return_value = None
+            return_value = np.nan
 
         elif prefer_int:
             try:
