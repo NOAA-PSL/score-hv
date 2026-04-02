@@ -9,6 +9,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+import numpy as np
 
 from score_hv.config_base import ConfigInterface
 
