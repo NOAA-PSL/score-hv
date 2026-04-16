@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-#TODO: CRITICAL!!! refactor unit tests so that they assert exisitence of values to be checked under if statements, which can currently be bypassed if the data don't exist
-
 """Unit tests for gsi_satellite_radiance.py
 """
 
@@ -60,8 +58,6 @@ VALID_CONFIG_DICT_QSAT = {
         'count', # number of obs summed under obs types and vertical layers
         'bias', # bias of obs departure for each outer loop (it)
         'rms', # root mean squre error of obs departure for each outer loop (it)
-        #'cpen', # obs part of penalty (cost function)
-        #'qcpen' # nonlinear qc penalty
         ),
         
     'plev_bounds': [
@@ -185,7 +181,6 @@ def test_qsat_plevs():
                                            0.400E+03,
                                            0.300E+03,
                                            0.200E+04]
-            #assert data_i.plevs_units[1] == 'hPa'
 
             test_complete = True
 
@@ -328,7 +323,6 @@ def test_temperature_plevs():
                                            0.150E+03,
                                            0.100E+03,
                                            0.200E+04]
-            #assert data_i.plevs_units[0] == 'hPa'
             test_complete = True
 
     assert test_complete
@@ -946,7 +940,6 @@ def test_fit_of_uv_wind_data():
                                          0.150E+03,
                                          0.100E+03,
                                          0.200E+04]
-            #assert data_i.plevs_units == ['hPa', 'hPa']
             test_plevs = True
             
             if data_i.iteration == 1:
