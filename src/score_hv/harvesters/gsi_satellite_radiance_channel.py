@@ -331,23 +331,26 @@ class GSISatelliteRadianceChannelHv(object):
                 for var in self.config.vars_to_harvest:
                     for line_part_idx, line_part_val in enumerate(line2list):
                         if line_part_idx > 0:
-                            if var == 'var' and line2list[line_part_idx - 1].split()[-1] == 'var':
+                            
+                            extracted_variable_name = line2list[line_part_idx - 1].split()[-1]
+                            
+                            if var == 'var' and extracted_variable_name == 'var':
                                 value = float(line_part_val.split()[0])
-                            elif var == 'varch_cld' and line2list[line_part_idx - 1].split()[-1] == 'varch_cld':
+                            elif var == 'varch_cld' and extracted_variable_name == 'varch_cld':
                                 value = float(line_part_val.split()[0])
-                            elif var == 'use' and line2list[line_part_idx - 1].split()[-1] == 'use':
+                            elif var == 'use' and extracted_variable_name == 'use':
                                 value = int(line_part_val.split()[0])
-                            elif var == 'ermax' and line2list[line_part_idx - 1].split()[-1] == 'ermax':
+                            elif var == 'ermax' and extracted_variable_name == 'ermax':
                                 value = float(line_part_val.split()[0])
-                            elif var == 'b_rad' and line2list[line_part_idx - 1].split()[-1] == 'b_rad':
+                            elif var == 'b_rad' and extracted_variable_name == 'b_rad':
                                 value = float(line_part_val.split()[0])
-                            elif var == 'pg_rad' and line2list[line_part_idx - 1].split()[-1] == 'pg_rad':
+                            elif var == 'pg_rad' and extracted_variable_name == 'pg_rad':
                                 value = float(line_part_val.split()[0])
-                            elif var == 'icld_det' and line2list[line_part_idx - 1].split()[-1] == 'icld_det':
+                            elif var == 'icld_det' and extracted_variable_name == 'icld_det':
                                 value = int(line_part_val.split()[0])
-                            elif var == 'icloud' and line2list[line_part_idx - 1].split()[-1] == 'icloud':
+                            elif var == 'icloud' and extracted_variable_name == 'icloud':
                                 value = int(line_part_val.split()[0])
-                            elif var == 'iaeros' and line2list[line_part_idx - 1].split()[-1] == 'iaeros':
+                            elif var == 'iaeros' and extracted_variable_name == 'iaeros':
                                 value = int(line_part_val.split()[0])
                             elif var == BIAS_CORR_COEF_STR:
                                 value = []  # empty list for bias correction coefficients
