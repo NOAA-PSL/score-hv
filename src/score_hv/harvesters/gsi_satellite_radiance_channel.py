@@ -242,11 +242,22 @@ class GSISatelliteRadianceChannelHv(object):
         series_number = int(line_parts[0]) # from satinfo file, index from 1 
         channel_number = int(line_parts[1])
         observation_type = line_parts[2]
+
+        # patch for airs281SUBSET_aqua
+        if observation_type == 'airs281SUBSET_aq':
+            observation_type = 'airs281SUBSET_aqua'
+            
+        # patch for iasi616_metop-a (CFSR)
+        if observation_type == 'iasi616_metop-a':
+            observation_type = 'iasi_metop-a'
+
+        if observation_type == 'iasi616_metop-b':
+            observation_type = 'iasi_metop-b'
         
         # make sure we have the correct channel
         if self.channels[series_number]['observation_type'] != observation_type:
             raise ValueError(f"Expected observation type "
-                      "{self.channels[series_number]['observation_type']}, "
+                      f"{self.channels[series_number]['observation_type']}, "
                       f"but got {observation_type}")
 
         if self.channels[series_number]['channel'] != channel_number:
@@ -307,34 +318,43 @@ class GSISatelliteRadianceChannelHv(object):
 
                 series_number = int(line_parts[0])
                 observation_type = line_parts[1]
-                
+                # patch for iasi616_metop-a (CFSR)
+                if observation_type == 'iasi616_metop-a':
+                    observation_type = 'iasi_metop-a'
+                if observation_type == 'iasi616_metop-b':
+                    observation_type = 'iasi_metop-b'
+
                 line2list = line.split('=')
                 channel = int(line2list[1].split()[0])    
                 
                 data_usage_dict = dict()
                 for var in self.config.vars_to_harvest:
-                    if var == 'var':
-                        value = float(line2list[2].split()[0])
-                    elif var == 'varch_cld':
-                        value = float(line2list[3].split()[0])
-                    elif var == 'use':
-                        value = int(line2list[4].split()[0])
-                    elif var == 'ermax':
-                        value = float(line2list[5].split()[0])
-                    elif var == 'b_rad':
-                        value = float(line2list[6].split()[0])
-                    elif var == 'pg_rad':
-                        value = float(line2list[7].split()[0])
-                    elif var == 'icld_det':
-                        value = int(line2list[8].split()[0])
-                    elif var == 'icloud':
-                        value = int(line2list[9].split()[0])
-                    elif var == 'iaeros':
-                        value = int(line2list[10].split()[0])
-                    elif var == BIAS_CORR_COEF_STR:
-                        value = list() # empty list for bias
-                                       # correction coeficients
-                    
+                    for line_part_idx, line_part_val in enumerate(line2list):
+                        if line_part_idx > 0:
+                            
+                            extracted_variable_name = line2list[line_part_idx - 1].split()[-1]
+                            
+                            if var == 'var' and extracted_variable_name == 'var':
+                                value = float(line_part_val.split()[0])
+                            elif var == 'varch_cld' and extracted_variable_name == 'varch_cld':
+                                value = float(line_part_val.split()[0])
+                            elif var == 'use' and extracted_variable_name == 'use':
+                                value = int(line_part_val.split()[0])
+                            elif var == 'ermax' and extracted_variable_name == 'ermax':
+                                value = float(line_part_val.split()[0])
+                            elif var == 'b_rad' and extracted_variable_name == 'b_rad':
+                                value = float(line_part_val.split()[0])
+                            elif var == 'pg_rad' and extracted_variable_name == 'pg_rad':
+                                value = float(line_part_val.split()[0])
+                            elif var == 'icld_det' and extracted_variable_name == 'icld_det':
+                                value = int(line_part_val.split()[0])
+                            elif var == 'icloud' and extracted_variable_name == 'icloud':
+                                value = int(line_part_val.split()[0])
+                            elif var == 'iaeros' and extracted_variable_name == 'iaeros':
+                                value = int(line_part_val.split()[0])
+                            elif var == BIAS_CORR_COEF_STR:
+                                value = []  # empty list for bias correction coefficients
+
                     data_usage_dict[var] = value    
                 
                 self.channels[series_number] = {
