@@ -17,6 +17,7 @@ from score_hv.harvesters.ioda_meta_netcdf import IodaMetaCfg
 
 IODA_SST_DATA = 'sst.nesdis.avhrr_l3u_noaa19.20150820.T120000Z.iodav3.nc'
 IODA_SST_N7_DATA = 'nesdis.avhrr_noaa07.sst.19810901.T030000Z.iodav2.so0p25.nc'
+IODA_SST_NGGODAS_DATA = 'sst.ESACCI20cm.avhrr.19970105.T00Z.iodav3.nc'
 IODA_INSITU_DATA = 'wod.ncei.insitu.20090605.T000000Z.iodav2.nc'
 IODA_INSITU_V3_DATA = 'wod.ncei_insitu.20090605.T000000Z.iodav3.nc'
 PYTEST_CALLING_DIR = Path(__file__).parent.resolve()
@@ -32,6 +33,12 @@ file_path_ioda_sst_n7_data = os.path.join(
     PYTEST_CALLING_DIR,
     DATA_DIR,
     IODA_SST_N7_DATA
+)
+
+file_path_ioda_sst_nggodas_data = os.path.join(
+    PYTEST_CALLING_DIR,
+    DATA_DIR,
+    IODA_SST_NGGODAS_DATA
 )
 
 file_path_ioda_insitu_data = os.path.join(
@@ -54,6 +61,11 @@ VALID_CONFIG_SST_DICT = {
 VALID_CONFIG_SST_N7_DICT = {
     'harvester_name': hv_registry.IODA_META_NETCDF, 
     'filename': file_path_ioda_sst_n7_data
+}
+
+VALID_CONFIG_SST_NGGODAS_DICT = {
+    'harvester_name': hv_registry.IODA_META_NETCDF, 
+    'filename': file_path_ioda_sst_nggodas_data
 }
 
 VALID_CONFIG_INSITU_DICT = {
@@ -108,6 +120,27 @@ def test_ioda_sst_noaa07_meta():
     assert sst_data.processing_level == "L3U"
     assert sst_data.thinning == None
     assert sst_data.ioda_version == 'v2'
+
+#Test the ioda SST file from nggodas is being parsed correctly, value independently verified
+def test_ioda_sst_nggodas_meta():
+    data = harvest(VALID_CONFIG_SST_NGGODAS_DICT)
+    sst_data = data[0]
+    assert sst_data.filename == IODA_SST_NGGODAS_DATA
+    assert sst_data.file_date_time == '1997-01-05 00:00:00'
+    assert sst_data.num_locs == 284184
+    assert sst_data.min_depth == None
+    assert sst_data.max_depth == None
+    assert sst_data.num_vars == 1
+    assert sst_data.variable_name == 'seaSurfaceTemperature'
+    assert sst_data.var_count == 284184
+    assert sst_data.has_PreQC == True
+    assert sst_data.has_ObsError == True
+    assert sst_data.sensor == None
+    assert sst_data.platform == None
+    assert sst_data.ioda_layout == "ObsGroup"
+    assert sst_data.processing_level == None
+    assert sst_data.thinning == None
+    assert sst_data.ioda_version == 'v3'
 
 #Test insitu data stored in v2 for salinity and temp in one file, values are independently sourced from the file
 def test_ioda_insitu_v2_meta():
