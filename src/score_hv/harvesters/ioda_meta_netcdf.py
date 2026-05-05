@@ -133,6 +133,12 @@ class IodaMetaHv:
                 num_locs = len(num_locs_var)
             else:
                 num_locs = num_locs_var.size
+        elif num_locs is None and 'Location' in dataset.variables:
+            num_locs_var = dataset.variables['Location'][:]
+            if num_locs_var.size == 1:
+                num_locs = len(num_locs_var)
+            else:
+                num_locs = num_locs_var.size
 
         valid_value_counts = {}
         if 'ObsValue' in dataset.groups:
@@ -243,7 +249,7 @@ def parse_filename(file_path):
     filename = os.path.basename(file_path)
     
     # Regular expression to match the filename pattern
-    pattern = r'.*?(\d{8})\.T(\d{6})Z?\.ioda(v\d+)\b.*\.nc$'
+    pattern = r'.*?(\d{8})\.T(\d{2,6})Z?\.ioda(v\d+)\b.*\.nc$'
     
     match = re.match(pattern, filename)
     if match:
@@ -251,9 +257,17 @@ def parse_filename(file_path):
         date_str = match.group(1)
         time_str = match.group(2)
         ioda_version = match.group(3)
+
+        # Determine the correct time format based on length
+        if len(time_str) == 2:
+            time_format = "%H"
+        elif len(time_str) == 6:
+            time_format = "%H%M%S"
+        else:
+            raise ValueError(f"Unexpected time format length: {len(time_str)} for filename: {filename}")
         
         # Combine date and time into a datetime object
-        dt = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
+        dt = datetime.strptime(f"{date_str}{time_str}", f"%Y%m%d{time_format}")
         
         # Format the datetime string as 'YYYY-MM-DD HH:MM:SS'
         formatted_datetime_str = format_datetime_string(dt)
