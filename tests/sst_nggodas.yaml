@@ -1,0 +1,80 @@
+SST_No_Filter:
+  filename: sst_nggodas.nc 
+  QC_threshold: 999999.0
+  variable: seaSurfaceTemperature
+  components:
+    sensor: avhrr 
+    satellite: MetOp 
+    level: unknown 
+    file_region: global  
+  expected_stats:
+    mean:
+      ObsValue: 20.8124
+      oman: -0.0512094
+      ombg: -0.145826
+      ObsError: 0.568862
+    median:
+      ObsValue: 24.05
+      oman: 0.0178512
+      ombg: -0.0600926
+      ObsError: 0.41
+    StdDev:
+      ObsValue: 7.78171
+      oman:  0.567444
+      ombg:  0.832735
+      ObsError: 0.403547
+    minimum:
+      ObsValue:  -2
+      oman:  -7.11951
+      ombg:  -8.58221
+      ObsError: 0.239
+    maximum:
+      ObsValue:  33.13
+      oman:  4.48938
+      ombg:  6.09044
+      ObsError: 7.01
+    rmse:
+      ObsValue:  22.2196
+      oman:  0.56975
+      ombg:  0.845406
+      ObsError:  0.697463
+SST_Strict_Filter:
+  filename: sst_nggodas.nc 
+  QC_threshold: 10.0
+  variable: seaSurfaceTemperature
+  components:
+    sensor: avhrr 
+    satellite: MetOp 
+    level: unknown 
+    file_region: global  
+  expected_stats:
+    mean:
+      ObsValue: 21.5966
+      oman: -0.0312551
+      ombg: -0.126583
+      ObsError: 0.54577
+    median:
+      ObsValue: 24.36
+      oman: 0.0297289
+      ombg: -0.0405568
+      ObsError: 0.408
+    StdDev:
+      ObsValue: 6.89188
+      oman:  0.54094
+      ombg:  0.824995
+      ObsError: 0.343143      
+    minimum:
+      ObsValue:  -1.17999
+      oman:  -5.70387
+      ombg:  -6.58006
+      ObsError:  0.239      
+    maximum:
+      ObsValue:  33.13
+      oman:  4.48938
+      ombg:  6.09044
+      ObsError: 7.01
+    rmse:
+      ObsValue:  22.6696
+      oman:  0.541841
+      ombg:  0.834648
+      ObsError:  0.64468      

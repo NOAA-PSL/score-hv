@@ -1,0 +1,82 @@
+ICEC_No_Filter:
+  filename: icec_nsidc_nh.nc 
+  QC_threshold: 999999.0
+  variable: seaIceFraction
+  components:
+    sensor: ssmis
+    satellite: DMSP 
+    level: null
+    file_region: north 
+    ocean_depth_bins: null
+  expected_stats:
+    mean:
+      ObsValue: 0.820398
+      oman: 0.00513352
+      ombg: 0.00749206
+      ObsError: 0.0541992
+    median:
+      ObsValue: 1.0
+      oman: 3.65351e-17
+      ombg: 1.06463e-05
+      ObsError: 0.0210896
+    StdDev:
+      ObsValue: 0.340416
+      oman:  0.107658
+      ombg:  0.124272
+      ObsError: 0.0641536
+    minimum:
+      ObsValue:  0.0
+      oman:  -0.999994
+      ombg:  -1.0
+      ObsError:  0.002
+    maximum:
+      ObsValue: 1.0
+      oman:  0.95615
+      ombg:  0.970416
+      ObsError: 0.498905
+    rmse:
+      ObsValue:  0.888218
+      oman:  0.107778
+      ombg:  0.124495
+      ObsError:  0.0839827
+ICEC_No_Filter:
+  filename: icec_nsidc_nh.nc 
+  QC_threshold: 10.0 
+  variable: seaIceFraction
+  components:
+    sensor: ssmis
+    satellite: DMSP 
+    level: null
+    file_region: north 
+    ocean_depth_bins: null
+  expected_stats:
+    mean:
+      ObsValue: 0.858108
+      oman: 0.00047282
+      ombg: 0.00258934
+      ObsError: 0.0494753
+    median:
+      ObsValue: 1.0
+      oman: 7.57448e-08
+      ombg: 1.28709e-05
+      ObsError: 0.0171117
+    StdDev:
+      ObsValue: 0.303678
+      oman:  0.0624621
+      ombg:  0.0835612
+      ObsError: 0.0614178
+    minimum:
+      ObsValue:  0.0
+      oman:  -0.489312
+      ombg:  -0.499473
+      ObsError:  0.002 
+    maximum:
+      ObsValue: 1.0
+      oman: 0.490965 
+      ombg: 0.498841
+      ObsError: 0.350295
+    rmse:
+      ObsValue: 0.910256 
+      oman:  0.0624627
+      ombg:  0.0835997
+      ObsError:  0.0788657

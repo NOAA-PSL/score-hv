@@ -1,84 +1,77 @@
 import math
+import yaml 
 import pytest
 import json
 from pathlib import Path
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 
-# --- 1. Global Registry of Test Cases ---
-TEST_REGISTRY = {
-    'SST_No_Filter': {
-        'filename': 'sst_avhrr_mb_l3u.nc',
-        'QC_threshold': 999999.0,
-        'variable': 'sst',
-        'components': {
-            'variables': 'seaSurfaceTemperature',
-            'sensor': 'avhrr', 'satellite': 'mb', 'level': 'l3u'
-        },
-        'expected_stats': {
-            'mean':    {'ObsValue': 18.9179, 'oman': -0.0227356, 'ombg': -0.0183097}, 
-            'median':  {'ObsValue': 21.9568, 'oman': -0.00784429, 'ombg': 0.000918341},
-            'StdDev':  {'ObsValue': 8.74214, 'oman': 0.242088 , 'ombg': 0.516438},
-            'minimum': {'ObsValue': -2.00204, 'oman': -5.48481, 'ombg': -9.02633},
-            'maximum': {'ObsValue': 31.4994, 'oman': 4.79691 , 'ombg': 4.35711}
-        }
-    },
-    'SST_Strict_Filter': {
-        'filename': 'sst_avhrr_mb_l3u.nc',
-        'QC_threshold': 10.0,
-        'variable': 'sst',
-        'components': {
-            'variables': 'seaSurfaceTemperature',
-            'sensor': 'avhrr', 'satellite': 'mb', 'level': 'l3u'
-        },
-        'expected_stats': {
-            'mean':    {'ObsValue': 20.2476, 'oman': -0.0115724 , 'ombg': 0.000774546},
-            'median':  {'ObsValue': 22.6499, 'oman': -0.00537496, 'ombg': 0.00645174 },
-            'StdDev':  {'ObsValue': 7.43362, 'oman': 0.141163 , 'ombg': 0.442145},
-            'minimum': {'ObsValue': -1.18811, 'oman': -2.16965 , 'ombg': -4.98607},
-            'maximum': {'ObsValue': 31.4478, 'oman': 4.40796, 'ombg': 4.21172}
-        }  
-    }
-}
-
+# --- 1. Load the Registry from YAML ---
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data'
+YAML_PATH = BASE_DIR / "sst_nggodas.yaml"
 
-# --- 2. Verification Helpers ---
+with open(YAML_PATH, 'r') as f:
+    TEST_REGISTRY = yaml.safe_load(f)
+
+def verify_filename_components(data_record, expected_components, expected_variable):
+    """
+    Verifies the metadata tags attached to the harvested record.
+    """
+    # Check each component against the expected dictionary
+    assert data_record.variables == expected_variable, \
+        f"Variable mismatch! Got {data_record.variables}, expected {expected_variable}"
+    
+    # Use .get() for the rest to prevent more KeyErrors if a value is missing
+    assert data_record.sensor == expected_components.get('sensor'), \
+        f"Sensor mismatch! Got {data_record.sensor}"
+   
+    assert data_record.satellite == expected_components.get('satellite'), \
+        f"Satellite mismatch! Got {data_record.satellite}"
+    
+    assert data_record.level == expected_components.get('level'), \
+        f"Level mismatch! Got {data_record.level}"
+    
+    assert data_record.file_region == expected_components.get('file_region'), \
+        f"Region mismatch! Got '{data_record.file_region}'"
 
 def verify_statistics(harvested_results, expected_stats, test_id):
     """
-      Verifies all requested stats.
-      """
-    tolerance = 0.001 
-    # Organize actual data into a nested dict: {stat: {group: value}}
+    Verifies the statistical values (mean, std dev, etc.) against baselines.
+    """
+    
+    rel_tol = 0.001  # 0.1% relative tolerance
+    abs_tol = 1e-07  # Handles cases where expected value is 0 or near-zero
+
     actual_map = {}
     for d in harvested_results:
         if d.statistics not in actual_map:
             actual_map[d.statistics] = {}
         actual_map[d.statistics][d.group] = float(d.value)
-
-    # If expectations are missing or mismatched, print the actual values for copy-pasting
+    
     if not expected_stats or any(stat not in expected_stats for stat in actual_map):
         print(f"\n\n--- CURRENT OUTPUT FOR {test_id} (Copy into expected_stats) ---")
         print(json.dumps(actual_map, indent=4))
         if not expected_stats:
-            pytest.fail(f"No baseline for {test_id}. Baseline generated in console.")
+            pytest.fail(f"No baseline defined for {test_id}. See console for values.")
 
-    # Compare actual vs expected
     for stat_name, expected_groups in expected_stats.items():
         actual_groups = actual_map.get(stat_name, {})
+        
         for group, exp_val in expected_groups.items():
             act_val = actual_groups.get(group)
+            assert act_val is not None, (
+                f"Stat group '{group}' missing in '{stat_name}' for test: {test_id}"
+            )
             
-            assert act_val is not None, f"Group {group} missing in {stat_name} for {test_id}"
-            
-            if not math.isclose(act_val, exp_val, rel_tol=0.001):
-                print(f"\n\n--- MISMATCH DETECTED: CURRENT DATA FOR {test_id} ---")
-                print(json.dumps(actual_map, indent=4))
-                pytest.fail(f"{test_id} mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}")
-
-# --- 3. The Pytest Function ---
+            if not math.isclose(act_val, exp_val, rel_tol=rel_tol, abs_tol=abs_tol):
+                print(f"\n\n--- MISMATCH DETECTED: {test_id} ---")
+                print(f"Statistic: {stat_name} | Group: {group}")
+                print(f"Expected:  {exp_val}")
+                print(f"Actual:    {act_val}")
+                print(f"Diff:      {abs(act_val - exp_val)}")
+                
+                assert False, f"{test_id} mismatch in {stat_name}:{group}. Got {act_val}, expected {exp_val}"
 
 @pytest.mark.parametrize("test_id", TEST_REGISTRY.keys())
 def test_soca_harvester(test_id):
@@ -89,20 +82,31 @@ def test_soca_harvester(test_id):
     if not file_path.exists():
         pytest.fail(f"Test data missing: {file_path}")
 
-    # Build the config for the harvester
+    comp = meta.get('components', {})
+    
+    # Build the config dictionary for the harvester
     config_dict = {
         'harvester_name': hv_registry.SOCA_DIAGS,
         'filenames': [str(file_path)],
-        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum'],
+        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse'],
         'variables': [meta['variable']],
         'QC_threshold': meta['QC_threshold'],
+        'ocean_depth_bins': meta.get('ocean_depth_bins') or comp.get('ocean_depth_bins'),
+        'file_region': comp.get('file_region', 'global'),
+        'components': {
+            'variables': meta['variable'],  
+            'sensor': comp.get('sensor'),
+            'satellite': comp.get('satellite'),
+            'level': comp.get('level'),
+        }        
     }
 
     # 1. Execute Harvester
     all_data = harvest(config_dict)
     assert len(all_data) > 0, "No data was harvested."
-
-    # 2. Verify Statistics
+    
+    # 2. Verification (Using external helpers)
+    verify_filename_components(all_data[0], comp, meta['variable'])
     verify_statistics(all_data, meta['expected_stats'], test_id)
 
     print(f"Test {test_id} passed successfully.")
