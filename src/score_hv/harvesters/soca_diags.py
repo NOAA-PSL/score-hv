@@ -147,13 +147,18 @@ class SOCADiagsHv:
         """      
         parts = filename.replace('.nc', '').split('_')
         platform_id = parts[2] if len(parts) > 2 else None
+        
+        satellite = "Unknown"
+        sensor = "Unknown"
         adt_mapping = {
-            "e1": {"satellite": "ERS-1", "sensor": "RA"},
+            "e2": {"satellite": "ERS-2", "sensor": "RA-2"},
             "j3": {"satellite": "Jason-3", "sensor": "Poseidon-3B"},
             "s3a": {"satellite": "Sentinel-3A", "sensor": "SRAL"},
-            "swot": {"satellite": "SWOT", "sensor": "Karin"}
+            "swot": {"satellite": "SWOT", "sensor": "Karin"},
+            "s3b": {"satellite": "Sentinel-3B", "sensor": "SRAL"},
+            "c2": {"satellite": "CryoSat-2", "sensor": "SIRAL"},
         }
-        return adt_mapping.get(platform_id, {"satellite": "Unknown", "sensor": "Unknown"})
+        return adt_mapping.get(platform_id, {"satellite": satellite, "sensor": sensor})
 
     def get_wod_info(self, filename):
         """

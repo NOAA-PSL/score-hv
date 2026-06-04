@@ -1,0 +1,81 @@
+  ADT_No_Filter:
+    filename: adt_glore_e2.nc
+    QC_threshold: 999999.0
+    variable: absoluteDynamicTopography
+    components:
+      variables: absoluteDynamicTopography
+      sensor: RA-2
+      satellite: ERS-2
+      level: null
+    expected_stats:
+      mean:
+        ObsValue: 0.380361
+        oman: -0.0033328
+        ombg: -0.00408677
+        ObsError: 0.1
+      median:
+        ObsValue: 0.6423
+        oman: -0.00881378
+        ombg: -0.0118032
+        ObsError: 0.1
+      StdDev:
+        ObsValue: 0.695176
+        oman: 0.100901
+        ombg: 0.120154
+        ObsError: 0.0
+      minimum:
+        ObsValue: -1.4647
+        oman: -0.386282
+        ombg: -0.443521
+        ObsError: 0.1
+      maximum:
+        ObsValue: 1.7431
+        oman: 1.10506
+        ombg: 1.21564
+        ObsError: 0.1
+      rmse:
+        ObsValue: 0.792401
+        oman: 0.100951
+        ombg: 0.120218
+        ObsError: 0.1
+
+  ADT_Strict_Filter:
+    filename: adt_glore_e2.nc
+    QC_threshold: 10.0
+    variable: absoluteDynamicTopography
+    components:
+      variables: absoluteDynamicTopography
+      sensor: RA-2
+      satellite: ERS-2
+      level: null
+    expected_stats:
+      mean:
+        ObsValue: 0.67733
+        oman: -3.40937e-11
+        ombg: -0.0019098
+        ObsError: 0.1
+      median:
+        ObsValue: 0.71695
+        oman: -0.00638066
+        ombg: -0.00961795
+        ObsError: 0.1
+      StdDev:
+        ObsValue: 0.331167
+        oman: 0.0784638
+        ombg: 0.106203
+        ObsError: 0.0
+      minimum:
+        ObsValue: -0.6917
+        oman: -0.360815
+        ombg: -0.443521
+        ObsError: 0.1
+      maximum:
+        ObsValue: 1.7431
+        oman: 0.772016
+        ombg: 0.99856
+        ObsError: 0.1
+      rmse:
+        ObsValue: 0.753946
+        oman: 0.078459
+        ombg: 0.106213
+        ObsError: 0.1
