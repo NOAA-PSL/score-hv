@@ -1,51 +1,18 @@
 import math
 import pytest
+import yaml
 import json
 from pathlib import Path
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 
-# --- 1. Global Registry of Test Cases ---
-TEST_REGISTRY = {
-    'ICEC_No_Filter': {
-        'filename': 'adt_glore_e2.nc',
-        'QC_threshold': 999999.0,
-        'variable': 'absoluteDynamicTopography',
-        'components': {
-            'variables': 'absoluteDynamicTopography',
-            'sensor': 'RA-2', 'satellite': 'ERS2', 'level': None
-        },
-        'expected_stats': {
-            'mean':    {'ObsValue': 0.380361, 'oman': -0.0033328 , 'ombg': -0.00408677, 'ObsError': 0.1}, 
-            'median':  {'ObsValue': 0.6423, 'oman': -0.00881378, 'ombg': -0.0118032, 'ObsError': 0.1},
-            'StdDev':  {'ObsValue': 0.695176, 'oman': 0.100901, 'ombg': 0.120154, 'ObsError': 0.0},
-            'minimum': {'ObsValue': -1.4647, 'oman': -0.386282, 'ombg': -0.443521, 'ObsError': 0.1},
-            'maximum': {'ObsValue': 1.7431, 'oman': 1.10506 , 'ombg': 1.21564, 'ObsError': 0.1},
-            'rmse':    {'ObsValue': 0.792401, 'oman': 0.100951, 'ombg': 0.120218, 'ObsError': 0.1}  
-        }
-    },
-    'ICEC_Strict_Filter': {
-        'filename': 'adt_glore_e2.nc',
-        'QC_threshold': 10.0,
-        'variable': 'absoluteDynamicTopography',
-        'components': {
-            'variables': 'absoluteDynamicTopography',
-            'sensor': 'RA-2', 'satellite': 'ERS2', 'level': None
-        },
-        'expected_stats': {
-            'mean':    {'ObsValue': 0.67733, 'oman': -3.40937e-11, 'ombg': -0.0019098, 'ObsError': 0.1},
-            'median':  {'ObsValue': 0.71695, 'oman': -0.00638066, 'ombg': -0.00961795, 'ObsError': 0.1},
-            'StdDev':  {'ObsValue': 0.331167, 'oman': 0.0784638, 'ombg': 0.106203, 'ObsError': 0.0},
-            'minimum': {'ObsValue': -0.6917, 'oman': -0.360815, 'ombg': -0.443521, 'ObsError': 0.1},
-            'maximum': {'ObsValue': 1.7431, 'oman': 0.772016, 'ombg': 0.99856, 'ObsError': 0.1},
-            'rmse':    {'ObsValue': 0.753946, 'oman': 0.078459, 'ombg': 0.106213, 'ObsError': 0.1}
-        }  
-    }
-}
-
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data'
+YAML_PATH = BASE_DIR / "adt_glore.yaml"
 
+with open(YAML_PATH, 'r') as f:
+    raw_data = yaml.safe_load(f) 
+    TEST_REGISTRY = raw_data.get('TEST_REGISTRY', raw_data)
 """
   Verification Helpers.
   """
@@ -54,12 +21,8 @@ def verify_filename_components(data_record, expected_components):
     assert data_record.sensor == expected_components['sensor'], f"Sensor mismatch! Got {data_record.sensor}"
     assert data_record.satellite == expected_components['satellite'], f"Satellite mismatch! Got {data_record.satellite}"
     assert data_record.level == expected_components['level'], f"Level mismatch! Got {data_record.level}"
-    assert data_record.file_region == expected_components['file_region'], \
-        f"Region mismatch! Got '{data_record.file_region}', expected '{expected_components['file_region']}'"
-
 
 def verify_statistics(harvested_results, expected_stats, test_id):
-    print("Verifying stats")
     rel_tol = 0.001
     abs_tol = 1e-07 
 
@@ -116,13 +79,10 @@ def test_soca_harvester(test_id):
         'QC_threshold': meta['QC_threshold'],
     }
 
-    # 1. Execute Harvester
     all_data = harvest(config_dict)
     assert len(all_data) > 0, "No data was harvested."
 
-    # 2. Verify Statistics
+    verify_filename_components(all_data[0], meta['components']) 
     verify_statistics(all_data, meta['expected_stats'], test_id)
 
-    # 3. Cross-Test Logic: Compare Counts (Optional check)
-    # If this is the filtered test, we can check that it has different values than No_Filter
     print(f"Test {test_id} passed successfully.")
