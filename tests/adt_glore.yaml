@@ -33,7 +33,7 @@
         oman: 1.10506
         ombg: 1.21564
         ObsError: 0.1
-      rmse:
+      rms:
         ObsValue: 0.792401
         oman: 0.100951
         ombg: 0.120218
@@ -74,7 +74,7 @@
         oman: 0.772016
         ombg: 0.99856
         ObsError: 0.1
-      rmse:
+      rms:
         ObsValue: 0.753946
         oman: 0.078459
         ombg: 0.106213
