@@ -34,7 +34,7 @@ ICEC_No_Filter:
       oman: 1.00543
       ombg: 1.0
       ObsError: 0.1
-    rmse:
+    rms:
       ObsValue: 0.22743
       oman: 0.0390879
       ombg: 0.0466817
@@ -75,7 +75,7 @@ ICEC_Strict_Filter:
       oman: 0.635509
       ombg: 0.49948
       ObsError: 0.1
-    rmse:
+    rms:
       ObsValue: 0.2486722
       oman: 0.0311045
       ombg: 0.0408237
