@@ -74,7 +74,7 @@ def test_soca_harvester(test_id):
     config_dict = {
         'harvester_name': hv_registry.SOCA_DIAGS,
         'filenames': [str(file_path)],
-        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse'],
+        'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms'],
         'variables': [meta['variable']],
         'QC_threshold': meta['QC_threshold'],
     }
