@@ -4,7 +4,7 @@ from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 
 STANDARD_BINS = [(0, 20), (20, 100), (100, 500), (500, 20000)]
-STANDARD_STATS = ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse', 'count']
+STANDARD_STATS = ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms', 'count']
 
 # --- 1. Global Registry of Test Cases ---
 TEST_REGISTRY = {
@@ -26,7 +26,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 3.3964, 'oman': 0.149, 'ombg': 0.213, 'ObsError': 0.0},
                  'minimum': {'ObsValue': 5.663,  'oman': -0.611, 'ombg': -1.022, 'ObsError': 0.5},
                  'maximum': {'ObsValue': 38.633, 'oman': 1.090, 'ombg': 1.211,  'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 35.172, 'oman': 0.149, 'ombg': 0.213,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 35.172, 'oman': 0.149, 'ombg': 0.213,  'ObsError': 0.5},
                  'count':   {'ObsValue': 1701,   'oman': 1701,  'ombg': 1701,   'ObsError': 1701} 
             },
             (20, 100): {
@@ -35,7 +35,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 3.5517,  'oman': 0.156,  'ombg': 0.205,  'ObsError': 0.0},
                  'minimum': {'ObsValue': 5.669,   'oman': -1.493, 'ombg': -1.849, 'ObsError': 0.5},
                  'maximum': {'ObsValue': 38.839,  'oman': 1.315,  'ombg': 1.425 , 'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 35.245,  'oman': 0.156,  'ombg': 0.205,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 35.245,  'oman': 0.156,  'ombg': 0.205,  'ObsError': 0.5},
                  'count':   {'ObsValue': 5084,    'oman': 5084,   'ombg': 5084,   'ObsError': 5084}
             },
             (100, 500): {
@@ -44,7 +44,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 0.9287, 'oman': 0.114,  'ombg': 0.143,  'ObsError': 0.0},
                  'minimum': {'ObsValue': 33.820, 'oman': -0.666, 'ombg': -0.743, 'ObsError': 0.5},
                  'maximum': {'ObsValue': 38.689, 'oman': 0.696,  'ombg': 0.901,  'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 35.299, 'oman': 0.114,  'ombg': 0.143,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 35.299, 'oman': 0.114,  'ombg': 0.143,  'ObsError': 0.5},
                  'count':   {'ObsValue': 19901,  'oman': 19901,  'ombg': 19901,  'ObsError': 19901}
             },
             (500, 20000): {
@@ -53,7 +53,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 0.5211, 'oman': 0.201, 'ombg': 0.202,  'ObsError': 0.0},
                  'minimum': {'ObsValue': 33.974, 'oman': -0.619,'ombg': -0.627, 'ObsError': 0.5},
                  'maximum': {'ObsValue': 38.629, 'oman': 2.418, 'ombg': 2.418,  'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 34.720, 'oman': 0.202, 'ombg': 0.202,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 34.720, 'oman': 0.202, 'ombg': 0.202,  'ObsError': 0.5},
                  'count':   {'ObsValue': 42893,  'oman': 42893, 'ombg': 42893,  'ObsError': 42893}
             }
         }
