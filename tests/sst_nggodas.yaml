@@ -33,7 +33,7 @@ SST_No_Filter:
       oman:  4.48938
       ombg:  6.09044
       ObsError: 7.01
-    rmse:
+    rms:
       ObsValue:  22.2196
       oman:  0.56975
       ombg:  0.845406
@@ -73,7 +73,7 @@ SST_Strict_Filter:
       oman:  4.48938
       ombg:  6.09044
       ObsError: 7.01
-    rmse:
+    rms:
       ObsValue:  22.6696
       oman:  0.541841
       ombg:  0.834648
