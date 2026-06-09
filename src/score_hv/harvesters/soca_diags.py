@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from collections import namedtuple
 
 # Standard definitions
-VALID_STATISTICS = ('mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse', 'count')
+VALID_STATISTICS = ('mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms', 'count')
 VALID_FILE_TYPE_IDS = ('sst', 'icec', 'adt', 'wod', 'sss')
 
 HarvestedData = namedtuple('HarvestedData', [
@@ -188,7 +188,7 @@ class SOCADiagsHv:
             info.update(parsers[file_type](basename))
         return info
 
-    def _calculate_rmse(self, masked_data):
+    def _calculate_rms(self, masked_data):
         valid = masked_data.compressed()
         if valid.size == 0: return None
         return float(np.sqrt(np.mean(np.square(valid.astype(np.float64)))))
@@ -224,7 +224,7 @@ class SOCADiagsHv:
             'text_std': lambda x: float(np.ma.std(x, ddof=1)) if x.count() > 1 else None,
             'minimum': lambda x: float(np.ma.min(x)),
             'maximum': lambda x: float(np.ma.max(x)),
-            'rmse':    self._calculate_rmse,
+            'rms':    self._calculate_rms,
             'count':   lambda x: int(x.count())
         }
         stat_map['StdDev'] = stat_map.pop('text_std')
@@ -257,12 +257,15 @@ class SOCADiagsHv:
                 meta = extract_soca_metadata(ds)
                 has_depth = meta.get('depth') is not None
                 current_bins = self.config.ocean_depth_bins if has_depth else [None]
-
-                time_var = ds.groups['MetaData'].variables['dateTime'] 
-                dates = netCDF4.num2date(meta['dateTime'], units=time_var.units)
-                file_time = dt(dates[0].year, dates[0].month, dates[0].day, 
-                               dates[0].hour, dates[0].minute)
-
+                
+                raw_times = meta['dateTime']
+                min_time_num = np.min(raw_times)
+                max_time_num = np.max(raw_times)
+                midpoint_time_num = min_time_num + (max_time_num - min_time_num) / 2
+                time_var = ds.groups['MetaData'].variables['dateTime']
+                midpoint_date = netCDF4.num2date(midpoint_time_num, units=time_var.units)
+                file_time = dt(midpoint_date.year, midpoint_date.month, midpoint_date.day,
+                               midpoint_date.hour, midpoint_date.minute)
                 for var_name in ds.groups['ObsValue'].variables.keys():
                     if self.config.variables and var_name not in self.config.variables:
                         continue
