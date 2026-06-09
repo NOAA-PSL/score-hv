@@ -4,7 +4,7 @@ from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 
 STANDARD_BINS = [(0, 20), (20, 100), (100, 500), (500, 20000)]
-STANDARD_STATS = ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rmse', 'count']
+STANDARD_STATS = ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms', 'count']
 
 # --- 1. Global Registry of Test Cases ---
 TEST_REGISTRY = {
@@ -26,7 +26,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 0.1086, 'oman':  0.4398, 'ombg': 0.1395, 'ObsError': 0.0},
                  'minimum': {'ObsValue': -0.5870, 'oman': -1.0777, 'ombg': -0.3383, 'ObsError': 0.5},
                  'maximum': {'ObsValue': -0.3300, 'oman': 0.2956,  'ombg': 0.1766,  'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 0.5055,  'oman': 0.5791,  'ombg': 0.1875,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 0.5055,  'oman': 0.5791,  'ombg': 0.1875,  'ObsError': 0.5},
                  'count':   {'ObsValue': 63,      'oman': 63,      'ombg': 63,      'ObsError': 63}
             },
             (20, 100): {
@@ -35,7 +35,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 0.3245, 'oman': 0.779,  'ombg': 0.705,  'ObsError': 0.0},
                  'minimum': {'ObsValue': -1.754, 'oman': -1.754, 'ombg': -1.750, 'ObsError': 0.5},
                  'maximum': {'ObsValue': -0.423, 'oman': 0.304,  'ombg': 0.190,  'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 1.594,  'oman': 1.273,  'ombg': 1.284,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 1.594,  'oman': 1.273,  'ombg': 1.284,  'ObsError': 0.5},
                  'count':   {'ObsValue': 243,    'oman': 243,    'ombg': 243,    'ObsError': 243}
             },
             (100, 500): {
@@ -44,7 +44,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 0.0513, 'oman': 0.051,  'ombg': 0.048,  'ObsError': 0.0},
                  'minimum': {'ObsValue': -1.915, 'oman': -1.915, 'ombg': -1.897, 'ObsError': 0.5},
                  'maximum': {'ObsValue': -1.694, 'oman': -1.694, 'ombg': -1.690, 'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 1.860,  'oman': 1.860,  'ombg': 1.848,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 1.860,  'oman': 1.860,  'ombg': 1.848,  'ObsError': 0.5},
                  'count':   {'ObsValue': 944,    'oman': 944,    'ombg': 944,    'ObsError': 944}
             },
             (500, 20000): {
@@ -53,7 +53,7 @@ TEST_REGISTRY = {
                  'StdDev':  {'ObsValue': 0.00539, 'oman': 0.005,   'ombg': 0.005,  'ObsError': 0.0},
                  'minimum': {'ObsValue': -1.916,  'oman': -1.916,  'ombg': -1.895, 'ObsError': 0.5},
                  'maximum': {'ObsValue': -1.902,  'oman': -1.902,  'ombg': -1.882, 'ObsError': 0.5},
-                 'rmse':    {'ObsValue': 1.910,  'oman': 1.910,   'ombg': 1.890,  'ObsError': 0.5},
+                 'rms':    {'ObsValue': 1.910,  'oman': 1.910,   'ombg': 1.890,  'ObsError': 0.5},
                  'count':   {'ObsValue': 129,     'oman': 129,     'ombg': 129,    'ObsError': 129}
             }
         }
@@ -146,7 +146,6 @@ def test_main():
             assert isinstance(all_data, list) and len(all_data) > 0, "No data harvested."
 
             verify_filename_components(all_data[0], meta['components'])
-
             verify_statistics(all_data, meta['expected_stats'], meta['QC_threshold'])
             
             print(f"RESULT: {filename} [PASS]")
