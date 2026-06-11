@@ -9,7 +9,7 @@ from score_hv.harvester_base import harvest
 # --- 1. Load the Registry from YAML ---
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data'
-YAML_PATH = BASE_DIR / "icec_amsr2_north.yaml"
+YAML_PATH = BASE_DIR / "icec_nsidc_nh.yaml"
 
 with open(YAML_PATH, 'r') as f:
     raw_data = yaml.safe_load(f) 
@@ -19,11 +19,10 @@ def verify_filename_components(data_record, expected_components, expected_variab
     """
     Verifies the metadata tags attached to the harvested record.
     """
-    # Check each component against the expected dictionary
+    
     assert data_record.variables == expected_variable, \
         f"Variable mismatch! Got {data_record.variables}, expected {expected_variable}"
     
-    # Use .get() for the rest to prevent more KeyErrors if a value is missing
     assert data_record.sensor == expected_components.get('sensor'), \
         f"Sensor mismatch! Got {data_record.sensor}"
    
@@ -44,6 +43,7 @@ def verify_statistics(harvested_results, expected_stats, test_id):
     rel_tol = 0.001  # 0.1% relative tolerance
     abs_tol = 1e-07  # Handles cases where expected value is 0 or near-zero
 
+    # 1. Map harvested objects into a dictionary for easy lookup
     actual_map = {}
     for d in harvested_results:
         if d.statistics not in actual_map:
@@ -65,6 +65,7 @@ def verify_statistics(harvested_results, expected_stats, test_id):
                 f"Stat group '{group}' missing in '{stat_name}' for test: {test_id}"
             )
             
+            # Using math.isclose with both rel and abs tolerances
             if not math.isclose(act_val, exp_val, rel_tol=rel_tol, abs_tol=abs_tol):
                 # Print context before failing
                 print(f"\n\n--- MISMATCH DETECTED: {test_id} ---")
@@ -93,14 +94,11 @@ def test_soca_harvester(test_id):
         'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms'],
         'variables': [meta['variable']],
         'QC_threshold': meta['QC_threshold'],
-        'ocean_depth_bins': meta.get('ocean_depth_bins') or comp.get('ocean_depth_bins'),
     }
 
-    # 1. Execute Harvester
     all_data = harvest(config_dict)
     assert len(all_data) > 0, "No data was harvested."
     
-    # 2. Verification (Using external helpers)
     verify_filename_components(all_data[0], comp, meta['variable'])
     verify_statistics(all_data, meta['expected_stats'], test_id)
 

@@ -1,295 +1,308 @@
-#!/usr/bin/env python
-
 import os
-import sys
-from pathlib import Path
-from collections import namedtuple
-from dataclasses import dataclass
-from dataclasses import field
-from datetime import datetime as dt
-
-import xarray as xr
 import numpy as np
-import cftime
-import netCDF4 
-from netCDF4 import Dataset
+import netCDF4
+import logging
+from datetime import datetime as dt
+from dataclasses import dataclass, field
+from collections import namedtuple
 
-from score_hv.config_base import ConfigInterface
+# Standard definitions
+VALID_STATISTICS = ('mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms', 'count')
+VALID_FILE_TYPE_IDS = ('sst', 'icec', 'adt', 'wod', 'sss')
 
-HARVESTER_NAME = 'soca_diags'
-VALID_STATISTICS = ('mean', 'median', 'StdDev','minimum', 'maximum')
+HarvestedData = namedtuple('HarvestedData', [
+    'filenames', 'sensor', 'satellite', 'level', 'variables', 
+    'group', 'longname', 'units', 'statistics', 'value', 
+    'filetime', 'file_region', 'QC_threshold', 'ocean_depth_bins'
+])
 
-"""Variables of interest that come from the background forecast data.
-Commented out variables can be uncommented to generate gridcell weighted
-statistics but are in development and are currently not fully supported.
-"""
-VALID_VARIABLES  =  ('sst', #sea surface temperature
-                     'icec', #seaIceFraction
-                     'salinity',
-                     'waterTemperature',
-                     'seaSurfaceSalinity',
-                     'seaSurfaceTemperature',
-                    )
-HarvestedData = namedtuple('HarvestedData', ['filenames',
-                                             'sensor',
-                                             'satellite',
-                                             'level',
-                                             'variables',
-                                             'group',
-                                             'longname',
-                                             'units',
-                                             'statistics',
-                                             'value',
-                                             'filetime',
-                                             'file_region'])
-def parse_filename(filename):
+def extract_soca_metadata(ds):
     """
-      This method parses the input SOCA file name for variable,
-      satellite, level, region, file date and time.  If the 
-      filename does not have the expected number of parts,
-      the program exits.
-      Parameters: The filename. 
-      Return: The information listed above for the filename in
-              the form of the dictionary filename_info.
-              - variable_type (str)
-              - sensor (str or None)
-              - satellite (str or None)
-              - level (str or None)
-              - region (str or None)
-              - datetime (str)
-      Raises:
-              ValueError: If the filename format is unexpected or has an invalid number of parts.        
-      """
-    base = os.path.basename(filename)
-    try:
-       name_part, datetime_part, ext = base.rsplit('.', 2)
-    except ValueError:
-       raise ValueError(f"Filename format unexpected: {filename}")
-
-    parts = name_part.split('_')
-    # Initialize dictionary with default values
-    filename_info = {
-              'variable_type': parts[0],
-              'sensor':  parts[1],
-    }        
-    if filename_info['variable_type'] == 'insitu':
-       filename_info['sensor'] = None
-
-    filename_info['datetime'] = datetime_part 
-    filename_info['region'] = 'global'
-    filename_info['satellite'] = None
-    filename_info['level'] = None
-    if len(parts) == 3:
-       if filename_info['variable_type'] == 'insitu':
-          filename_info['satellite'] = parts[2]
-       else:
-          filename_info['region'] = parts[2]
-    elif len(parts) == 4:
-       filename_info['satellite'] = parts[2]
-       filename_info['level'] = parts[3]
-    elif len(parts) == 5:
-       filename_info['level'] = parts[3]
-       filename_info['region'] = parts[4]
-    else:
-       raise ValueError(f"Unexpected number of parts in filename: {filename}")
-
-    return filename_info
-
-def read_MetaData_group(dataset):
+    Extracts core spatial/temporal variables from MetaData group.
+    Parameters: ds - netCDF4.Dataset  An open NetCDF file handle.
+    Return:     A dictionary containing arrays for latitude, longitude, dateTime, 
+                and optionally depth.
     """
-       This method reads the MetaData group from the 
-       opened data set.
-       Parameters:
-                dataset- Opened Netcdf4 file.
+    meta = ds.groups.get('MetaData')
+    if not meta:
+        raise KeyError("MetaData group missing in NetCDF file.")
+    
+    extracted = {}
+    for var in ['latitude', 'longitude', 'dateTime']:
+        if var in meta.variables:
+            extracted[var] = meta.variables[var][:]
+        else:
+            raise KeyError(f"Mandatory variable '{var}' missing in MetaData.")
+    
+    extracted['depth'] = meta.variables['depth'][:] if 'depth' in meta.variables else None
+    return extracted
 
-       Returns: latitude and longitude value 
-                from the MetadData group.
-       """
-    if 'MetaData' not in dataset.groups:
-       latitude = None
-       longitude = None
-    else: 
-       metadata_group = dataset.groups['MetaData'] 
-       if 'latitude' in metadata_group.variables:
-          latitude = metadata_group['latitude'][:]
-       else:
-          latitude = None 
-          print("'latitude' not found in metadata_vars")
+def get_variable_metadata(file_type, var_name, mean_val=None):
+    """
+    Determines long names and units based on file type and variable name.
+    Parameters: 1. file_type - string.  
+                   The category of the file (e.g., 'sst', 'adt', 'wod', 'sss').
+                2. var_name - string.
+                   The internal NetCDF variable name.
+                3. mean_val     - float/None
+    Return:     Tuple
+                A pair containing (long_name, units)
+    """
+    soca_map = {
+        'waterTemperature': 't', 'seaSurfaceTemperature': 't',
+        'salinity': 's', 'Salinity': 's', 'seaIceFraction': 'ice'
+    }
+    wod_meta = {
+        't': ('waterTemperature', 'DegC'), 
+        's': ('Practical Salinity Scale', 'PSS'),
+        'o': ('Oxygen', 'umol/kg'), 
+        'ice': ('Sea Ice Fraction', '%')
+    }
 
-       if 'longitude' in metadata_group.variables:
-          longitude = metadata_group['longitude'][:]
-       else:
-          longitude = None 
-          print("'longitude' not found in metadata_vars")
+    if file_type == 'wod':
+        lookup = soca_map.get(var_name, var_name)
+        return wod_meta.get(lookup, (var_name, 'Unknown'))
 
-    return(latitude,longitude)
+    units = 'Unknown'
+    if file_type == 'icec': 
+        units = '%'
+    elif file_type == 'sst': 
+        units = 'DegC' if (mean_val is not None and mean_val < 200) else 'DegK'
+    elif file_type == 'adt': 
+        units = 'm'
+    elif file_type == 'sss': 
+        units = 'psu'
+        
+    return var_name, units
 
 @dataclass
-class SOCADiagsConfig(ConfigInterface):
-
+class SOCADiagsConfig:
     config_data: dict = field(default_factory=dict)
-
+    
     def __post_init__(self):
-        self.set_config()
+        self.harvest_filenames = self.config_data.get('filenames', [])
+        self.variables = self.config_data.get('variables', [])
+        self.stats = self.config_data.get('statistics', ['mean'])
+        self.qc_threshold = self.config_data.get('QC_threshold', 0.0)
+        self.ocean_depth_bins = self.config_data.get('ocean_depth_bins', [None])
 
-    def set_config(self):
-        """ 
-          Function to set configuration variables from given dictionary
-          """
-        self.harvest_filenames = self.config_data.get('filenames')
-        self.set_stats()
-        self.set_variables()
-        self.set_depths()
-        self.set_regions()
+class SOCADiagsHv:
+    def __init__(self, config: SOCADiagsConfig):
+        self.config = config
 
-    def set_variables(self):
+    def get_icec_info(self, filename):
+        fn = filename.lower()
+        satellite, sensor, file_region = "Unknown", "Unknown", "global"
+        if "amsr2" in fn:
+            satellite, sensor = "GCOM-W1", "amsr2"
+        elif "ssmis" in fn or "nsidc" in fn:
+            satellite, sensor = "DMSP", "ssmis"
+        
+        if "north" in fn or "_nh" in fn: file_region = "north"
+        elif "south" in fn or "_sh" in fn: file_region = "south"
+        
+        return {"satellite": satellite, "sensor": sensor, "file_region": file_region}
+
+    def get_sst_info(self, filename):
         """
-          Set the variables specified by the config dict
-          """
-        self.variables = self.config_data.get('variables')
-        for var in self.variables:
-            if var not in VALID_VARIABLES:
-                msg = ("'%s' is not a supported "
-                       "variable to harvest from the soca diag files "
-                       "Please reconfigure the input dictionary using only the "
-                       "following variables: %r" % (var, VALID_VARIABLES))
-                raise KeyError(msg)
+        Parses the input file name to load the output dictionary.
+        Parameters: filename - string. The filename to be parsed.
+        Return: A dictionary of specific platform metadata.
+        """        
+        fn = filename.lower()
+        satellite, sensor, file_region, level = "unknown", "unknown", "global", "unknown"
 
-    def set_stats(self):
+        if "avhrr" in fn:
+            sensor = "avhrr"
+            satellite = "MetOp-B" if "mb" in fn else "MetOp-C" if "mc" in fn else "MetOp"
+        elif "nggodas" in fn:
+            sensor = "avhrr"
+            satellite = "MetOp"
+        elif "viirs" in fn:
+            sensor = "viirs"
+            if "npp" in fn or "snpp" in fn: satellite = "Suomi-NPP"
+            elif "n20" in fn or "j01" in fn: satellite = "NOAA-20"
+            elif "n21" in fn or "j02" in fn: satellite = "NOAA-21"
+            else: satellite = "VIIRS-Multi"
+        elif "amsr2" in fn:
+            sensor, satellite = "amsr2", "GCOM-W1"
+
+        if "l3u" in fn: level = "l3u"
+        elif "l2" in fn: level = "l2"
+        elif "l3c" in fn: level = "l3c"
+
+        regions = {"natl": "North Atlantic", "satl": "South Atlantic", "gom": "Gulf of Mexico", "arctic": "Arctic"}
+        for tag, full_name in regions.items():
+            if tag in fn:
+                file_region = full_name
+                break
+
+        return {"satellite": satellite, "sensor": sensor, "file_region": file_region, "level": level}
+
+    def get_adt_info(self, filename):
         """
-           Set the statistics specified by the config dict
-           """
-        self.stats = self.config_data.get('statistics')
-        for stat in self.stats:
-            if stat not in VALID_STATISTICS:
-                msg = ("'%s' is not a supported statistic to harvest from "
-                       "the SOCA diag files.. "
-                       "Please reconfigure the input dictionary using only the "
-                       "following statistics: %r" % (stat, VALID_STATISTICS))
-                raise KeyError(msg)
+        Parses the input file name to load the output dictionary.
+        Parameters: filename - string. The filename to be parsed.
+        Return: A dictionary of specific platform metadata.
+        """      
+        parts = filename.replace('.nc', '').split('_')
+        platform_id = parts[2] if len(parts) > 2 else None
+        
+        satellite = "Unknown"
+        sensor = "Unknown"
+        adt_mapping = {
+            "e2": {"satellite": "ERS-2", "sensor": "RA-2"},
+            "j3": {"satellite": "Jason-3", "sensor": "Poseidon-3B"},
+            "s3a": {"satellite": "Sentinel-3A", "sensor": "SRAL"},
+            "swot": {"satellite": "SWOT", "sensor": "Karin"},
+            "s3b": {"satellite": "Sentinel-3B", "sensor": "SRAL"},
+            "c2": {"satellite": "CryoSat-2", "sensor": "SIRAL"},
+        }
+        return adt_mapping.get(platform_id, {"satellite": satellite, "sensor": sensor})
 
-    def set_depths(self):
-        self.depths = self.config_data.get('depths')
-       
-    def set_regions(self):
-        self.regions = self.config_data.get('regions')
+    def get_wod_info(self, filename):
+        """
+        Parses the input file name to load the output dictionary.
+        Parameters: filename - string. The filename to be parsed.
+        Return: A dictionary of specific platform metadata.
+        """
+        parts = filename.replace('.nc', '').split('_')
+        return {"sensor": parts[2] if len(parts) > 2 else "Unknown", "satellite": "In-Situ"}
 
-    def get_stats(self):
-        ''' return list of all stat types based on harvest_config '''
-        return self.stats
-
-    def get_variables(self):
-        ''' return list of all variable types based on harvest_config'''
-        return self.variables
-    
-
-@dataclass
-class SOCADiagsHv(object):
-    """ Harvester dataclass used to parse SOCA output.
-    
-        Parameters:
-        -----------
-        config: SOCADiagsConfig object containing information used to determine
-                which variable to parse SOCA output.
-        Methods:
-        --------
-        get_data: parse descriptive statistics from SOCA output.
-    
-                  returns a list of tuples containing specific data
-    """
-    config: SOCADiagsConfig = field(default_factory=SOCADiagsConfig)
-     
-    def get_data(self):
-        depths = self.config.depths
-        groups_wanted = ['ObsValue','oman','ombg']
-        units = None
-        for filename in self.config.harvest_filenames:
-            harvested_data = list()
-            filename_info = parse_filename(filename)
-            try:
-               dataset = netCDF4.Dataset(filename, 'r')
-            except Exception as e: 
-               raise OSError (f"Failed to open NetCDF file {filename}: {e}")
-
-            """
-              The information about the file from the 
-              file name.
-              """
-            variable = filename_info['variable_type']  
-            filetime_str = filename_info['datetime']
-            dt_obj = dt.strptime(filetime_str, "%Y%m%d%H")
-            filetime = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
-            sensor = filename_info['sensor']
-            file_region = filename_info['region']
-            satellite = filename_info['satellite']
-            level = filename_info['level']
-            latitude,longitude = read_MetaData_group(dataset)
+    def parse_filename(self, filename):
+        basename = os.path.basename(filename).lower()
+        file_type = next((t for t in VALID_FILE_TYPE_IDS if t in basename), None)
+        if not file_type: return None
+          
+        info = {'file_type': file_type, 'sensor': 'Unknown', 'satellite': 'Unknown', 
+                'file_region': 'global', 'level': None}
             
-            """
-              We can now loop through the list of wanted groups.
-              We get the values from the wanted groups and the FillValue.
-              """
-            for group in groups_wanted:
-                if group not in dataset.groups:
-                   raise ValueError(f"{group} is not in dataset.groups: {dataset.groups}")   
-                else:     
-                   requested_group = dataset.groups[group]
-                   group_name = group
-                   num_variables = len(requested_group.variables)
-                   for var_name in requested_group.variables:
-                       variable = var_name
-                       var = requested_group.variables[var_name]
-                       longname = var_name 
-                       if "units" in var.ncattrs():
-                          units = str(var.getncattr("units"))
-   
-                       groupvalue_variable = requested_group.variables[var_name]
+        parsers = {
+            'wod': self.get_wod_info,
+            'icec': self.get_icec_info,
+            'adt': self.get_adt_info,
+            'sst': self.get_sst_info
+        }
+        
+        if file_type in parsers:
+            info.update(parsers[file_type](basename))
+        return info
 
-                       if '_FillValue' in groupvalue_variable.ncattrs():
-                          fill_value = groupvalue_variable.getncattr('_FillValue')
-                          var_values = np.ma.masked_where(groupvalue_variable[:] == fill_value,groupvalue_variable[:])
-                       else:   
-                          var_values =  np.ma.array(groupvalue_variable[:])
-                       """
-                         Mask out the nans in place.
-                         """
-                       np.ma.masked_where(var_values == np.nan,var_values,copy=False)
-                       
-                       """
-                          Calculate the requested statistics. Our var_values arrays are 
-                          all of type <class 'numpy.ndarray'>.  We have used the fill_value
-                          to put np.nan's in the for all values to to the fill_values so we 
-                          can calculate the statistics.
-                          """
-                       for j, statistic in enumerate(self.config.get_stats()):
-                           group = group_name
-                           if statistic == 'mean':
-                               value = np.ma.mean(var_values)
-                               
-                           elif statistic == 'median':
-                               value = np.ma.median(var_values)
-                                
-                           elif statistic == 'StdDev':
-                               value = np.ma.std(var_values)
-                               
-                           elif statistic == 'minimum':
-                               value = np.ma.min(var_values)
-                           
-                           elif statistic == 'maximum':
-                               value = np.ma.max(var_values)
-                                
-                           harvested_data.append(HarvestedData(
-                                                 filename,
-                                                 sensor,
-                                                 satellite,
-                                                 level,
-                                                 variable,
-                                                 group,
-                                                 longname,
-                                                 units,
-                                                 statistic,
-                                                 np.float32(value),
-                                                 filetime,
-                                                 file_region))
-            dataset.close()               
-            return(harvested_data)
+    def _calculate_rms(self, masked_data):
+        valid = masked_data.compressed()
+        if valid.size == 0: return None
+        return float(np.sqrt(np.mean(np.square(valid.astype(np.float64)))))
+
+    def calculate_masked_stats(self, var_obj, bin_mask, requested_stats):
+        """
+        Method to calculate the requested stats.
+        Parameters: 1. var_obj - netCDF4.Variable
+                       The raw data array from the NetCDF group.
+                    2. bin_mask - np.ndarray
+                       A boolean mask (True = exclude) 
+                       combining QC and depth filters.
+                    3. requested_stats - list
+                       The statistics to compute.
+        Return: A dictionary   
+                Keys are stat names; values are floats or 
+                None if no valid data exists.
+        """        
+        netcdf_data = var_obj[:]
+        
+        raw_vals = np.array(netcdf_data, dtype=np.float64, copy=True)
+        intrinsic_mask = np.ma.getmaskarray(netcdf_data)
+        
+        combined_mask = intrinsic_mask | bin_mask
+        masked_data = np.ma.masked_array(raw_vals.ravel(), mask=combined_mask.ravel())
+
+        if masked_data.count() == 0:
+            return {s: (0 if s == 'count' else None) for s in requested_stats}
+
+        stat_map = {
+            'mean':    lambda x: float(np.ma.mean(x)),
+            'median':  lambda x: float(np.ma.median(x)),
+            'text_std': lambda x: float(np.ma.std(x, ddof=1)) if x.count() > 1 else None,
+            'minimum': lambda x: float(np.ma.min(x)),
+            'maximum': lambda x: float(np.ma.max(x)),
+            'rms':    self._calculate_rms,
+            'count':   lambda x: int(x.count())
+        }
+        stat_map['StdDev'] = stat_map.pop('text_std')
+        
+        results = {}
+        for stat in [s.strip() for s in requested_stats]:
+            if stat in stat_map:
+                try:
+                    val = stat_map[stat](masked_data)
+                    results[stat] = val if (val is not None and np.isfinite(val)) else None
+                except: 
+                    results[stat] = None
+        return results
+
+    def get_data(self):
+        """
+        Return: list A list of HarvestedData namedtuples.
+        """
+        harvested_results = []
+        data_groups = ['ObsValue', 'oman', 'ombg', 'ObsError']
+          
+        for filename in self.config.harvest_filenames:
+            if not os.path.exists(filename):
+                raise FileNotFoundError(f"Missing required SOCA/JEDI file: {filename}")
+
+            with netCDF4.Dataset(filename, 'r') as ds:
+                file_info = self.parse_filename(filename)
+                if file_info is None: continue 
+
+                meta = extract_soca_metadata(ds)
+                has_depth = meta.get('depth') is not None
+                current_bins = self.config.ocean_depth_bins if has_depth else [None]
+                
+                raw_times = meta['dateTime']
+                min_time_num = np.min(raw_times)
+                max_time_num = np.max(raw_times)
+                midpoint_time_num = min_time_num + (max_time_num - min_time_num) / 2
+                time_var = ds.groups['MetaData'].variables['dateTime']
+                midpoint_date = netCDF4.num2date(midpoint_time_num, units=time_var.units)
+                file_time = dt(midpoint_date.year, midpoint_date.month, midpoint_date.day,
+                               midpoint_date.hour, midpoint_date.minute)
+                for var_name in ds.groups['ObsValue'].variables.keys():
+                    if self.config.variables and var_name not in self.config.variables:
+                        continue
+
+                    qc_grp = ds.groups.get('EffectiveQC0')
+                    if qc_grp and var_name in qc_grp.variables:
+                        qc_mask = qc_grp.variables[var_name][:] > self.config.qc_threshold
+                    else:
+                        qc_mask = np.zeros(ds.groups['ObsValue'].variables[var_name].shape, dtype=bool) 
+
+                    for d_bin in current_bins:
+                        bin_mask = qc_mask.copy()
+                        if d_bin and has_depth:
+                            bin_mask |= (meta['depth'] < d_bin[0]) | (meta['depth'] >= d_bin[1])
+                        
+                        if np.all(bin_mask): continue
+
+                        for grp in data_groups:
+                            if grp not in ds.groups or var_name not in ds.groups[grp].variables:
+                                continue
+                            
+                            stats = self.calculate_masked_stats(
+                                ds.groups[grp].variables[var_name], 
+                                bin_mask, self.config.stats
+                            )
+                            lname, units = get_variable_metadata(
+                                file_info['file_type'], var_name, stats.get('mean')
+                            )
+                            
+                            for s_name, s_val in stats.items():
+                                harvested_results.append(HarvestedData(
+                                    filenames=filename, sensor=file_info['sensor'], 
+                                    satellite=file_info['satellite'], level=file_info['level'], 
+                                    variables=var_name, group=grp, longname=lname,
+                                    units=units, statistics=s_name, value=s_val, 
+                                    filetime=file_time, file_region=file_info['file_region'], 
+                                    QC_threshold=self.config.qc_threshold, ocean_depth_bins=d_bin
+                                ))
+                
+        return harvested_results

@@ -1,0 +1,81 @@
+SST_No_Filter:
+  filename: sst_viirs_n20_l3u.nc
+  QC_threshold: 999999.0
+  variable: seaSurfaceTemperature
+  components:
+    sensor: viirs
+    satellite: NOAA-20
+    level: l3u
+    file_region: global  
+  expected_stats:
+    mean:
+      ObsValue: 19.2038
+      oman: -0.00844146
+      ombg: 0.00397953
+      ObsError: 0.280588
+    median:
+      ObsValue: 23.3198
+      oman: -0.00540246
+      ombg: 0.0181797
+      ObsError: 0.271      
+    StdDev:
+      ObsValue: 9.50721
+      oman:  0.312667
+      ombg:  0.377471
+      ObsError: 0.0531209
+    minimum:
+      ObsValue:  -2.0034
+      oman:  -4.39335
+      ombg:  -4.53665
+      ObsError: 0.174602      
+    maximum:
+      ObsValue:  31.768
+      oman:  9.59331
+      ombg:  9.57827
+      ObsError: 0.666
+    rms:
+      ObsValue:  21.4283
+      oman:  0.31278
+      ombg:  0.37749
+      ObsError:  0.285572
+SST_Strict_Filter:
+  filename: sst_viirs_n20_l3u.nc
+  QC_threshold: 10.0
+  variable: seaSurfaceTemperature
+  components:
+    sensor: viirs
+    satellite: NOAA-20
+    level: l3u
+    file_region: global  
+  expected_stats:
+    mean:
+      ObsValue: 20.5516
+      oman: -0.0130351
+      ombg: 0.00191854
+      ObsError: 0.274843
+    median:
+      ObsValue: 24.5305
+      oman: -0.00535841
+      ombg: 0.0197704
+      ObsError: 0.269013
+    StdDev:
+      ObsValue: 8.55334
+      oman:  0.214438
+      ombg:  0.307252
+      ObsError: 0.0492828
+    minimum:
+      ObsValue:  -1.17976
+      oman:  -3.2775
+      ombg:  -4.53665
+      ObsError:  0.174602
+    maximum:
+      ObsValue:  31.768
+      oman:  2.53399
+      ombg:  4.75831
+      ObsError: 0.581
+    rms:
+      ObsValue:  22.2605
+      oman:  0.214833
+      ombg:  0.307257
+      ObsError:  0.279227
+      
