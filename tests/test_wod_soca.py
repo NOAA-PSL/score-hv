@@ -13,12 +13,6 @@ TEST_REGISTRY = {
         'longname': 'Temperature',
         'units': 'DegC',
         'ocean_depth_bins': [(0, 20), (20, 100), (100, 500), (500,20000)],
-        'components': {
-            'variables': 'waterTemperature',
-            'sensor': 'ctd',
-            'satellite': 'In-Situ',
-            'level': None
-        },
         'expected_stats': {
              (0, 20): {
                  'mean':    {'ObsValue': -0.4939, 'oman': -0.3808, 'ombg': -0.126, 'ObsError': 0.5},
