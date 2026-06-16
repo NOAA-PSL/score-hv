@@ -20,7 +20,7 @@ SOCA_PATH = [os.path.join(TEST_DATA_PATH, file_name) for file_name in TEST_DATA_
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
-                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum', 'rmse', 'count'],
+                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum', 'rms', 'count'],
                      'variables': ['seaIceFraction']
                  }
 
@@ -96,7 +96,7 @@ def test_verify_group_rms_values(tolerance=TEST_TOLERANCE):
     calculated_rms = [0.868,0.0681,0.119,0.1]
     groups_wanted = ['ObsValue','oman','ombg', 'ObsError'] 
     group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'rmse']
+    harvested_data = [data for data in data1 if data.statistics == 'rms']
     assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
   
     group_index = 0
