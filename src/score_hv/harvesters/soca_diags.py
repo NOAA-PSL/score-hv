@@ -40,13 +40,6 @@ def extract_soca_metadata(ds):
 def get_variable_metadata(file_type, var_name, mean_val=None):
     """
     Determines long names and units based on file type and variable name.
-    Parameters: 1. file_type - string.  
-                   The category of the file (e.g., 'sst', 'adt', 'wod', 'sss').
-                2. var_name - string.
-                   The internal NetCDF variable name.
-                3. mean_val     - float/None
-    Return:     Tuple
-                A pair containing (long_name, units)
     """
     soca_map = {
         'waterTemperature': 't', 'seaSurfaceTemperature': 't',
@@ -94,62 +87,51 @@ class SOCADiagsHv:
         fn = filename.lower()
         satellite, sensor, file_region = "Unknown", "Unknown", "global"
         if "amsr2" in fn:
-            satellite, sensor = "GCOM-W1", "amsr2"
+            satellite, sensor = "gcom-w1", "amsr2"
         elif "ssmis" in fn or "nsidc" in fn:
             satellite, sensor = "DMSP", "ssmis"
         
-        if "north" in fn or "_nh" in fn: file_region = "north"
-        elif "south" in fn or "_sh" in fn: file_region = "south"
+        if "north" in fn or "_nh" in fn: file_region = "nh"
+        elif "south" in fn or "_sh" in fn: file_region = "sh"
         
         return {"satellite": satellite, "sensor": sensor, "file_region": file_region}
 
     def get_sst_info(self, filename):
-        """
-        Parses the input file name to load the output dictionary.
-        Parameters: filename - string. The filename to be parsed.
-        Return: A dictionary of specific platform metadata.
-        """        
         fn = filename.lower()
-        satellite, sensor, file_region, level = "unknown", "unknown", "global", "unknown"
+        satellite, sensor, level = "unknown", "unknown", "unknown"
 
         if "avhrr" in fn:
             sensor = "avhrr"
-            satellite = "MetOp-B" if "mb" in fn else "MetOp-C" if "mc" in fn else "MetOp"
+            satellite = "metop-b" if "mb" in fn else "metop-c" if "mc" in fn else "unknown"
         elif "nggodas" in fn:
             sensor = "avhrr"
             satellite = "MetOp"
         elif "viirs" in fn:
             sensor = "viirs"
-            if "npp" in fn or "snpp" in fn: satellite = "Suomi-NPP"
-            elif "n20" in fn or "j01" in fn: satellite = "NOAA-20"
-            elif "n21" in fn or "j02" in fn: satellite = "NOAA-21"
-            else: satellite = "VIIRS-Multi"
+            if "npp" in fn or "snpp" in fn: satellite = "npp"
+            elif "n20" in fn: satellite = "n20"
+            elif "n21" in fn: satellite = "n21"
+            #elif "n20" in fn or "j01" in fn: satellite = "NOAA-20"
+            #elif "n21" in fn or "j02" in fn: satellite = "NOAA-21"
+            #else: satellite = "VIIRS-Multi"
         elif "amsr2" in fn:
-            sensor, satellite = "amsr2", "GCOM-W1"
+            sensor, satellite = "amsr2", "gcom-w1"
 
         if "l3u" in fn: level = "l3u"
         elif "l2" in fn: level = "l2"
         elif "l3c" in fn: level = "l3c"
 
+        # REFACTORED: Replaced explicit loop + break statement with next() generator expression
         regions = {"natl": "North Atlantic", "satl": "South Atlantic", "gom": "Gulf of Mexico", "arctic": "Arctic"}
-        for tag, full_name in regions.items():
-            if tag in fn:
-                file_region = full_name
-                break
+        file_region = next((full_name for tag, full_name in regions.items() if tag in fn), "global")
 
         return {"satellite": satellite, "sensor": sensor, "file_region": file_region, "level": level}
 
     def get_adt_info(self, filename):
-        """
-        Parses the input file name to load the output dictionary.
-        Parameters: filename - string. The filename to be parsed.
-        Return: A dictionary of specific platform metadata.
-        """      
         parts = filename.replace('.nc', '').split('_')
         platform_id = parts[2] if len(parts) > 2 else None
         
-        satellite = "Unknown"
-        sensor = "Unknown"
+        satellite, sensor = "Unknown", "Unknown"
         adt_mapping = {
             "e2": {"satellite": "ERS-2", "sensor": "RA-2"},
             "j3": {"satellite": "Jason-3", "sensor": "Poseidon-3B"},
@@ -161,11 +143,6 @@ class SOCADiagsHv:
         return adt_mapping.get(platform_id, {"satellite": satellite, "sensor": sensor})
 
     def get_wod_info(self, filename):
-        """
-        Parses the input file name to load the output dictionary.
-        Parameters: filename - string. The filename to be parsed.
-        Return: A dictionary of specific platform metadata.
-        """
         parts = filename.replace('.nc', '').split('_')
         return {"sensor": parts[2] if len(parts) > 2 else "Unknown", "satellite": "In-Situ"}
 
@@ -194,26 +171,9 @@ class SOCADiagsHv:
         return float(np.sqrt(np.mean(np.square(valid.astype(np.float64)))))
 
     def calculate_masked_stats(self, var_obj, bin_mask, requested_stats):
-        """
-        Method to calculate the requested stats.
-        Parameters: 1. var_obj - netCDF4.Variable
-                       The raw data array from the NetCDF group.
-                    2. bin_mask - np.ndarray
-                       A boolean mask (True = exclude) 
-                       combining QC and depth filters.
-                    3. requested_stats - list
-                       The statistics to compute.
-        Return: A dictionary   
-                Keys are stat names; values are floats or 
-                None if no valid data exists.
-        """        
         netcdf_data = var_obj[:]
-        
-        raw_vals = np.array(netcdf_data, dtype=np.float64, copy=True)
-        intrinsic_mask = np.ma.getmaskarray(netcdf_data)
-        
-        combined_mask = intrinsic_mask | bin_mask
-        masked_data = np.ma.masked_array(raw_vals.ravel(), mask=combined_mask.ravel())
+        combined_mask = np.ma.getmaskarray(netcdf_data) | bin_mask
+        masked_data = np.ma.masked_array(netcdf_data, mask=combined_mask).ravel()
 
         if masked_data.count() == 0:
             return {s: (0 if s == 'count' else None) for s in requested_stats}
@@ -221,13 +181,12 @@ class SOCADiagsHv:
         stat_map = {
             'mean':    lambda x: float(np.ma.mean(x)),
             'median':  lambda x: float(np.ma.median(x)),
-            'text_std': lambda x: float(np.ma.std(x, ddof=1)) if x.count() > 1 else None,
+            'StdDev':  lambda x: float(np.ma.std(x, ddof=1)) if x.count() > 1 else None,
             'minimum': lambda x: float(np.ma.min(x)),
             'maximum': lambda x: float(np.ma.max(x)),
-            'rms':    self._calculate_rms,
+            'rms':     self._calculate_rms,
             'count':   lambda x: int(x.count())
         }
-        stat_map['StdDev'] = stat_map.pop('text_std')
         
         results = {}
         for stat in [s.strip() for s in requested_stats]:
@@ -235,7 +194,8 @@ class SOCADiagsHv:
                 try:
                     val = stat_map[stat](masked_data)
                     results[stat] = val if (val is not None and np.isfinite(val)) else None
-                except: 
+                except Exception as e:
+                    logging.debug(f"Failed calculating {stat}: {e}")
                     results[stat] = None
         return results
 
@@ -257,35 +217,80 @@ class SOCADiagsHv:
                 meta = extract_soca_metadata(ds)
                 has_depth = meta.get('depth') is not None
                 current_bins = self.config.ocean_depth_bins if has_depth else [None]
-                
-                raw_times = meta['dateTime']
-                min_time_num = np.min(raw_times)
-                max_time_num = np.max(raw_times)
-                midpoint_time_num = min_time_num + (max_time_num - min_time_num) / 2
-                time_var = ds.groups['MetaData'].variables['dateTime']
-                midpoint_date = netCDF4.num2date(midpoint_time_num, units=time_var.units)
-                file_time = dt(midpoint_date.year, midpoint_date.month, midpoint_date.day,
-                               midpoint_date.hour, midpoint_date.minute)
+
                 for var_name in ds.groups['ObsValue'].variables.keys():
                     if self.config.variables and var_name not in self.config.variables:
                         continue
 
-                    qc_grp = ds.groups.get('EffectiveQC0')
-                    if qc_grp and var_name in qc_grp.variables:
-                        qc_mask = qc_grp.variables[var_name][:] > self.config.qc_threshold
+                    # --- BASELINE TIME QC (EffectiveQC0) ---
+                    base_qc_grp = ds.groups.get('EffectiveQC0')
+                    if not base_qc_grp:
+                       qc_group_keys = []
+                       for group_names in ds.groups.keys():
+                           if group_names.startswith('EffectiveQC'):
+                              qc_group_keys.append(group_names)
+                       if qc_group_keys: #Get the first match if the list is not empty.
+                           base_qc_grp = ds.groups[qc_group_keys[0]]
+                    """
+                      Now mask.
+                      """
+                    if base_qc_grp and var_name in base_qc_grp.variables:
+                        base_qc_mask = base_qc_grp.variables[var_name][:] > self.config.qc_threshold
                     else:
-                        qc_mask = np.zeros(ds.groups['ObsValue'].variables[var_name].shape, dtype=bool) 
+                        base_qc_mask = np.zeros(ds.groups['ObsValue'].variables[var_name].shape, dtype=bool)
 
+                    """
+                      The variable current_bins is set to None on this line:
+                      current_bins = self.config.ocean_depth_bins if has_depth else [None]
+                      If the input data file does not contain depth bins or the config
+                      dictionary does not contain bins then the current bins will be
+                      set to none.  The for loop will execute only once.
+                      """
                     for d_bin in current_bins:
-                        bin_mask = qc_mask.copy()
+                        # Build the mask window specifically for time math
+                        time_mask = base_qc_mask.copy()
                         if d_bin and has_depth:
-                            bin_mask |= (meta['depth'] < d_bin[0]) | (meta['depth'] >= d_bin[1])
-                        
-                        if np.all(bin_mask): continue
+                            time_mask |= (meta['depth'] < d_bin[0]) | (meta['depth'] >= d_bin[1])
 
+                        masked_times = np.ma.masked_array(meta['dateTime'], mask=time_mask)
+                        
+                        if masked_times.count() > 0:
+                            median_time_num = np.ma.median(masked_times)
+                            time_var = ds.groups['MetaData'].variables['dateTime']
+                            
+                            # Forced float cast to prevent netCDF wrapper object leakage into num2date
+                            midpoint_date = netCDF4.num2date(float(median_time_num), units=time_var.units)
+                            
+                            if hasattr(midpoint_date, 'calendar'):
+                                file_time = dt(midpoint_date.year, midpoint_date.month, midpoint_date.day,
+                                               midpoint_date.hour, midpoint_date.minute, midpoint_date.second)
+                            else:
+                                file_time = dt(midpoint_date.year, midpoint_date.month, midpoint_date.day,
+                                               midpoint_date.hour, midpoint_date.minute)
+                        else:
+                            file_time = None
+
+                        # Now track data groups for structural metrics processing
                         for grp in data_groups:
                             if grp not in ds.groups or var_name not in ds.groups[grp].variables:
                                 continue
+
+                            # Use EffectiveQC1 exclusively for o-a ('oman'), fallback to EffectiveQC0 for others
+                            target_qc_suffix = '1' if grp == 'oman' else '0'
+                            qc_grp_name = f'EffectiveQC{target_qc_suffix}'
+                            qc_grp = ds.groups.get(qc_grp_name, base_qc_grp)
+
+                            if qc_grp and var_name in qc_grp.variables:
+                                qc_mask = qc_grp.variables[var_name][:] > self.config.qc_threshold
+                            else:
+                                qc_mask = np.zeros(ds.groups['ObsValue'].variables[var_name].shape, dtype=bool)
+
+                            # Combine specific group QC with depth filters for metrics math
+                            bin_mask = qc_mask.copy()
+                            if d_bin and has_depth:
+                                bin_mask |= (meta['depth'] < d_bin[0]) | (meta['depth'] >= d_bin[1])
+                            
+                            if np.all(bin_mask): continue
                             
                             stats = self.calculate_masked_stats(
                                 ds.groups[grp].variables[var_name], 
@@ -306,3 +311,4 @@ class SOCADiagsHv:
                                 ))
                 
         return harvested_results
+

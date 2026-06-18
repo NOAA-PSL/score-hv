@@ -13,12 +13,6 @@ TEST_REGISTRY = {
         'longname': 'salinity',
         'units': 'DegC',
         'ocean_depth_bins': [(0, 20), (20, 100), (100, 500), (500,20000)],
-        'components': {
-            'variables': 'salinity',
-            'sensor': 'pfl',
-            'satellite': 'In-Situ',
-            'level': None
-        },
         'expected_stats': {
              (0, 20): {
                  'mean':    {'ObsValue': 35.008, 'oman': 0.007, 'ombg': 0.010, 'ObsError': 0.5},
