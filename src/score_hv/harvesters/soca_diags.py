@@ -87,12 +87,12 @@ class SOCADiagsHv:
         fn = filename.lower()
         satellite, sensor, file_region = "Unknown", "Unknown", "global"
         if "amsr2" in fn:
-            satellite, sensor = "GCOM-W1", "amsr2"
+            satellite, sensor = "gcom-w1", "amsr2"
         elif "ssmis" in fn or "nsidc" in fn:
             satellite, sensor = "DMSP", "ssmis"
         
-        if "north" in fn or "_nh" in fn: file_region = "north"
-        elif "south" in fn or "_sh" in fn: file_region = "south"
+        if "north" in fn or "_nh" in fn: file_region = "nh"
+        elif "south" in fn or "_sh" in fn: file_region = "sh"
         
         return {"satellite": satellite, "sensor": sensor, "file_region": file_region}
 
@@ -102,18 +102,20 @@ class SOCADiagsHv:
 
         if "avhrr" in fn:
             sensor = "avhrr"
-            satellite = "MetOp-B" if "mb" in fn else "MetOp-C" if "mc" in fn else "MetOp"
+            satellite = "metop-b" if "mb" in fn else "metop-c" if "mc" in fn else "unknown"
         elif "nggodas" in fn:
             sensor = "avhrr"
             satellite = "MetOp"
         elif "viirs" in fn:
             sensor = "viirs"
-            if "npp" in fn or "snpp" in fn: satellite = "Suomi-NPP"
-            elif "n20" in fn or "j01" in fn: satellite = "NOAA-20"
-            elif "n21" in fn or "j02" in fn: satellite = "NOAA-21"
-            else: satellite = "VIIRS-Multi"
+            if "npp" in fn or "snpp" in fn: satellite = "npp"
+            elif "n20" in fn: satellite = "n20"
+            elif "n21" in fn: satellite = "n21"
+            #elif "n20" in fn or "j01" in fn: satellite = "NOAA-20"
+            #elif "n21" in fn or "j02" in fn: satellite = "NOAA-21"
+            #else: satellite = "VIIRS-Multi"
         elif "amsr2" in fn:
-            sensor, satellite = "amsr2", "GCOM-W1"
+            sensor, satellite = "amsr2", "gcom-w1"
 
         if "l3u" in fn: level = "l3u"
         elif "l2" in fn: level = "l2"
