@@ -89,7 +89,7 @@ class SOCADiagsHv:
         if "amsr2" in fn:
             satellite, sensor = "gcom-w1", "amsr2"
         elif "ssmis" in fn or "nsidc" in fn:
-            satellite, sensor = "DMSP", "ssmis"
+            satellite, sensor = "dmsp", "ssmis"
         
         if "north" in fn or "_nh" in fn: file_region = "nh"
         elif "south" in fn or "_sh" in fn: file_region = "sh"
@@ -105,7 +105,7 @@ class SOCADiagsHv:
             satellite = "metop-b" if "mb" in fn else "metop-c" if "mc" in fn else "unknown"
         elif "nggodas" in fn:
             sensor = "avhrr"
-            satellite = "MetOp"
+            satellite = "metop"
         elif "viirs" in fn:
             sensor = "viirs"
             if "npp" in fn or "snpp" in fn: satellite = "npp"
@@ -117,6 +117,9 @@ class SOCADiagsHv:
         elif "amsr2" in fn:
             sensor, satellite = "amsr2", "gcom-w1"
 
+        elif "noaa15" in fn:
+            sensor, satellite = "avhrr", "n15" 
+        
         if "l3u" in fn: level = "l3u"
         elif "l2" in fn: level = "l2"
         elif "l3c" in fn: level = "l3c"
