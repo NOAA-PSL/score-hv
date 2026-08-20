@@ -137,7 +137,7 @@ class SOCADiagsHv:
         satellite, sensor = "Unknown", "Unknown"
         adt_mapping = {
             "all": {"satellite": "misc", "sensor": "misc"},
-            "e1": {"satellite": "ers1", "sensor": "Radar Altimeter"}
+            "e1": {"satellite": "ers1", "sensor": "Radar Altimeter"},
             "e2": {"satellite": "ers2", "sensor": "Radar Altimeter"},
             "j1": {"satellite": "jason1", "sensor": "Poseidon 2"},
             "j2": {"satellite": "jason2", "sensor": "Poseidon 3"},
