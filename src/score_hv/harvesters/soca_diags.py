@@ -136,8 +136,8 @@ class SOCADiagsHv:
         
         satellite, sensor = "Unknown", "Unknown"
         adt_mapping = {
-            "all": {"satellite": "multiple", "sensor": "all"},
-            "e1": {"satellite": "ers2", "sensor": "Radar Altimeter"}
+            "all": {"satellite": "misc", "sensor": "misc"},
+            "e1": {"satellite": "ers1", "sensor": "Radar Altimeter"}
             "e2": {"satellite": "ers2", "sensor": "Radar Altimeter"},
             "j1": {"satellite": "jason1", "sensor": "Poseidon 2"},
             "j2": {"satellite": "jason2", "sensor": "Poseidon 3"},
@@ -147,7 +147,7 @@ class SOCADiagsHv:
             "6a": {"satellite": "Sentinel-6A", "sensor": "Poseidon 4"},
             "sa": {"satellite": "saral", "sensor": "AltiKa"},
             "sw": {"satellite": "swot", "sensor": "KaRIN"},
-            "c2": {"satellite": "CryoSat2", "sensor": "SAR Interferometer Radar Altimeter"},
+            "c2": {"satellite": "cryosat2", "sensor": "SAR Interferometer Radar Altimeter"},
             "tx": {"satellite": "topex-poseidon", "sensor": "NASA Radar Altimeter"},
             "n1": {"satellite": "envisat", "sensor": "Radar Altimeter - 2"},
             "g1": {"satellite": "gfo", "sensor": "GFO-Radar Altimeter"},
