@@ -136,12 +136,21 @@ class SOCADiagsHv:
         
         satellite, sensor = "Unknown", "Unknown"
         adt_mapping = {
-            "e2": {"satellite": "ERS-2", "sensor": "RA-2"},
-            "j3": {"satellite": "Jason-3", "sensor": "Poseidon-3B"},
-            "s3a": {"satellite": "Sentinel-3A", "sensor": "SRAL"},
-            "swot": {"satellite": "SWOT", "sensor": "Karin"},
-            "s3b": {"satellite": "Sentinel-3B", "sensor": "SRAL"},
-            "c2": {"satellite": "CryoSat-2", "sensor": "SIRAL"},
+            "all": {"satellite": "multiple", "sensor": "all"},
+            "e1": {"satellite": "ers2", "sensor": "Radar Altimeter"}
+            "e2": {"satellite": "ers2", "sensor": "Radar Altimeter"},
+            "j1": {"satellite": "jason1", "sensor": "Poseidon 2"},
+            "j2": {"satellite": "jason2", "sensor": "Poseidon 3"},
+            "j3": {"satellite": "jason3", "sensor": "Poseidon 3B"},
+            "3a": {"satellite": "Sentinel-3A", "sensor": "Synthetic aperture Radar Altimeter"},
+            "3b": {"satellite": "Sentinel-3B", "sensor": "Synthetic aperture Radar Altimeter"},
+            "6a": {"satellite": "Sentinel-6A", "sensor": "Poseidon 4"},
+            "sa": {"satellite": "saral", "sensor": "AltiKa"},
+            "sw": {"satellite": "swot", "sensor": "KaRIN"},
+            "c2": {"satellite": "CryoSat2", "sensor": "SAR Interferometer Radar Altimeter"},
+            "tx": {"satellite": "topex-poseidon", "sensor": "NASA Radar Altimeter"},
+            "n1": {"satellite": "envisat", "sensor": "Radar Altimeter - 2"},
+            "g1": {"satellite": "gfo", "sensor": "GFO-Radar Altimeter"},
         }
         return adt_mapping.get(platform_id, {"satellite": satellite, "sensor": sensor})
 
