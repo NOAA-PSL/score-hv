@@ -1,7 +1,7 @@
 import math
 import yaml 
-import json
 import pytest
+import json
 from pathlib import Path
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
@@ -9,7 +9,7 @@ from score_hv.harvester_base import harvest
 # --- 1. Load the Registry from YAML ---
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data'
-YAML_PATH = BASE_DIR / "icec_amsr2_north.yaml"
+YAML_PATH = BASE_DIR / "sst_nggodas.yaml"
 
 with open(YAML_PATH, 'r') as f:
     raw_data = yaml.safe_load(f) 
@@ -49,7 +49,7 @@ def verify_statistics(harvested_results, expected_stats, test_id):
         if d.statistics not in actual_map:
             actual_map[d.statistics] = {}
         actual_map[d.statistics][d.group] = float(d.value)
-
+    
     if not expected_stats or any(stat not in expected_stats for stat in actual_map):
         print(f"\n\n--- CURRENT OUTPUT FOR {test_id} (Copy into expected_stats) ---")
         print(json.dumps(actual_map, indent=4))
@@ -66,7 +66,6 @@ def verify_statistics(harvested_results, expected_stats, test_id):
             )
             
             if not math.isclose(act_val, exp_val, rel_tol=rel_tol, abs_tol=abs_tol):
-                # Print context before failing
                 print(f"\n\n--- MISMATCH DETECTED: {test_id} ---")
                 print(f"Statistic: {stat_name} | Group: {group}")
                 print(f"Expected:  {exp_val}")
