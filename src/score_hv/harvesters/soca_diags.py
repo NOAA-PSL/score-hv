@@ -116,9 +116,13 @@ class SOCADiagsHv:
             #else: satellite = "VIIRS-Multi"
         elif "amsr2" in fn:
             sensor, satellite = "amsr2", "gcom-w1"
-
+        
+        elif "noaa14" in fn:
+            sensor, satellite = "avhrr", "n14"
         elif "noaa15" in fn:
-            sensor, satellite = "avhrr", "n15" 
+            sensor, satellite = "avhrr", "n15"
+        elif "noaa16" in fn:
+            sensor, satellite = "avhrr", "n16"
         
         if "l3u" in fn: level = "l3u"
         elif "l2" in fn: level = "l2"
