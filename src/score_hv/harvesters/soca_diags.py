@@ -123,7 +123,10 @@ class SOCADiagsHv:
             sensor, satellite = "avhrr", "n15"
         elif "noaa16" in fn:
             sensor, satellite = "avhrr", "n16"
-        
+        elif "odyssea" in fn:
+            sensor, satellite = "multiple", "ODYSSEA"
+            level = "l3"
+
         if "l3u" in fn: level = "l3u"
         elif "l2" in fn: level = "l2"
         elif "l3c" in fn: level = "l3c"
