@@ -1,0 +1,82 @@
+ICEC_No_Filter:
+  filename: icec_amsr2_south.nc
+  QC_threshold: 999999.0
+  variable: seaIceFraction
+  components:
+    sensor: amsr2
+    satellite: GCOM-W1
+    level: null
+    file_region: south
+    ocean_depth_bins: null
+  expected_stats:
+    mean:
+      ObsValue: 0.0588236
+      oman: 0.000857198
+      ombg: 0.000520988
+      ObsError: 0.1
+    median:
+      ObsValue: 0.0
+      oman: 2.76804e-12
+      ombg: 0.0
+      ObsError: 0.1
+    StdDev:
+      ObsValue: 0.219691
+      oman: 0.0390785
+      ombg: 0.0466789
+      ObsError: 0.0
+    minimum:
+      ObsValue: 0.0
+      oman: -1.0064
+      ombg: -0.951411
+      ObsError: 0.1
+    maximum:
+      ObsValue: 1.0
+      oman: 1.00543
+      ombg: 1.0
+      ObsError: 0.1
+    rms:
+      ObsValue: 0.22743
+      oman: 0.0390879
+      ombg: 0.0466817
+      ObsError: 0.1
+ICEC_Strict_Filter:
+  filename: icec_amsr2_south.nc
+  QC_threshold: 10.0
+  variable: seaIceFraction
+  components:
+    sensor: amsr2
+    satellite: GCOM-W1
+    level: null
+    file_region: south
+    ocean_depth_bins: null
+  expected_stats:
+    mean:
+      ObsValue: 0.0704661
+      oman: 9.04092e-05
+      ombg: -0.000386386
+      ObsError: 0.1
+    median:
+      ObsValue: 0.0
+      oman: 1.82054e-08
+      ombg: 0.0
+      ObsError: 0.1
+    StdDev:
+      ObsValue: 0.23848
+      oman: 0.0311044
+      ombg: 0.0408219
+      ObsError: 0.0
+    minimum:
+      ObsValue: 0.0
+      oman: -0.496384
+      ombg: -0.499384
+      ObsError: 0.1
+    maximum:
+      ObsValue: 1.0
+      oman: 0.635509
+      ombg: 0.49948
+      ObsError: 0.1
+    rms:
+      ObsValue: 0.2486722
+      oman: 0.0311045
+      ombg: 0.0408237
+      ObsError: 0.1
