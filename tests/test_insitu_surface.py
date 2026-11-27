@@ -34,6 +34,7 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
                      'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
                      'variables': ['seaSurfaceSalinity','seaSurfaceTemperature'],
+                     'QC_threshold': None,
                      }
 
 def test_soca_harvester():
@@ -48,18 +49,25 @@ def test_verify_filename_components():
     for item in data1:
         if item.variables not in expected_variable_names:
            raise ValueError(f"Error: {item.variables} is not in the expected variable list.")  
-        assert item.sensor == None   
-        assert item.satellite == 'trkob'
+        assert item.sensor == 'trkob'
+        assert item.satellite == None
         assert item.level == None
         assert item.file_region == 'global'
 
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT)
-    date_str = "2021070300"
-    date_obj = datetime.strptime(date_str, "%Y%m%d%H")
-    filetime_str = data1[0].filetime
-    filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
-    assert date_obj == filetime_dt 
+    # median time of the harvested observations
+    date_obj = datetime(2021, 7, 3, 0, 11)
+    for item in data1:
+        assert item.filetime == date_obj
+
+def test_verify_groups():
+    data1 = harvest(VALID_CONFIG_DICT)
+    # seaSurfaceSalinity is only in the ObsValue and ObsError groups of this file
+    groups_wanted = {'seaSurfaceSalinity': {'ObsValue', 'ObsError'},
+                     'seaSurfaceTemperature': {'ObsValue', 'oman', 'ombg', 'ObsError'}}
+    for variable, groups in groups_wanted.items():
+        assert {item.group for item in data1 if item.variables == variable} == groups
 
 def test_verify_group_mean_values(tolerance=.001):
     data1 = harvest(VALID_CONFIG_DICT) 

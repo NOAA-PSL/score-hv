@@ -4,7 +4,7 @@ SST_No_Filter:
   variable: seaSurfaceTemperature
   components:
     sensor: avhrr
-    satellite: MetOp-B
+    satellite: metop-b
     level: l3u
     file_region: global  
   expected_stats:
@@ -44,7 +44,7 @@ SST_Strict_Filter:
   variable: seaSurfaceTemperature
   components:
     sensor: avhrr
-    satellite:  MetOp-B
+    satellite: metop-b
     level: l3u
     file_region: global  
   expected_stats:

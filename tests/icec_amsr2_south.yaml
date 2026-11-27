@@ -4,9 +4,9 @@ ICEC_No_Filter:
   variable: seaIceFraction
   components:
     sensor: amsr2
-    satellite: GCOM-W1
+    satellite: gcom-w1
     level: null
-    file_region: south
+    file_region: sh
     ocean_depth_bins: null
   expected_stats:
     mean:
@@ -45,9 +45,9 @@ ICEC_Strict_Filter:
   variable: seaIceFraction
   components:
     sensor: amsr2
-    satellite: GCOM-W1
+    satellite: gcom-w1
     level: null
-    file_region: south
+    file_region: sh
     ocean_depth_bins: null
   expected_stats:
     mean:

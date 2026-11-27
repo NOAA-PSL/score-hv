@@ -1,199 +1,107 @@
 #!/usr/bin/env python
+"""Verify soca_diags depth-binned statistics for the World Ocean Database
+profiling float file wod_t_pfl.2023080612.nc.
 
+The expected values were computed independently of score-hv (xarray/pandas)
+with QC_threshold 0 (EffectiveQC1 for oman, EffectiveQC0 for the other
+groups), half-open depth bins lo <= depth < hi, the sample standard deviation
+(ddof=1), and filetime as the median MetaData/dateTime of the observations
+used, floored to the second.
+"""
 import os
-from pathlib import Path 
-import cftime
+from datetime import datetime
+from pathlib import Path
+
+import pytest
 
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
 
-TEST_TOLERANCE = 0.001
-
-TEST_DATA_FILE_NAMES = ['wod_t_pfl.2023080612.nc']
-
-DATA_DIR = os.path.join(Path(__file__).parent.parent.resolve(), 'src', 'score_hv', 'data')
-
-CONFIGS_DIR = 'configs'
-PYTEST_CALLING_DIR = Path(__file__).parent.resolve()
-TEST_DATA_PATH = os.path.join(PYTEST_CALLING_DIR, 'data')
-SOCA_PATH = [os.path.join(TEST_DATA_PATH, file_name) for file_name in TEST_DATA_FILE_NAMES]
+TEST_DATA_PATH = os.path.join(Path(__file__).parent.resolve(), 'data')
+SOCA_PATH = [os.path.join(TEST_DATA_PATH, 'wod_t_pfl.2023080612.nc')]
 
 VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
-                     'filenames' : SOCA_PATH,
-                     'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum', 'rms', 'count'],
+                     'filenames': SOCA_PATH,
+                     'statistics': ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms',
+                                    'count'],
                      'variables': ['waterTemperature'],
-                     'ocean_depth_bins': [0, 10, 50, 100, 500, 1000]
-                 }
+                     'ocean_depth_bins': [0, 10, 50, 100, 500, 1000]}
 
-def test_soca_harvester():
-    data1 = harvest(VALID_CONFIG_DICT)
-    
+STATISTICS = ('count', 'mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms')
+# depth bin: (filetime, {group: values of STATISTICS})
+EXPECTED = {
+    (0, 10): (datetime(2023, 8, 6, 11, 48, 46), {
+        'ObsValue': (1086, 19.61598, 22.1555, 8.529668, -1.767, 30.296, 21.38867),
+        'oman': (1086, 0.02690667, 0.01507827, 0.2456789, -1.600366, 0.9726624, 0.2470355),
+        'ombg': (1086, -0.0227276, 0.0195634, 0.5154725, -1.827266, 1.565654, 0.5157361),
+        'ObsError': (1086, 0.5, 0.5, 0, 0.5, 0.5, 0.5),
+    }),
+    (10, 50): (datetime(2023, 8, 6, 11, 0, 57), {
+        'ObsValue': (2883, 18.24359, 18.774, 9.038686, -1.851, 30.192, 20.35923),
+        'oman': (2883, 0.0240833, 0.009913783, 0.2510165, -1.440295, 1.688091, 0.2521258),
+        'ombg': (2883, 0.05565696, 0.08337782, 0.6426867, -1.997398, 1.997224, 0.6449811),
+        'ObsError': (2883, 0.5, 0.5, 0, 0.5, 0.5, 0.5),
+    }),
+    (50, 100): (datetime(2023, 8, 6, 11, 34, 41), {
+        'ObsValue': (3447, 15.81142, 15.192, 8.393386, -1.849, 29.909, 17.90054),
+        'oman': (3447, -0.01437733, 0.001194983, 0.2955491, -1.728829, 1.577021, 0.2958557),
+        'ombg': (3447, 0.01639983, 0.0438651, 0.6600188, -1.972986, 1.975288, 0.6601268),
+        'ObsError': (3447, 0.5, 0.5, 0, 0.5, 0.5, 0.5),
+    }),
+    (100, 500): (datetime(2023, 8, 6, 11, 23, 27), {
+        'ObsValue': (24543, 10.79046, 10.585, 5.38264, -1.918, 29.217, 12.05843),
+        'oman': (24543, -0.007459531, 0.002279506, 0.3239951, -1.948685, 1.893383, 0.3240743),
+        'ombg': (24543, -0.0429516, 0.007404115, 0.5972409, -1.99977, 1.998933, 0.5987712),
+        'ObsError': (24543, 0.5, 0.5, 0, 0.5, 0.5, 0.5),
+    }),
+    (500, 1000): (datetime(2023, 8, 6, 11, 17, 48), {
+        'ObsValue': (22395, 6.026007, 5.731, 2.554485, 0.22, 15.765, 6.545064),
+        'oman': (22395, -0.2232245, -0.1648834, 0.4202607, -2.008858, 1.743043, 0.4758575),
+        'ombg': (22395, -0.2275291, -0.1706144, 0.4394141, -1.999478, 1.996362, 0.4948187),
+        'ObsError': (22395, 0.5, 0.5, 0, 0.5, 0.5, 0.5),
+    }),
+}
+
+
+@pytest.fixture(scope='module')
+def data1():
+    if not os.path.exists(SOCA_PATH[0]):
+        pytest.fail(f'Test data missing: {SOCA_PATH[0]}')
+    return harvest(VALID_CONFIG_DICT)
+
+
+def test_soca_harvester(data1):
     assert type(data1) is list
-    assert len(data1) > 0
-    assert data1[0].filenames==SOCA_PATH[0]
+    assert len(data1) == len(EXPECTED) * 4 * len(STATISTICS)
+    assert all(data.filenames == SOCA_PATH[0] for data in data1)
 
-def test_verify_filename_components():
-    data1 = harvest(VALID_CONFIG_DICT)
-    data = data1[0]
-    assert data.variables == 'waterTemperature'
-    assert data.sensor == 'pfl'
-    assert data.file_region == 'global'   
 
-def test_verify_datetime():
-    data1 = harvest(VALID_CONFIG_DICT) 
-    date_obj = cftime.DatetimeGregorian(2023, 8, 6, 11, 0, 57, 0)
-    filetime_dt = data1[0].filetime
-    assert date_obj == filetime_dt 
-
-def test_verify_groups():
-    data1 = harvest(VALID_CONFIG_DICT)
-    groups_wanted = ['ObsValue', 'oman', 'ombg', 'ObsError']
+def test_verify_filename_components(data1):
     for data in data1:
-        assert data.group in groups_wanted, f"Unexpected group: {data.group}"
+        assert data.variables == 'waterTemperature'
+        assert data.sensor == 'pfl'
+        assert data.satellite is None
+        assert data.level is None
+        assert data.file_region == 'global'
+        assert data.longname == 'waterTemperature'
+        assert data.units == 'DegC'
+        assert data.QC_threshold == 0
 
-def get_harvested_statistic_value(statistic):
-    data1 = harvest(VALID_CONFIG_DICT)
-    harvested_data = {data.group: data.value for data in data1 if data.statistics == statistic}
-    return harvested_data
 
-def test_verify_group_mean_values(tolerance=TEST_TOLERANCE):
-    data1 = harvest(VALID_CONFIG_DICT) 
-    
-    import ipdb
-    ipdb.set_trace()
-    
-    calculated_means = [0.798, 0.0169, 0.0398, 0.1]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError'] 
-    group_index = 0
-    # Filter out only the data that has the "mean" statistic
-    harvested_data = [data for data in data1 if data.statistics == 'mean']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-   
-   # Iterate over harvested data and check means for each group
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_mean = data.value
-        calculated_value = calculated_means[group_index]
-        # Verify that the harvested mean is within tolerance of the calculated mean
-        assert abs(harvested_mean - calculated_value) <= tolerance, f"Mean value mismatch for {group_name}"
-        group_index += 1
-       
-def test_verify_group_median_values(tolerance=TEST_TOLERANCE):
-    data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_medians = [1.0, 0.0157, 0.0344, 0.1]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError'] 
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'median']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
+def test_verify_datetime(data1):
+    for data in data1:
+        assert data.filetime == EXPECTED[data.ocean_depth_bins][0], \
+            f'filetime mismatch for {data.group} in depth bin {data.ocean_depth_bins}'
 
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_medians = data.value
-        calculated_value = calculated_medians[group_index]
-        # Verify that the harvested mean is within tolerance of the calculated median 
-        assert abs(harvested_medians - calculated_value) <= tolerance, f"Median value mismatch for {group_name}"
-        group_index += 1
 
-def test_verify_group_rms_values(tolerance=TEST_TOLERANCE):
-    data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_rms = [0.868,0.0681,0.119,0.1]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError'] 
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'rmse']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-  
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_rms = data.value
-        calculated_value = calculated_rms[group_index]
-        assert abs(harvested_rms - calculated_value) <= tolerance, f"RMS value mismatch for {group_name}"
-        group_index += 1
-
-def test_verify_group_count_values(tolerance=TEST_TOLERANCE):
-    """
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    calculated_count = [174727, 174727, 174727, 174727]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError']
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'count']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-  
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_minimum = data.value
-        calculated_value = calculated_count[group_index]
-        assert abs(harvested_minimum - calculated_value) <= tolerance, f"Count value mismatch for {group_name}"
-        group_index += 1
-
-def test_verify_group_StdDev_values(tolerance=TEST_TOLERANCE):
-    data1 = harvest(VALID_CONFIG_DICT) 
-    calculated_StdDevs = [0.343, 0.0660, 0.113, 0]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError'] 
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'StdDev']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-  
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_StdDevs = data.value
-        calculated_value = calculated_StdDevs[group_index]
-        assert abs(harvested_StdDevs - calculated_value) <= tolerance, f"Standard Deviation value mismatch for {group_name}"
-        group_index += 1
-
-def test_verify_group_minimum_values(tolerance=TEST_TOLERANCE):
-    """
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    calculated_minimums = [0, -0.589, -0.5, 0.1]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError']
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'minimum']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-  
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_minimum = data.value
-        calculated_value = calculated_minimums[group_index]
-        assert abs(harvested_minimum - calculated_value) <= tolerance, f"Minimum value mismatch for {group_name}"
-        group_index += 1
-
-def test_verify_group_maximum_values(tolerance=TEST_TOLERANCE):
-    """
-    """
-    data1 = harvest(VALID_CONFIG_DICT)
-    calculated_maximums = [1.0 , 0.511, 0.5, 0.1]
-    groups_wanted = ['ObsValue','oman','ombg', 'ObsError']
-    group_index = 0
-    harvested_data = [data for data in data1 if data.statistics == 'maximum']
-    assert len(harvested_data) == len(groups_wanted), "Error: Mismatch between expected groups and harvested data."
-    
-    group_index = 0
-    for data in harvested_data:
-        group_name = data.group
-        harvested_maximum = data.value
-        calculated_value = calculated_maximums[group_index]
-        assert abs(harvested_maximum - calculated_value) <= tolerance, f" Maximum value mismatch for {group_name}"
-        group_index += 1
-
-def main():
-    test_soca_harvester()
-    test_verify_filename_components()
-    test_verify_datetime()
-    test_verify_groups()
-    test_verify_group_mean_values()
-    test_verify_group_median_values() 
-    test_verify_group_StdDev_values()
-    test_verify_group_rms_values()
-    test_verify_group_count_values()
-    test_verify_group_minimum_values()
-    test_verify_group_maximum_values()
-
-if __name__=='__main__':
-    main()
+def test_verify_statistics(data1):
+    harvested = {(data.ocean_depth_bins, data.group, data.statistics): data.value
+                 for data in data1}
+    expected = {(depth_bin, group, statistic): value
+                for depth_bin, (_, groups) in EXPECTED.items()
+                for group, values in groups.items()
+                for statistic, value in zip(STATISTICS, values)}
+    assert harvested.keys() == expected.keys()
+    for key, value in expected.items():
+        assert harvested[key] == pytest.approx(value, rel=1e-5, abs=1e-6), \
+            f'{key}: harvested {harvested[key]}, expected {value}'

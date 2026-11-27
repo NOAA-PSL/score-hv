@@ -4,8 +4,9 @@
     variable: absoluteDynamicTopography
     components:
       variables: absoluteDynamicTopography
-      sensor: RA-2
-      satellite: ERS-2
+      sensor: Radar Altimeter
+      satellite: ers2
+      file_region: global
       level: null
     expected_stats:
       mean:
@@ -45,8 +46,9 @@
     variable: absoluteDynamicTopography
     components:
       variables: absoluteDynamicTopography
-      sensor: RA-2
-      satellite: ERS-2
+      sensor: Radar Altimeter
+      satellite: ers2
+      file_region: global
       level: null
     expected_stats:
       mean:

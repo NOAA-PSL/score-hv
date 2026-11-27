@@ -1,0 +1,362 @@
+# Expected soca_diags records for the SFS_v11 ocean diag files in
+# tests/data/sfs_v11, copied from
+#   s3://noaa-reanalyses-pds/analyses/scout_runs/exper/SFS_v11/2023/02/2023020112/
+#   gdas.20230201/12/analysis/ocean/diags/
+# and mirrored in s3://noaa-reanalyses-pds/score_suite/test_data/sfs_v11/.
+#
+# The statistics and filetimes were computed independently of score-hv with
+# xarray and pandas for the request in test_soca_diags_sfs_v11.py:
+#   QC_threshold 0 (oman uses EffectiveQC1, the other groups EffectiveQC0),
+#   depth bin edges [0, 20, 100, 500, 20000] m (lo <= depth < hi; files
+#   without depth are not binned), StdDev with ddof=1, rms = sqrt(mean(x**2)),
+#   filetime = median MetaData/dateTime of the observations used, floored to
+#   the second (whole-file median when no observation is used).
+# Statistics that are undefined (StdDev of one value, anything but count of
+# no values) are not harvested and are omitted here.
+#
+# <file name>:
+#   components: expected on every record of the file
+#   variables:
+#     <variable>:
+#       longname, units: expected on every record of the variable
+#       records: one entry per depth bin and data group
+
+adt_glore_3a.nc:
+  components:
+    sensor: Synthetic aperture Radar Altimeter
+    satellite: Sentinel-3A
+    level: null
+    file_region: global
+  variables:
+    absoluteDynamicTopography:
+      longname: absoluteDynamicTopography
+      units: m
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 11:33:39', mean: 0.662209572, median: 0.620700002, StdDev: 0.501035169, minimum: -0.794099987, maximum: 1.9152, rms: 0.830379322, count: 8985}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 11:33:39', mean: -1.28616823e-11, median: -0.00248739147, StdDev: 0.0631818926, minimum: -0.336606503, maximum: 0.396652997, rms: 0.0631783765, count: 8985}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 11:33:39', mean: -1.86393145e-11, median: -0.00333779026, StdDev: 0.0724951573, minimum: -0.416463107, maximum: 0.556619406, rms: 0.0724911229, count: 8985}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 11:33:39', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 8985}
+adt_glore_3b.nc:
+  components:
+    sensor: Synthetic aperture Radar Altimeter
+    satellite: Sentinel-3B
+    level: null
+    file_region: global
+  variables:
+    absoluteDynamicTopography:
+      longname: absoluteDynamicTopography
+      units: m
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 11:49:16', mean: 0.635758769, median: 0.584299982, StdDev: 0.469272975, minimum: -1.13110006, maximum: 1.66939998, rms: 0.790177981, count: 8775}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 11:49:16', mean: -6.60474534e-12, median: -0.00365749747, StdDev: 0.0755383956, minimum: -0.548238635, maximum: 0.642211795, rms: 0.0755340913, count: 8775}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 11:49:16', mean: -2.07273195e-11, median: -0.00488329493, StdDev: 0.0887833433, minimum: -0.627809584, maximum: 0.784745693, rms: 0.0887782842, count: 8775}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 11:49:16', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 8775}
+adt_glore_6a.nc:
+  components:
+    sensor: Poseidon 4
+    satellite: Sentinel-6A
+    level: null
+    file_region: global
+  variables:
+    absoluteDynamicTopography:
+      longname: absoluteDynamicTopography
+      units: m
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 12:13:25', mean: 0.680845614, median: 0.778849989, StdDev: 0.443212667, minimum: -1.00660002, maximum: 1.48310006, rms: 0.812384456, count: 9964}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 12:13:25', mean: -1.87007318e-11, median: -0.00215359963, StdDev: 0.0769806139, minimum: -0.557068825, maximum: 0.855555892, rms: 0.0769767509, count: 9964}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 12:13:25', mean: -0.000102610664, median: -0.00337819965, StdDev: 0.0907955386, minimum: -0.652267337, maximum: 0.993827224, rms: 0.0907910403, count: 9964}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 12:13:25', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 9964}
+adt_glore_c2.nc:
+  components:
+    sensor: SAR Interferometer Radar Altimeter
+    satellite: cryosat2
+    level: null
+    file_region: global
+  variables:
+    absoluteDynamicTopography:
+      longname: absoluteDynamicTopography
+      units: m
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 12:12:38', mean: 0.70705689, median: 0.762199998, StdDev: 0.389572362, minimum: -0.921000004, maximum: 1.56789994, rms: 0.807267402, count: 9847}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 12:12:38', mean: -2.19556796e-11, median: -0.000842819922, StdDev: 0.0452370868, minimum: -0.389327228, maximum: 0.2802037, rms: 0.0452347898, count: 9847}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 12:12:38', mean: 8.78183774e-12, median: -0.00113615009, StdDev: 0.0714577607, minimum: -0.469038695, maximum: 0.605451107, rms: 0.0714541322, count: 9847}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 12:12:38', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 9847}
+adt_glore_j3.nc:
+  components:
+    sensor: Poseidon 3B
+    satellite: jason3
+    level: null
+    file_region: global
+  variables:
+    absoluteDynamicTopography:
+      longname: absoluteDynamicTopography
+      units: m
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 11:30:45', mean: 0.679213004, median: 0.762050003, StdDev: 0.419656981, minimum: -0.930100024, maximum: 1.93710005, rms: 0.798388244, count: 9520}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 11:30:45', mean: -1.19561772e-11, median: 0.000626135705, StdDev: 0.0483893632, minimum: -0.602502048, maximum: 0.472811341, rms: 0.0483868217, count: 9520}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 11:30:45', mean: 2.61959791e-11, median: 0.00125352055, StdDev: 0.08151787, minimum: -0.660224855, maximum: 0.689532995, rms: 0.0815135885, count: 9520}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 11:30:45', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 9520}
+icec_amsr2_north.nc:
+  components:
+    sensor: amsr2
+    satellite: gcom-w1
+    level: null
+    file_region: nh
+  variables:
+    seaIceFraction:
+      longname: seaIceFraction
+      units: '1'
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 10:48:59', mean: 0.773907662, median: 1, StdDev: 0.400140433, minimum: 0, maximum: 1, rms: 0.871231773, count: 253172}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 10:48:59', mean: -0.00150038124, median: 2.33731353e-05, StdDev: 0.0393351665, minimum: -0.50774461, maximum: 0.526985884, rms: 0.0393636933, count: 253172}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 10:48:59', mean: -0.00607914664, median: 4.16410103e-06, StdDev: 0.0566214178, minimum: -0.499972641, maximum: 0.5, rms: 0.0569467147, count: 253172}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 10:48:59', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 253172}
+icec_amsr2_south.nc:
+  components:
+    sensor: amsr2
+    satellite: gcom-w1
+    level: null
+    file_region: sh
+  variables:
+    seaIceFraction:
+      longname: seaIceFraction
+      units: '1'
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 11:30:50', mean: 0.0501178723, median: 0, StdDev: 0.198788572, minimum: 0, maximum: 1, rms: 0.205008771, count: 391271}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 11:30:50', mean: 0.000868885835, median: 4.16187363e-22, StdDev: 0.0329757351, minimum: -0.520758152, maximum: 0.603052974, rms: 0.0329871382, count: 391271}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 11:30:50', mean: 0.000433968276, median: 0, StdDev: 0.0394418725, minimum: -0.498423755, maximum: 0.499659151, rms: 0.0394442094, count: 391271}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 11:30:50', mean: 0.100000001, median: 0.100000001, StdDev: 0, minimum: 0.100000001, maximum: 0.100000001, rms: 0.100000001, count: 391271}
+icec_nsidc_nh.nc:
+  components:
+    sensor: ssmis
+    satellite: dmsp
+    level: null
+    file_region: nh
+  variables:
+    seaIceFraction:
+      longname: seaIceFraction
+      units: '1'
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 12:00:00', mean: 0.869257816, median: 1, StdDev: 0.292110018, minimum: 0, maximum: 1, rms: 0.917024302, count: 22205}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 12:00:00', mean: -0.00739758387, median: 8.15711815e-07, StdDev: 0.0672180142, minimum: -0.536343575, maximum: 0.722728789, rms: 0.0676223499, count: 22205}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 12:00:00', mean: -0.0117342526, median: 7.33694969e-06, StdDev: 0.0784241468, minimum: -0.49943459, maximum: 0.5, rms: 0.0792954129, count: 22205}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 12:00:00', mean: 0.0457617523, median: 0.0142457429, StdDev: 0.0624906, minimum: 0.00200000009, maximum: 0.342663378, rms: 0.0774534518, count: 22205}
+icec_nsidc_sh.nc:
+  components:
+    sensor: ssmis
+    satellite: dmsp
+    level: null
+    file_region: sh
+  variables:
+    seaIceFraction:
+      longname: seaIceFraction
+      units: '1'
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 12:00:00', mean: 0.441652118, median: 0.419999987, StdDev: 0.397295086, minimum: 0, maximum: 1, rms: 0.59402919, count: 5387}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 12:00:00', mean: -0.0943912338, median: -0.0344200581, StdDev: 0.136964372, minimum: -0.664947808, maximum: 0.399278492, rms: 0.166329378, count: 5387}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 12:00:00', mean: -0.11248374, median: -0.0455699302, StdDev: 0.150882219, minimum: -0.499480486, maximum: 0.388623118, rms: 0.188185572, count: 5387}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 12:00:00', mean: 0.0986371712, median: 0.0896543786, StdDev: 0.0684287358, minimum: 0.00200000009, maximum: 0.377835393, rms: 0.120045467, count: 5387}
+sst_odyssea.nc:
+  components:
+    sensor: multiple
+    satellite: ODYSSEA
+    level: l3
+    file_region: global
+  variables:
+    seaSurfaceTemperature:
+      longname: seaSurfaceTemperature
+      units: DegC
+      records:
+        - {depth_bin: null, group: ObsValue, filetime: '2023-02-01 10:41:36', mean: 21.6308945, median: 25.4200001, StdDev: 8.44039375, minimum: -1.20000005, maximum: 32.3199997, rms: 23.2192914, count: 202153}
+        - {depth_bin: null, group: oman, filetime: '2023-02-01 10:41:36', mean: -0.00724964483, median: 0.00310001755, StdDev: 0.219646884, minimum: -2.77972627, maximum: 3.52111626, rms: 0.219765949, count: 202153}
+        - {depth_bin: null, group: ombg, filetime: '2023-02-01 10:41:36', mean: -0.0197862446, median: 0.0230487026, StdDev: 0.477501699, minimum: -2.49869466, maximum: 2.49442911, rms: 0.477910285, count: 202153}
+        - {depth_bin: null, group: ObsError, filetime: '2023-02-01 10:41:36', mean: 0.140116318, median: 0.119000003, StdDev: 0.0835289867, minimum: 0.0469999984, maximum: 0.584999979, rms: 0.163124614, count: 202153}
+wod_s_ctd.nc:
+  components:
+    sensor: ctd
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    salinity:
+      longname: Practical Salinity Scale
+      units: PSS
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 13:21:59', mean: 34.2651109, median: 34.5900002, StdDev: 0.443486175, minimum: 33.7200012, maximum: 35.0400009, rms: 34.2679032, count: 37}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 13:21:59', mean: 34.3008612, median: 34.0737991, StdDev: 0.443505051, minimum: 33.9816017, maximum: 35.1800003, rms: 34.3036752, count: 54}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 13:00:00', mean: 34.4604894, median: 34.3950005, StdDev: 0.341253724, minimum: 34.0752983, maximum: 35.0999985, rms: 34.4621534, count: 66}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 13:00:00', mean: 34.2597012, median: 34.25, StdDev: 0.137013315, minimum: 34.0699997, maximum: 34.6199989, rms: 34.2599711, count: 67}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 13:21:59', mean: -0.0133002862, median: -0.0143503891, StdDev: 0.208525513, minimum: -0.348541111, maximum: 0.195410818, rms: 0.206117864, count: 37}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 13:21:59', mean: 0.0208240261, median: 0.0405551847, StdDev: 0.0351860473, minimum: -0.0946523696, maximum: 0.0582101606, rms: 0.0406050611, count: 54}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 13:00:00', mean: -0.0431248072, median: -0.0654577725, StdDev: 0.0730842788, minimum: -0.229148224, maximum: 0.166838944, rms: 0.0843808736, count: 66}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 13:00:00', mean: 0.0051613481, median: 0.0126935337, StdDev: 0.0290349338, minimum: -0.156073362, maximum: 0.0344029106, rms: 0.0292760037, count: 67}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 13:21:59', mean: -0.0330912128, median: -0.0160345398, StdDev: 0.313675975, minimum: -0.509610891, maximum: 0.263838917, rms: 0.311172598, count: 37}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 13:21:59', mean: 0.0227159953, median: 0.0440555178, StdDev: 0.0399017352, minimum: -0.118717022, maximum: 0.0596688986, rms: 0.0455925507, count: 54}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 13:00:00', mean: -0.0937258692, median: -0.147031814, StdDev: 0.107824668, minimum: -0.254873455, maximum: 0.176237106, rms: 0.142248176, count: 66}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 13:00:00', mean: -0.00980381601, median: 0.00591282407, StdDev: 0.0391651532, minimum: -0.178627476, maximum: 0.0292304531, rms: 0.0400890243, count: 67}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 13:21:59', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 37}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 13:21:59', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 54}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 13:00:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 66}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 13:00:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 67}
+wod_s_pfl.nc:
+  components:
+    sensor: pfl
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    salinity:
+      longname: Practical Salinity Scale
+      units: PSS
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 11:48:46', mean: 34.6662576, median: 34.9643517, StdDev: 3.26647981, minimum: 7.73500013, maximum: 37.1780014, rms: 34.8197558, count: 2726}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 11:45:57', mean: 35.0655227, median: 35.118824, StdDev: 1.82579838, minimum: 7.73500013, maximum: 37.3156395, rms: 35.1130171, count: 7374}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 11:45:57', mean: 35.0577986, median: 34.8701324, StdDev: 0.848137351, minimum: 33.0429993, maximum: 38.6469994, rms: 35.0680561, count: 30629}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 11:48:46', mean: 34.6848543, median: 34.6041908, StdDev: 0.428768711, minimum: 33.9709663, maximum: 38.6230011, rms: 34.6875044, count: 71377}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 11:48:46', mean: 0.00987800023, median: 0.0121627841, StdDev: 0.0891823251, minimum: -0.356198609, maximum: 0.424770534, rms: 0.0897114505, count: 2726}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 11:45:57', mean: 0.00685239347, median: 0.00853931345, StdDev: 0.138437103, minimum: -0.873607278, maximum: 1.31721067, rms: 0.138597214, count: 7374}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 11:45:57', mean: 0.000226538996, median: 0.00183286122, StdDev: 0.078857744, minimum: -0.622175574, maximum: 2.45653653, rms: 0.0788567821, count: 30629}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 11:48:46', mean: 0.00509337876, median: 0.00384172425, StdDev: 0.0508313066, minimum: -0.435852528, maximum: 2.49183345, rms: 0.0510854973, count: 71377}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 11:48:46', mean: 0.0293135511, median: 0.0219133608, StdDev: 0.215866868, minimum: -0.618854523, maximum: 0.877730906, rms: 0.21780885, count: 2726}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 11:45:57', mean: 0.0117932108, median: 0.0145397312, StdDev: 0.224877939, minimum: -1.17362022, maximum: 1.58525932, rms: 0.225171733, count: 7374}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 11:45:57', mean: 0.0116382854, median: 0.00390665233, StdDev: 0.132351036, minimum: -0.779368937, maximum: 2.49226093, rms: 0.132859604, count: 30629}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 11:48:46', mean: 0.00281606464, median: 0.00368160615, StdDev: 0.0595593857, minimum: -0.486075759, maximum: 2.49215126, rms: 0.0596255059, count: 71377}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 11:48:46', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 2726}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 11:45:57', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 7374}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 11:45:57', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 30629}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 11:48:46', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 71377}
+wod_t_apb.nc:
+  components:
+    sensor: apb
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    waterTemperature:
+      longname: waterTemperature
+      units: DegC
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 13:30:00', mean: 2.10647059, median: 2.08999991, StdDev: 1.25453647, minimum: -0.0900000036, maximum: 4.23000002, rms: 2.43279674, count: 17}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 13:59:59', mean: 1.82218181, median: 2.04999995, StdDev: 1.3676767, minimum: -1.50999999, maximum: 4.21999979, rms: 2.27087567, count: 55}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 13:30:00', mean: 1.4240678, median: 1.85000002, StdDev: 1.07865516, minimum: -1.85000002, maximum: 2.76999998, rms: 1.78093957, count: 59}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 11:49:59', mean: 2.24000001, median: 2.24000001, StdDev: 0.0282842443, minimum: 2.22000003, maximum: 2.25999999, rms: 2.24008929, count: 2}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 13:30:00', mean: 0.00796239975, median: -0.00161682628, StdDev: 0.0644290158, minimum: -0.0967795327, maximum: 0.0993138999, rms: 0.0630104408, count: 17}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 13:59:59', mean: -0.0262253361, median: -0.00392793864, StdDev: 0.147168864, minimum: -0.531824052, maximum: 0.512488484, rms: 0.148164262, count: 55}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 13:30:00', mean: -0.0555210812, median: -0.011941866, StdDev: 0.333068376, minimum: -1.46042907, maximum: 0.673645616, rms: 0.334868462, count: 59}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 11:49:59', mean: -0.0790979862, median: -0.0790979862, StdDev: 0.0179949763, minimum: -0.091822356, maximum: -0.0663736165, rms: 0.0801149238, count: 2}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 13:30:00', mean: 0.0319034608, median: 0.062298093, StdDev: 0.201127151, minimum: -0.480924159, maximum: 0.238659009, rms: 0.197712985, count: 17}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 13:59:59', mean: -0.0404815137, median: -0.0194788519, StdDev: 0.287133153, minimum: -0.688625395, maximum: 1.22168279, rms: 0.287376395, count: 55}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 13:30:00', mean: -0.0528227448, median: -0.0296072792, StdDev: 0.42265348, minimum: -1.61760032, maximum: 1.01538587, rms: 0.42237244, count: 59}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 11:49:59', mean: -0.0825178251, median: -0.0825178251, StdDev: 0.0166273637, minimum: -0.0942751467, maximum: -0.0707605034, rms: 0.0833512211, count: 2}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 13:30:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 17}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 13:59:59', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 55}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 13:30:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 59}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 11:49:59', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 2}
+wod_t_ctd.nc:
+  components:
+    sensor: ctd
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    waterTemperature:
+      longname: waterTemperature
+      units: DegC
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 13:21:59', mean: 8.97875953, median: 7.05000019, StdDev: 5.79645503, minimum: 6.17999983, maximum: 25.6900005, rms: 10.644667, count: 37}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 13:21:59', mean: 11.4512796, median: 6.97070003, StdDev: 8.13823789, minimum: 6.06549978, maximum: 25.6900005, rms: 14.0048642, count: 54}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 13:00:00', mean: 13.5236152, median: 13.1500001, StdDev: 5.70030705, minimum: 6.05569983, maximum: 23.9099998, rms: 14.6591044, count: 66}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 13:00:00', mean: 5.35044773, median: 4.78000021, StdDev: 1.53615065, minimum: 2.03999996, maximum: 8.90999985, rms: 5.56343683, count: 67}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 13:21:59', mean: 0.0309419534, median: 0.0611221232, StdDev: 0.0924170675, minimum: -0.128013268, maximum: 0.197794437, rms: 0.0962677689, count: 37}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 13:21:59', mean: 0.00106180115, median: -0.0167254098, StdDev: 0.125326241, minimum: -0.253315151, maximum: 0.404153019, rms: 0.12416493, count: 54}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 13:00:00', mean: -0.108247567, median: -0.137980811, StdDev: 0.262928953, minimum: -0.700328231, maximum: 0.614304245, rms: 0.282491984, count: 66}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 13:00:00', mean: -0.0254658354, median: -0.0099923769, StdDev: 0.194606157, minimum: -0.892695606, maximum: 0.337186754, rms: 0.194819963, count: 67}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 13:21:59', mean: -0.024925676, median: 0.0470773019, StdDev: 0.337408303, minimum: -0.540405571, maximum: 0.28334567, rms: 0.333749574, count: 37}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 13:21:59', mean: -0.344466946, median: -0.214447841, StdDev: 0.545141917, minimum: -1.04666626, maximum: 0.625591993, rms: 0.64057307, count: 54}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 13:00:00', mean: -0.531560561, median: -0.419730276, StdDev: 0.470912555, minimum: -1.31119287, maximum: 0.64010644, rms: 0.707781948, count: 66}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 13:00:00', mean: -0.10965621, median: -0.0721894577, StdDev: 0.287236636, minimum: -1.51080799, maximum: 0.222131848, rms: 0.305447137, count: 67}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 13:21:59', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 37}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 13:21:59', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 54}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 13:00:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 66}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 13:00:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 67}
+wod_t_drb.nc:
+  components:
+    sensor: drb
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    waterTemperature:
+      longname: waterTemperature
+      units: DegC
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 12:02:01', mean: -1.51676955, median: -1.50779998, StdDev: 0.0266839263, minimum: -1.551, maximum: -1.48730004, rms: 1.51699405, count: 23}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 12:02:01', mean: -0.656210833, median: -0.705249995, StdDev: 0.617747789, minimum: -1.55060005, maximum: 0.806999981, rms: 0.899469224, count: 120}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 12:02:01', mean: -0.158125742, median: 0.162, StdDev: 0.8711059, minimum: -1.48220003, maximum: 0.804799974, rms: 0.884633852, count: 606}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 12:02:01', mean: 0.560739258, median: 0.554899991, StdDev: 0.139007278, minimum: 0.319599986, maximum: 0.814599991, rms: 0.57766797, count: 377}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 12:02:01', mean: 0.0393898854, median: 0.0467919856, StdDev: 0.0237394096, minimum: -0.00186050613, maximum: 0.0661387071, rms: 0.0457232988, count: 23}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 12:02:01', mean: -0.0018309214, median: -0.0319109987, StdDev: 0.147817065, minimum: -0.26697439, maximum: 0.454032183, rms: 0.147211259, count: 120}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 12:02:01', mean: 0.0167929887, median: 0.0197494989, StdDev: 0.080722356, minimum: -0.234535113, maximum: 0.194902882, rms: 0.0823853785, count: 606}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 12:02:01', mean: -0.0191691896, median: -0.0334490091, StdDev: 0.0330992611, minimum: -0.0587761439, maximum: 0.073506996, rms: 0.038211424, count: 377}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 12:02:01', mean: 0.0421591477, median: 0.0487418771, StdDev: 0.0224150892, minimum: 0.00500231981, maximum: 0.0671935976, rms: 0.0475182587, count: 23}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 12:02:01', mean: 0.0466003669, median: 0.00196074633, StdDev: 0.172366317, minimum: -0.210745707, maximum: 0.559729755, rms: 0.177859936, count: 120}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 12:02:01', mean: 0.0210697278, median: 0.0248656496, StdDev: 0.0839641861, minimum: -0.239478335, maximum: 0.201649591, rms: 0.0865001985, count: 606}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 12:02:01', mean: -0.0135071274, median: -0.025129687, StdDev: 0.0366194008, minimum: -0.0591544285, maximum: 0.0789925829, rms: 0.0389854592, count: 377}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 12:02:01', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 23}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 12:02:01', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 120}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 12:02:01', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 606}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 12:02:01', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 377}
+wod_t_pfl.nc:
+  components:
+    sensor: pfl
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    waterTemperature:
+      longname: waterTemperature
+      units: DegC
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 11:48:46', mean: 16.852444, median: 19.5760002, StdDev: 9.9656511, minimum: -1.69099998, maximum: 30.1720009, rms: 19.5776599, count: 2895}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 11:48:46', mean: 16.8005231, median: 18.8409996, StdDev: 9.5502929, minimum: -1.88150001, maximum: 30.1620007, rms: 19.3249456, count: 7508}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 11:48:46', mean: 11.0208081, median: 10.4949999, StdDev: 6.1209233, minimum: -1.90929997, maximum: 29.5009995, rms: 12.606456, count: 31717}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 11:48:46', mean: 4.27606517, median: 3.92400002, StdDev: 2.28121273, minimum: -1.90840006, maximum: 16.9130001, rms: 4.84650374, count: 78386}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 11:48:46', mean: 0.0152329822, median: 0.0130109033, StdDev: 0.0841838508, minimum: -0.617105365, maximum: 0.498898208, rms: 0.0855366383, count: 2895}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 11:48:46', mean: -0.0060771837, median: -0.00173301657, StdDev: 0.188725942, minimum: -1.35239375, maximum: 1.1510812, rms: 0.1888112, count: 7508}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 11:48:46', mean: 0.00195387356, median: 0.00544480653, StdDev: 0.268188188, minimum: -1.88928199, maximum: 1.85255086, rms: 0.268191078, count: 31717}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 11:48:46', mean: -0.0847485615, median: -0.0755819045, StdDev: 0.206724718, minimum: -1.98892438, maximum: 1.97647035, rms: 0.223420864, count: 78386}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 11:48:46', mean: 0.103606332, median: 0.0866597742, StdDev: 0.431805902, minimum: -1.20923448, maximum: 1.26782358, rms: 0.443988967, count: 2895}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 11:48:46', mean: 0.139900633, median: 0.113990299, StdDev: 0.596760184, minimum: -1.99316525, maximum: 1.99446464, rms: 0.612900866, count: 7508}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 11:48:46', mean: -0.0218077691, median: -0.00493020518, StdDev: 0.618133354, minimum: -1.99962187, maximum: 1.996876, rms: 0.618508185, count: 31717}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 11:48:46', mean: -0.124176826, median: -0.0988929421, StdDev: 0.29873669, minimum: -1.99973941, maximum: 1.99925113, rms: 0.323515619, count: 78386}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 11:48:46', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 2895}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 11:48:46', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 7508}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 11:48:46', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 31717}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 11:48:46', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 78386}
+wod_t_xbt.nc:
+  components:
+    sensor: xbt
+    satellite: null
+    level: null
+    file_region: global
+  variables:
+    waterTemperature:
+      longname: waterTemperature
+      units: DegC
+      records:
+        - {depth_bin: [0, 20], group: ObsValue, filetime: '2023-02-01 11:19:00', mean: 26.77588, median: 27.3789997, StdDev: 2.06314472, minimum: 20.25, maximum: 27.9759998, rms: 26.8550036, count: 325}
+        - {depth_bin: [20, 100], group: ObsValue, filetime: '2023-02-01 11:19:00', mean: 25.1967342, median: 25.3500004, StdDev: 2.11410182, minimum: 20.2000008, maximum: 27.7619991, rms: 25.2851968, count: 1219}
+        - {depth_bin: [100, 500], group: ObsValue, filetime: '2023-02-01 11:19:00', mean: 16.8599467, median: 16.3950005, StdDev: 3.67161566, minimum: 9.63000011, maximum: 23.8369999, rms: 17.2550428, count: 6530}
+        - {depth_bin: [500, 20000], group: ObsValue, filetime: '2023-02-01 11:19:00', mean: 9.04671081, median: 8.96100044, StdDev: 2.93358012, minimum: 4.17999983, maximum: 17.9500008, rms: 9.5103966, count: 7023}
+        - {depth_bin: [0, 20], group: oman, filetime: '2023-02-01 11:19:00', mean: 0.0152851033, median: 0.00674103294, StdDev: 0.103055764, minimum: -0.169326529, maximum: 0.379340202, rms: 0.104026181, count: 325}
+        - {depth_bin: [20, 100], group: oman, filetime: '2023-02-01 11:19:00', mean: 0.0282831222, median: 0.00419110106, StdDev: 0.250331704, minimum: -0.754692495, maximum: 1.27746141, rms: 0.251822337, count: 1219}
+        - {depth_bin: [100, 500], group: oman, filetime: '2023-02-01 11:19:00', mean: 0.0550891873, median: 0.0378760826, StdDev: 0.265320607, minimum: -0.833554685, maximum: 1.06331003, rms: 0.270959522, count: 6530}
+        - {depth_bin: [500, 20000], group: oman, filetime: '2023-02-01 11:19:00', mean: 0.00369776291, median: -0.00824566744, StdDev: 0.236457992, minimum: -0.572833538, maximum: 0.698763072, rms: 0.23647007, count: 7023}
+        - {depth_bin: [0, 20], group: ombg, filetime: '2023-02-01 11:19:00', mean: 0.155370973, median: 0.0882096365, StdDev: 0.18491684, minimum: -0.0680269897, maximum: 0.589360654, rms: 0.241307198, count: 325}
+        - {depth_bin: [20, 100], group: ombg, filetime: '2023-02-01 11:19:00', mean: 0.362546944, median: 0.219814166, StdDev: 0.588435942, minimum: -1.15710843, maximum: 1.99875772, rms: 0.690950863, count: 1219}
+        - {depth_bin: [100, 500], group: ombg, filetime: '2023-02-01 11:19:00', mean: 0.37023412, median: 0.433253348, StdDev: 0.867922995, minimum: -1.67075467, maximum: 1.99316072, rms: 0.943529687, count: 6530}
+        - {depth_bin: [500, 20000], group: ombg, filetime: '2023-02-01 11:19:00', mean: -0.308709368, median: -0.0441893004, StdDev: 0.741539397, minimum: -1.82372284, maximum: 1.26837552, rms: 0.803183575, count: 7023}
+        - {depth_bin: [0, 20], group: ObsError, filetime: '2023-02-01 11:19:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 325}
+        - {depth_bin: [20, 100], group: ObsError, filetime: '2023-02-01 11:19:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 1219}
+        - {depth_bin: [100, 500], group: ObsError, filetime: '2023-02-01 11:19:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 6530}
+        - {depth_bin: [500, 20000], group: ObsError, filetime: '2023-02-01 11:19:00', mean: 0.5, median: 0.5, StdDev: 0, minimum: 0.5, maximum: 0.5, rms: 0.5, count: 7023}
