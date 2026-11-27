@@ -47,8 +47,8 @@ def test_gridcell_area_conservation(tolerance=0.001):
     gridcell_area_data = Dataset(GRIDCELL_AREA_DATA_PATH)
     assert gridcell_area_data['area'].units == 'steradian'
     sum_gridcell_area = np.sum(gridcell_area_data.variables['area'])
-    assert sum_gridcell_area < (1 + tolerance) * 4 * np.pi
-    assert sum_gridcell_area > (1 - tolerance) * 4 * np.pi
+    assert sum_gridcell_area <= (1 + tolerance) * 4 * np.pi
+    assert sum_gridcell_area >= (1 - tolerance) * 4 * np.pi
     gridcell_area_data.close()
 
 def test_variable_names():

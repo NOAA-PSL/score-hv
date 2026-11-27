@@ -4,11 +4,8 @@ All rights reserved.
 
 Collection of methods to work with masking of user requested variables
 """
-import sys,os
 import numpy as np
 import xarray as xr
-import pytest
-import pdb
 
 VARIABLES_TO_MASK = ['icec', 'icetk','nsst','snod','soilm','soilt4','sst','tg3','tsnowp','weasd']
 VALID_MASKS = ['none','land','water', 'ice', 'sea']
@@ -89,11 +86,15 @@ class MaskCatalog:
     
     def user_mask(self, mask_type, variable_data, fraction_data, lfrac,
                   sotyp_data, icec=None):
-        """The user has requested a mask. Supported masks include: land, water,
-        or ice
+        """The user has requested a mask. Supported masks include: land, water
+        (or sea), ice, and none, which applies no mask beyond the automatic
+        masking of the variable.
         """
-        
-        if mask_type == 'land':
+        if mask_type == 'none':
+            masked_variable = variable_data
+            masked_frac = fraction_data
+
+        elif mask_type == 'land':
             masked_variable = variable_data.where(
                 (sotyp_data != 0) & (sotyp_data != 16)
             )
@@ -116,12 +117,14 @@ class MaskCatalog:
             )
             masked_frac = 1. - lfrac.where((icec==0) & (fraction_data.notnull())
                                            & (fraction_data != 0))
-        
+        else:
+            self.check_surface_mask([mask_type])
+
         return(masked_variable, masked_frac)
      
     def check_surface_mask(self,user_surface_mask):
         for mask in user_surface_mask:
             if mask not in VALID_MASKS:
                msg = f'The mask: {mask} is not a supported mask. ' \
-                     f'Valid masks are: "none, land, water, ice.'
+                     f'Valid masks are: {VALID_MASKS}'
                raise ValueError(msg)

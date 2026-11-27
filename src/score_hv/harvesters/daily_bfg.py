@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-import ast
-import copy
+import logging
 import os
-import sys
 import warnings
 from datetime import datetime as dt
 from pathlib import Path
@@ -17,21 +15,23 @@ from netCDF4 import MFDataset
 
 from score_hv.config_base import ConfigInterface
 from score_hv import stats_utils
-from score_hv.region_utils import GeoRegionsCatalog
+from score_hv.region_utils import GeoRegionsCatalog, REGION_BOUND_KEYS
 from score_hv.mask_utils import MaskCatalog
 from score_hv.variable_utils import VarUtilsCatalog
 
+logger = logging.getLogger(__name__)
+
 HARVESTER_NAME = 'daily_bfg'
 VALID_STATISTICS = ('mean', 'variance', 'minimum', 'maximum', 'integral')
-VALID_REGION_BOUND_KEYS = ('south_lat', 'north_lat', 'west_lon', 'east_lon')
-VALID_RESOLUTIONS = ('1536x768')
+VALID_REGION_BOUND_KEYS = REGION_BOUND_KEYS
+VALID_RESOLUTIONS = ('1536x768',)
 
 DEFAULT_REGION = {
     'global': {
         'north_lat': 90.0,
         'south_lat': -90.0,
-        'west_lon': 0.0,
-        'east_lon': 360.0
+        'west_long': 0.0,
+        'east_long': 360.0
     }
 }
 
@@ -206,8 +206,21 @@ class DailyBFGConfig(ConfigInterface):
                 raise KeyError(msg)
 
     def set_surface_mask(self):
-        """Set the surface mask from the configuration data."""
-        self.surface_mask = self.config_data.get('surface_mask')
+        """Set the surface masks from the configuration data.
+
+        A single mask name is accepted in place of a list; None or an empty
+        list requests no user surface mask.
+        Raises:
+            ValueError: If any of the masks is not a valid mask.
+        """
+        surface_mask = self.config_data.get('surface_mask')
+        if isinstance(surface_mask, str):
+            surface_mask = [surface_mask]
+        if not surface_mask:
+            surface_mask = None
+        else:
+            MaskCatalog().check_surface_mask(surface_mask)
+        self.surface_mask = surface_mask
 
     def set_regions(self):
         """
@@ -216,7 +229,7 @@ class DailyBFGConfig(ConfigInterface):
         """
         self.regions = self.config_data.get('regions', DEFAULT_REGION)
         if self.regions is DEFAULT_REGION:
-            print(f"Setting a default global region {self.regions}")
+            logger.info(f"Setting a default global region {self.regions}")
 
     def set_stats(self):
         """Set the statistics specified by the config dictionary.

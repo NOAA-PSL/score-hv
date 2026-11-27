@@ -5,11 +5,8 @@ All rights reserved.
 Collection of methods to work with masking of user requested variables
 """
 
-import os
 import numpy as np
 import xarray as xr
-import pytest
-import pdb
 
 class VarUtilsCatalog(object):
     def __init__(self,dataset):

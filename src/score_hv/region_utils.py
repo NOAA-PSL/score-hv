@@ -7,8 +7,12 @@ It includes functionality for defining default latitude and longitude ranges
 and potentially more utilities for working with geospatial data.
 """
 
+import logging
+
 import numpy as np
 import xarray as xr
+
+logger = logging.getLogger(__name__)
 
 # Default latitude and longitude ranges
 # The minimum latitude is -90, and the maximum latitude is 90.
@@ -17,6 +21,31 @@ NORTH_LAT = 90
 SOUTH_LAT = -90
 WEST_LONG = 0
 EAST_LONG = 360
+
+REGION_BOUND_KEYS = ('north_lat', 'south_lat', 'west_long', 'east_long')
+# alternate spellings accepted in a region request
+REGION_BOUND_KEY_ALIASES = {'west_lon': 'west_long', 'east_lon': 'east_long'}
+
+
+def normalize_region_bounds(region_name, bounds):
+    """Return the bounds of a region keyed by REGION_BOUND_KEYS.
+
+    The aliases in REGION_BOUND_KEY_ALIASES are renamed. Unknown keys, or a
+    bound given under both of its spellings, raise a KeyError.
+    """
+    normalized = dict()
+    for key, value in bounds.items():
+        bound = REGION_BOUND_KEY_ALIASES.get(key, key)
+        if bound not in REGION_BOUND_KEYS:
+            raise KeyError(f"'{key}' is not a valid bound for region "
+                           f"'{region_name}'. Valid bounds are "
+                           f"{REGION_BOUND_KEYS} (aliases "
+                           f"{tuple(REGION_BOUND_KEY_ALIASES)})")
+        if bound in normalized:
+            raise KeyError(f"'{bound}' is given more than once for region "
+                           f"'{region_name}'")
+        normalized[bound] = value
+    return normalized
 
 class GeoRegionsCatalog:
     """
@@ -124,10 +153,11 @@ class GeoRegionsCatalog:
                         'east_long': <float>
                     }
                 }
+                'west_lon' and 'east_lon' are accepted as aliases of
+                'west_long' and 'east_long'.
 
-        If the dictionary is empty or missing any required keys, appropriate
-        default values are used, and warnings are printed. If critical data is
-        missing, an exception is raised.
+        Missing bounds are set to their global defaults (and logged). Unknown
+        bound keys raise a KeyError, and invalid bounds a ValueError.
         """
         if not dictionary:
             raise ValueError("The dictionary passed to add_user_region is empty.")
@@ -136,22 +166,23 @@ class GeoRegionsCatalog:
             if not region_name:
                 raise ValueError("No region name was given. Please enter a "
                                  "name for your region.")
-            
+            input_dict = normalize_region_bounds(region_name, input_dict)
+
             # Define default values and handle missing keys
             north_lat = input_dict.get("north_lat", NORTH_LAT)
             south_lat = input_dict.get("south_lat", SOUTH_LAT)
             west_long = input_dict.get("west_long", WEST_LONG)
             east_long = input_dict.get("east_long", EAST_LONG)
 
-            # Handle missing latitude/longitude keys and print messages
+            # Log the defaults used for missing bounds
             if "north_lat" not in input_dict:
-                print(f"north_lat is missing. Using the default of north latitude = {north_lat}")
+                logger.info(f"{region_name}: north_lat is missing. Using the default of north latitude = {north_lat}")
             if "south_lat" not in input_dict:
-                print(f"south_lat is missing. Using the default of south latitude = {south_lat}")
+                logger.info(f"{region_name}: south_lat is missing. Using the default of south latitude = {south_lat}")
             if "west_long" not in input_dict:
-                print(f"west_long is missing. Using the default of west longitude = {west_long}")
+                logger.info(f"{region_name}: west_long is missing. Using the default of west longitude = {west_long}")
             if "east_long" not in input_dict:
-                print(f"east_long is missing. Using the default of east longitude = {east_long}")
+                logger.info(f"{region_name}: east_long is missing. Using the default of east longitude = {east_long}")
 
             # Test user latitudes and longitudes
             self.test_user_latitudes(north_lat, south_lat)
