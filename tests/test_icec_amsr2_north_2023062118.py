@@ -43,7 +43,8 @@ def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
     date_obj = datetime(2023, 6, 21, 17, 41, 58)
     for data in data1:
-        assert data.filetime == date_obj
+        assert data.filetime == datetime(2023, 6, 21, 18)
+        assert data.mediantime == date_obj
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)

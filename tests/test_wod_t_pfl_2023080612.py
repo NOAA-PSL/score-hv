@@ -5,8 +5,8 @@ profiling float file wod_t_pfl.2023080612.nc.
 The expected values were computed independently of score-hv (xarray/pandas)
 with QC_threshold 0 (EffectiveQC1 for oman, EffectiveQC0 for the other
 groups), half-open depth bins lo <= depth < hi, the sample standard deviation
-(ddof=1), and filetime as the median MetaData/dateTime of the observations
-used, floored to the second.
+(ddof=1), and mediantime as the median MetaData/dateTime of the observations
+used, floored to the second. filetime is the 2023080612 cycle in the file name.
 """
 import os
 from datetime import datetime
@@ -28,7 +28,7 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'ocean_depth_bins': [0, 10, 50, 100, 500, 1000]}
 
 STATISTICS = ('count', 'mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms')
-# depth bin: (filetime, {group: values of STATISTICS})
+# depth bin: (mediantime, {group: values of STATISTICS})
 EXPECTED = {
     (0, 10): (datetime(2023, 8, 6, 11, 48, 46), {
         'ObsValue': (1086, 19.61598, 22.1555, 8.529668, -1.767, 30.296, 21.38867),
@@ -90,8 +90,9 @@ def test_verify_filename_components(data1):
 
 def test_verify_datetime(data1):
     for data in data1:
-        assert data.filetime == EXPECTED[data.ocean_depth_bins][0], \
-            f'filetime mismatch for {data.group} in depth bin {data.ocean_depth_bins}'
+        assert data.filetime == datetime(2023, 8, 6, 12)
+        assert data.mediantime == EXPECTED[data.ocean_depth_bins][0], \
+            f'mediantime mismatch for {data.group} in depth bin {data.ocean_depth_bins}'
 
 
 def test_verify_statistics(data1):

@@ -17,6 +17,8 @@ from score_hv.harvester_base import harvest
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / 'data' / 'sfs_v11'
 STATISTICS = ['mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms', 'count']
+# the files have no cycle in their name or path; it is inferred from their times
+CYCLE = datetime(2023, 2, 1, 12)
 
 with open(BASE_DIR / 'soca_diags_sfs_v11.yaml') as stream:
     EXPECTED = yaml.safe_load(stream)
@@ -36,12 +38,12 @@ def test_sfs_v11_diag_file(filename):
 
     expected = EXPECTED[filename]
     expected_values = dict()
-    expected_filetimes = dict()
+    expected_mediantimes = dict()
     for variable, metadata in expected['variables'].items():
         for entry in metadata['records']:
             depth_bin = tuple(entry['depth_bin']) if entry['depth_bin'] else None
             key = (variable, depth_bin, entry['group'])
-            expected_filetimes[key] = datetime.fromisoformat(entry['filetime'])
+            expected_mediantimes[key] = datetime.fromisoformat(entry['mediantime'])
             for statistic in STATISTICS:
                 if statistic in entry:
                     expected_values[key + (statistic,)] = entry[statistic]
@@ -56,8 +58,9 @@ def test_sfs_v11_diag_file(filename):
         assert (record.longname, record.units) == (metadata['longname'], metadata['units'])
         assert record.QC_threshold == 0
         key = (record.variables, record.ocean_depth_bins, record.group)
-        assert key in expected_filetimes, f'unexpected record {key}'
-        assert record.filetime == expected_filetimes[key], f'filetime mismatch for {key}'
+        assert key in expected_mediantimes, f'unexpected record {key}'
+        assert record.filetime == CYCLE, f'filetime mismatch for {key}'
+        assert record.mediantime == expected_mediantimes[key], f'mediantime mismatch for {key}'
         harvested[key + (record.statistics,)] = record.value
 
     assert len(records) == len(harvested)

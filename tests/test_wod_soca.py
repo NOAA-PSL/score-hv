@@ -159,8 +159,8 @@ def test_wod_cycle_file_name():
         assert record.level is None
         assert record.file_region == 'global'
         assert record.ocean_depth_bins is None
-        # median time of the observations used, not the cycle in the file name
-        assert record.filetime == datetime(1979, 1, 1, 23, 22)
+        assert record.filetime == datetime(1979, 1, 2, 0)
+        assert record.mediantime == datetime(1979, 1, 1, 23, 22)
 
     harvested = {(record.group, record.statistics): record.value for record in records}
     assert harvested[('ombg', 'rms')] == pytest.approx(1.642326233143017, rel=TOLERANCE)

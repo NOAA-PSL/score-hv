@@ -84,7 +84,7 @@ def harvest_records(filenames, **request):
                     **request})
 
 
-def test_depth_bins_qc_and_filetime(tmp_path):
+def test_depth_bins_qc_and_mediantime(tmp_path):
     filename = write_wod(tmp_path / 'wod_t_ctd.nc')
     records = harvest_records([filename],
                               statistics=['mean', 'StdDev', 'count'],
@@ -116,13 +116,15 @@ def test_depth_bins_qc_and_filetime(tmp_path):
     assert harvested.keys() == {(depth_bin, group, statistic)
                                 for (depth_bin, group), (stats, _) in expected.items()
                                 for statistic in stats}
-    for (depth_bin, group), (stats, filetime) in expected.items():
+    for (depth_bin, group), (stats, mediantime) in expected.items():
         for statistic, value in stats.items():
             record = harvested[(depth_bin, group, statistic)]
             assert record.value == pytest.approx(value, rel=1e-6), (depth_bin, group, statistic)
-            assert record.filetime == filetime, (depth_bin, group, statistic)
+            assert record.mediantime == mediantime, (depth_bin, group, statistic)
     for record in records:
-        assert type(record.filetime) is datetime
+        # no cycle recorded: the file median time rounded to the nearest synoptic time
+        assert record.filetime == datetime(2023, 1, 1)
+        assert type(record.filetime) is type(record.mediantime) is datetime
         assert (record.sensor, record.satellite, record.level, record.file_region) == \
             ('ctd', None, None, 'global')
         assert (record.longname, record.units) == ('waterTemperature', 'DegC')
@@ -142,10 +144,10 @@ def test_without_qc_or_depth_bins(tmp_path):
     assert harvested[('ObsValue', 'count')].value == 5
     assert harvested[('ObsValue', 'mean')].value == pytest.approx(3.4)
     assert harvested[('ObsValue', 'rms')].value == pytest.approx(sqrt(15))
-    assert harvested[('ObsValue', 'mean')].filetime == at(21)
+    assert harvested[('ObsValue', 'mean')].mediantime == at(21)
     for group in ('oman', 'ombg', 'ObsError'):
         assert harvested[(group, 'count')].value == 6
-        assert harvested[(group, 'count')].filetime == at(25)
+        assert harvested[(group, 'count')].mediantime == at(25)
     assert harvested[('oman', 'mean')].value == pytest.approx(0.35)
     for record in records:
         assert record.ocean_depth_bins is None
@@ -224,12 +226,48 @@ def test_all_variables_harvested_by_default(tmp_path):
         {'seaSurfaceTemperature': 'DegC', 'seaSurfaceSalinity': 'psu'}
 
 
-def test_filetime_falls_back_to_file_name_cycle(tmp_path):
+def test_times_without_valid_obs_times_fall_back_to_file_name_cycle(tmp_path):
     filename = write_diag(tmp_path / 'wod_t_pfl.2023080612.nc',
                           {'waterTemperature': {group: [1.0, 2.0] for group in GROUPS}},
                           np.ma.masked_all(2, dtype='i8'))
     records = harvest_records([filename], QC_threshold=None)
-    assert {record.filetime for record in records} == {datetime(2023, 8, 6, 12)}
+    assert {(record.filetime, record.mediantime) for record in records} == \
+        {(datetime(2023, 8, 6, 12), datetime(2023, 8, 6, 12))}
+
+
+@pytest.mark.parametrize('subdir, name, date_time, expected', [
+    # file name cycle first, then a <run>.YYYYMMDD/HH directory, then date_time
+    ('gdas.20230201/12/analysis/ocean/diags', 'sst_odyssea.2023020118.nc', 2023020100,
+     datetime(2023, 2, 1, 18)),
+    ('gdas.20230201/12/analysis/ocean/diags', 'sst_odyssea.nc', 2023020100,
+     datetime(2023, 2, 1, 12)),
+    ('gdas.20230201/12', 'sst_odyssea.nc', None, datetime(2023, 2, 1, 12)),
+    ('diags', 'icec_nsidc_nh.nc', 2023020106, datetime(2023, 2, 1, 6)),
+    # otherwise the file median time (2022-12-31 21:00:26 here) rounded to the
+    # nearest synoptic time
+    ('diags', 'sst_odyssea.nc', None, datetime(2023, 1, 1)),
+])
+def test_filetime_is_the_analysis_cycle(tmp_path, subdir, name, date_time, expected):
+    directory = tmp_path / subdir
+    directory.mkdir(parents=True)
+    times = [t - 3 * 3600 + 1 for t in WOD_TIMES]
+    filename = write_diag(directory / name,
+                          {'seaSurfaceTemperature': {group: [1.0] * 6 for group in GROUPS}},
+                          times)
+    if date_time is not None:
+        with netCDF4.Dataset(filename, 'a') as dataset:
+            dataset.setncattr('date_time', np.int32(date_time))
+    records = harvest_records([filename], QC_threshold=None)
+    assert {record.filetime for record in records} == {expected}
+    assert {record.mediantime for record in records} == {at(25 - 3 * 3600 + 1)}
+
+
+def test_filetime_requires_a_cycle_or_valid_times(tmp_path):
+    filename = write_diag(tmp_path / 'wod_t_pfl.nc',
+                          {'waterTemperature': {group: [1.0, 2.0] for group in GROUPS}},
+                          np.ma.masked_all(2, dtype='i8'))
+    with pytest.raises(ValueError, match='no cycle'):
+        harvest_records([filename], QC_threshold=None)
 
 
 def test_multiple_files_and_unsupported_file_names(tmp_path, caplog):

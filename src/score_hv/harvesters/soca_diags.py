@@ -16,7 +16,7 @@ import os
 import re
 from collections import namedtuple
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from numbers import Real
 
 import netCDF4
@@ -46,6 +46,9 @@ DATA_GROUPS = ('ObsValue', 'oman', 'ombg', 'ObsError')
 DEFAULT_STATISTICS = ('mean',)
 DEFAULT_QC_THRESHOLD = 0.0
 DEFAULT_TIME_UNITS = 'seconds since 1970-01-01T00:00:00Z'
+# when the cycle is not recorded, filetime is the file median time rounded to
+# the nearest synoptic time (00, 06, 12, 18 UTC)
+SYNOPTIC_INTERVAL = timedelta(hours=6)
 
 HarvestedData = namedtuple('HarvestedData', ['filenames',
                                              'sensor',
@@ -58,6 +61,7 @@ HarvestedData = namedtuple('HarvestedData', ['filenames',
                                              'statistics',
                                              'value',
                                              'filetime',
+                                             'mediantime',
                                              'file_region',
                                              'QC_threshold',
                                              'ocean_depth_bins'])
@@ -113,6 +117,8 @@ KELVIN_UNITS = ('k', 'degk', 'deg_k', 'kelvin')
 _LEVEL_RE = re.compile(r'l[1-4][a-z]?')
 _NOAA_RE = re.compile(r'noaa(\d{2})')
 _CYCLE_RE = re.compile(r'\d{10}')
+# a <run>.YYYYMMDD/HH directory, e.g. gdas.20230201/12
+_PATH_CYCLE_RE = re.compile(r'[^/\\]\.(\d{8})[/\\](\d{2})(?=[/\\]|$)')
 
 
 def split_filename(filename):
@@ -403,6 +409,60 @@ def median_datetime(times, mask, units, calendar='standard'):
                     median.hour, median.minute, median.second)
 
 
+def nearest_synoptic_time(time):
+    """Round a datetime to the nearest synoptic time (00, 06, 12 or 18 UTC)."""
+    midnight = datetime(time.year, time.month, time.day)
+    intervals = int(np.floor((time - midnight) / SYNOPTIC_INTERVAL + 0.5))
+    return midnight + intervals * SYNOPTIC_INTERVAL
+
+
+def path_cycle(filename):
+    """Cycle of a <run>.YYYYMMDD/HH directory in the file path, or None.
+
+    e.g. .../gdas.20230201/12/analysis/ocean/diags/sst_odyssea.nc -> 2023-02-01 12Z.
+    The innermost such directory is used.
+    """
+    directory = os.path.dirname(os.path.abspath(os.fspath(filename)))
+    for match in reversed(list(_PATH_CYCLE_RE.finditer(directory))):
+        try:
+            return datetime.strptime(match.group(1) + match.group(2), '%Y%m%d%H')
+        except ValueError:
+            continue
+    return None
+
+
+def attribute_cycle(dataset):
+    """Cycle of the YYYYMMDDHH date_time global attribute, or None."""
+    value = getattr(dataset, 'date_time', None)
+    try:
+        return datetime.strptime(f'{int(value):010d}', '%Y%m%d%H')
+    except (TypeError, ValueError):
+        return None
+
+
+def analysis_cycle(filename, dataset, file_info, file_mediantime):
+    """Analysis cycle reported as filetime, from the first available of:
+
+    1. the .YYYYMMDDHH cycle in the file name,
+    2. a <run>.YYYYMMDD/HH directory in the file path (e.g. gdas.20230201/12),
+    3. the YYYYMMDDHH date_time global attribute,
+    4. the median time of the whole file rounded to the nearest synoptic time.
+
+    Raises:
+        ValueError: if none is available (no cycle and no valid times).
+    """
+    cycle = file_info['cycle'] or path_cycle(filename) or attribute_cycle(dataset)
+    if cycle is not None:
+        return cycle
+    if file_mediantime is None:
+        raise ValueError(f'no cycle in the name, path or date_time attribute of {filename} '
+                         'and no valid MetaData/dateTime to infer it from')
+    cycle = nearest_synoptic_time(file_mediantime)
+    logger.info('%s: no cycle recorded; using the median time %s rounded to %s',
+                filename, file_mediantime, cycle)
+    return cycle
+
+
 def depth_bin_mask(depth, depth_bin, size):
     """Boolean mask of the observations with lo <= depth < hi.
 
@@ -554,12 +614,13 @@ class SOCADiagsHv(object):
     def _harvest_dataset(self, filename, dataset, file_info):
         """Harvest the records of one open SOCA diag dataset.
 
+        filetime is the analysis cycle of the file (see analysis_cycle).
         For each variable, depth bin and data group, the statistics and the
-        median time (filetime) are computed from the same observations: those
-        with a valid value that pass QC and lie inside the depth bin. When
-        no observation is left only count (0) is reported, with the median
-        time of the whole file as filetime (the file name cycle if the file
-        has no valid times).
+        median time (mediantime) are computed from the same observations:
+        those with a valid value that pass QC and lie inside the depth bin.
+        When no observation is left only count (0) is reported, with the
+        median time of the whole file as mediantime (filetime if the file has
+        no valid times).
         """
         for group in ('MetaData', 'ObsValue'):
             if group not in dataset.groups:
@@ -572,8 +633,9 @@ class SOCADiagsHv(object):
         time_units = getattr(time_var, 'units', DEFAULT_TIME_UNITS)
         calendar = getattr(time_var, 'calendar', 'standard')
         times = read_float(time_var)
-        file_time = median_datetime(times, np.ones(times.size, dtype=bool),
-                                    time_units, calendar) or file_info['cycle']
+        file_mediantime = median_datetime(times, np.ones(times.size, dtype=bool),
+                                          time_units, calendar)
+        filetime = analysis_cycle(filename, dataset, file_info, file_mediantime)
 
         depth = read_float(metadata.variables['depth']) if 'depth' in metadata.variables \
             else None
@@ -608,7 +670,8 @@ class SOCADiagsHv(object):
                 for group, (values, usable) in group_data.items():
                     used = usable & in_bin
                     statistics = compute_statistics(values[used], self.config.stats)
-                    filetime = median_datetime(times, used, time_units, calendar) or file_time
+                    mediantime = median_datetime(times, used, time_units, calendar) or \
+                        file_mediantime or filetime
                     for statistic, value in statistics.items():
                         if value is None:
                             continue
@@ -624,6 +687,7 @@ class SOCADiagsHv(object):
                             statistics=statistic,
                             value=value,
                             filetime=filetime,
+                            mediantime=mediantime,
                             file_region=file_info['file_region'],
                             QC_threshold=self.config.qc_threshold,
                             ocean_depth_bins=depth_bin))

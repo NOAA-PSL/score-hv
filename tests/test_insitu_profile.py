@@ -56,7 +56,8 @@ def test_verify_datetime():
     # median time of the harvested observations
     date_obj = datetime(2021, 7, 2, 22, 41)
     for item in data1:
-        assert item.filetime == date_obj
+        assert item.filetime == datetime(2021, 7, 3, 0)
+        assert item.mediantime == date_obj
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)

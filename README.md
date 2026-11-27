@@ -358,15 +358,24 @@ HarvestedData = namedtuple('HarvestedData', ['filenames',
                                              'statistics',
                                              'value',
                                              'filetime',
+                                             'mediantime',
                                              'file_region',
                                              'QC_threshold',
                                              'ocean_depth_bins'])
 ```
 - `group`: the data group, one of `ObsValue`, `oman`, `ombg` or `ObsError`
-- `filetime`: a `datetime.datetime`, the median `MetaData/dateTime` of the
+- `filetime`: a `datetime.datetime`, the analysis cycle of the file, the same
+  for every record of the file. It is taken from the first available of the
+  `.YYYYMMDDHH` cycle in the file name, a `<run>.YYYYMMDD/HH` directory in the
+  file path (e.g. `gdas.20230201/12/analysis/ocean/diags/`), and the
+  `YYYYMMDDHH` `date_time` global attribute. Otherwise the median time of the
+  whole file is rounded to the nearest synoptic time (00, 06, 12 or 18 UTC),
+  which assumes the assimilation window is centered on a 6-hourly cycle. A file
+  with none of these raises a `ValueError`.
+- `mediantime`: a `datetime.datetime`, the median `MetaData/dateTime` of the
   observations used for the record, floored to the second. Records without
-  observations use the median time of the whole file (or the file name cycle if
-  the file has no valid times).
+  observations use the median time of the whole file (or `filetime` if the
+  file has no valid times).
 - `units`: the units attribute of the `ObsValue` variable, with Celsius
   spellings reported as `DegC` and Kelvin spellings as `DegK`. Without a units
   attribute: `DegC` for WOD temperature, `PSS` for WOD salinity, `1` for
@@ -392,7 +401,8 @@ HarvestedData(filenames='/filepath/diags/wod_t_pfl.nc', sensor='pfl', satellite=
               level=None, variables='waterTemperature', group='oman',
               longname='waterTemperature', units='DegC', statistics='rms',
               value=0.16662825309021626,
-              filetime=datetime.datetime(2023, 2, 1, 11, 48, 46),
+              filetime=datetime.datetime(2023, 2, 1, 12, 0),
+              mediantime=datetime.datetime(2023, 2, 1, 11, 48, 46),
               file_region='global', QC_threshold=0, ocean_depth_bins=(0, 100))
 ```
 
