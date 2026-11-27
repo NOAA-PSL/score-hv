@@ -32,6 +32,7 @@ VALID_CONFIG_DICT = {'harvester_name': hv_registry.SOCA_DIAGS,
                      'filenames' : SOCA_PATH,
                      'statistics': ['mean', 'median', 'StdDev',  'minimum', 'maximum'],
                      'variables': ['salinity','waterTemperature'],
+                     'QC_threshold': None,
                      }
 
 def test_soca_harvester():
@@ -45,22 +46,22 @@ def test_verify_filename_components():
     data1 = harvest(VALID_CONFIG_DICT)
     for item in data1:
         if item.variables not in expected_variable_names:
-           raise ValueError(f"Error: {item.variable} is not in the expected variable list.") 
-        assert item.sensor == None   
-        assert item.satellite == 'argo'
+           raise ValueError(f"Error: {item.variables} is not in the expected variable list.") 
+        assert item.sensor == 'argo'
+        assert item.satellite == None
         assert item.level == None   
 
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
-    date_str = "2021070300"
-    date_obj = datetime.strptime(date_str, "%Y%m%d%H")
-    filetime_str = data1[0].filetime
-    filetime_dt = datetime.strptime(filetime_str, "%Y-%m-%d %H:%M:%S")
-    assert date_obj == filetime_dt 
+    # median time of the harvested observations
+    date_obj = datetime(2021, 7, 2, 22, 41)
+    for item in data1:
+        assert item.filetime == datetime(2021, 7, 3, 0)
+        assert item.mediantime == date_obj
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)
-    groups_wanted = ['ObsValue', 'oman', 'ombg']
+    groups_wanted = ['ObsValue', 'oman', 'ombg', 'ObsError']
     for data in data1:
         assert data.group in groups_wanted, f"Unexpected group: {data.group}"
    

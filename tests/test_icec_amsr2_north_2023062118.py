@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import os
+from datetime import datetime
 from pathlib import Path 
-import cftime
 
 from score_hv import hv_registry
 from score_hv.harvester_base import harvest
@@ -36,13 +36,15 @@ def test_verify_filename_components():
     data = data1[0]
     assert data.variables == 'seaIceFraction'
     assert data.sensor == 'amsr2'
-    assert data.file_region == 'north'   
+    assert data.satellite == 'gcom-w1'
+    assert data.file_region == 'nh'
 
 def test_verify_datetime():
     data1 = harvest(VALID_CONFIG_DICT) 
-    date_obj = cftime.DatetimeGregorian(2023, 6, 21, 17, 41, 58, 0, has_year_zero=False)
-    filetime_dt = data1[0].filetime
-    assert date_obj == filetime_dt 
+    date_obj = datetime(2023, 6, 21, 17, 41, 58)
+    for data in data1:
+        assert data.filetime == datetime(2023, 6, 21, 18)
+        assert data.mediantime == date_obj
 
 def test_verify_groups():
     data1 = harvest(VALID_CONFIG_DICT)

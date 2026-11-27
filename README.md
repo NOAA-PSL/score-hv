@@ -259,3 +259,157 @@ VALID_CONFIG_DICT_TEMP = {
 ```
 
 
+### soca_diags
+Descriptive statistics of the observations in SOCA/JEDI ocean observation-space
+diagnostic files ("ocean diags"), e.g. the files in
+`gdas.YYYYMMDD/HH/analysis/ocean/diags/`. One record is returned for every
+requested statistic of every variable, depth bin and data group (`ObsValue`,
+`oman`, `ombg`, `ObsError`) found in each file.
+
+**Expected file format**: IODA netCDF with a `MetaData` group holding `dateTime`
+(and `depth` for profile data), an `ObsValue` group, and optionally the `oman`,
+`ombg`, `ObsError`, `EffectiveQC0` and `EffectiveQC1` groups.
+
+#### Supported file names
+An optional `.YYYYMMDDHH` cycle may precede the `.nc`/`.nc4` extension, e.g.
+`wod_t_pfl.2023080612.nc`.
+```
+[rads_]adt[_<source>]_<altimeter>                             e.g. adt_glore_j3.nc, rads_adt_j3.nc
+icec_<sensor|product>[_<platform>][_<level>][_<north|south|nh|sh>]
+                                                              e.g. icec_amsr2_north.nc, icec_nsidc_sh.nc
+sst_<sensor|product>[_<platform>][_<level>][_<region>]        e.g. sst_viirs_n20_l3u.nc, sst_avhrrf_mb_l3u.nc, sst_odyssea.nc
+sss_<sensor>[_<platform>][_<level>]                           e.g. sss_smap_l2.nc
+wod_<t|s>_<platform>                                          e.g. wod_t_pfl.nc, wod_s_ctd.nc
+insitu_[<temp|salt>_]<profile|surface>_<platform>             e.g. insitu_profile_argo.nc4, insitu_temp_surface_drifter.nc
+icoads_<...>
+```
+`sst_avhrrf_<ma|mb|mc>` is reported as sensor `avhrr` and satellite
+`metop-a|b|c`. For WOD and insitu files the sensor is the platform (`pfl`,
+`argo`, `drifter`, ...) and the satellite is `None`.
+
+Files with any other name (including the `moana`, `pirata_t`, `rama_t` and
+`tao_t` mooring files, and the GDASApp `nasa_swk` and `icefb_*` obs spaces) are
+skipped with a logged warning. The record metadata
+parsed from the current GDAS ocean diag file names is:
+
+| File name | sensor | satellite | level | file_region |
+|---|---|---|---|---|
+| adt_glore_3a.nc, adt_glore_3b.nc | Synthetic aperture Radar Altimeter | Sentinel-3A, Sentinel-3B | None | global |
+| adt_glore_6a.nc | Poseidon 4 | Sentinel-6A | None | global |
+| adt_glore_c2.nc | SAR Interferometer Radar Altimeter | cryosat2 | None | global |
+| adt_glore_j3.nc | Poseidon 3B | jason3 | None | global |
+| icec_amsr2_north.nc, icec_amsr2_south.nc | amsr2 | gcom-w1 | None | nh, sh |
+| icec_nsidc_nh.nc, icec_nsidc_sh.nc | ssmis | dmsp | None | nh, sh |
+| sst_odyssea.nc | multiple | ODYSSEA | l3 | global |
+| wod_t_\<platform\>.nc, wod_s_\<platform\>.nc | \<platform\> (apb, ctd, drb, pfl, xbt, ...) | None | None | global |
+
+#### Request keys
+- `filenames`: list of diag file paths (required)
+- `statistics`: list of statistics, default `['mean']`
+- `variables`: list of variables, default (`[]` or missing) is every variable in each file
+- `QC_threshold`: observations are used when their EffectiveQC flag is
+  `<= QC_threshold` (default `0`); `None` turns QC filtering off. `oman` is
+  filtered with `EffectiveQC1` (the analysis QC), and `ObsValue`, `ombg` and
+  `ObsError` with `EffectiveQC0` (the background QC). If the preferred group is
+  missing, another `EffectiveQC*` group is used; if none has the variable, a
+  warning is logged and the group is not QC filtered.
+- `ocean_depth_bins`: depth bins in meters (positive down), either as increasing
+  bin edges, e.g. `[0, 20, 100]` for the bins `(0, 20)` and `(20, 100)`, or as
+  `[lo, hi]` pairs, e.g. `[[0, 20], [0, 100]]` (pairs may overlap). Bins are
+  half open, `lo <= depth < hi`, and observations without a depth are in no
+  bin. Default (`None` or `[]`) is no depth binning. Files without
+  `MetaData/depth` (e.g. ADT, ICEC and SST) are never binned.
+
+Missing values are dropped separately for each data group. Unknown statistics or
+variables raise a `KeyError`, an invalid `QC_threshold` or `ocean_depth_bins` a
+`ValueError`, and a missing file a `FileNotFoundError`.
+
+#### Available statistics
+```python
+VALID_STATISTICS = ('mean', 'median', 'StdDev', 'minimum', 'maximum', 'rms', 'count')
+STATISTIC_ALIASES = {'RMS': 'rms', 'n': 'count', 'nobs': 'count'}
+```
+`StdDev` is the sample standard deviation (ddof=1) and `rms` is
+`sqrt(mean(x**2))`; statistics are computed in double precision. A record with
+no observations reports only `count` (0), and `StdDev` is not reported for a
+single observation.
+
+#### Available variables
+```python
+VALID_VARIABLES = ('seaSurfaceTemperature',
+                   'seaIceFraction',
+                   'absoluteDynamicTopography',
+                   'seaSurfaceSalinity',
+                   'waterTemperature',
+                   'salinity')
+VARIABLE_ALIASES = {'sst': 'seaSurfaceTemperature', 'icec': 'seaIceFraction'}
+```
+
+#### Returned results
+```python
+HarvestedData = namedtuple('HarvestedData', ['filenames',
+                                             'sensor',
+                                             'satellite',
+                                             'level',
+                                             'variables',
+                                             'group',
+                                             'longname',
+                                             'units',
+                                             'statistics',
+                                             'value',
+                                             'filetime',
+                                             'mediantime',
+                                             'file_region',
+                                             'QC_threshold',
+                                             'ocean_depth_bins'])
+```
+- `group`: the data group, one of `ObsValue`, `oman`, `ombg` or `ObsError`
+- `filetime`: a `datetime.datetime`, the analysis cycle of the file, the same
+  for every record of the file. It is taken from the first available of the
+  `.YYYYMMDDHH` cycle in the file name, a `<run>.YYYYMMDD/HH` directory in the
+  file path (e.g. `gdas.20230201/12/analysis/ocean/diags/`), and the
+  `YYYYMMDDHH` `date_time` global attribute. Otherwise the median time of the
+  whole file is rounded to the nearest synoptic time (00, 06, 12 or 18 UTC),
+  which assumes the assimilation window is centered on a 6-hourly cycle. A file
+  with none of these raises a `ValueError`.
+- `mediantime`: a `datetime.datetime`, the median `MetaData/dateTime` of the
+  observations used for the record, floored to the second. Records without
+  observations use the median time of the whole file (or `filetime` if the
+  file has no valid times).
+- `units`: the units attribute of the `ObsValue` variable, with Celsius
+  spellings reported as `DegC` and Kelvin spellings as `DegK`. Without a units
+  attribute: `DegC` for WOD temperature, `PSS` for WOD salinity, `1` for
+  `seaIceFraction`, `m` for ADT, `psu` for SSS, and `DegC` or `DegK` for SST
+  (from the magnitude of the values).
+- `longname`: the variable name, except for WOD files (`waterTemperature` for
+  temperature and `Practical Salinity Scale` for salinity)
+- `ocean_depth_bins`: the `(lo, hi)` depth bin of the record, or `None`
+
+#### Example input dictionary
+```python
+VALID_CONFIG_DICT = {'harvester_name': 'soca_diags',
+                     'filenames': ['/filepath/diags/wod_t_pfl.nc',
+                                   '/filepath/diags/adt_glore_j3.nc'],
+                     'statistics': ['mean', 'rms', 'count'],
+                     'variables': ['waterTemperature', 'absoluteDynamicTopography'],
+                     'QC_threshold': 0,
+                     'ocean_depth_bins': [0, 100, 500]}
+```
+which returns records such as
+```python
+HarvestedData(filenames='/filepath/diags/wod_t_pfl.nc', sensor='pfl', satellite=None,
+              level=None, variables='waterTemperature', group='oman',
+              longname='waterTemperature', units='DegC', statistics='rms',
+              value=0.16662825309021626,
+              filetime=datetime.datetime(2023, 2, 1, 12, 0),
+              mediantime=datetime.datetime(2023, 2, 1, 11, 48, 46),
+              file_region='global', QC_threshold=0, ocean_depth_bins=(0, 100))
+```
+
+#### Test data
+`tests/test_soca_diags_unit.py` writes its own small diag files and needs no
+test data. `tests/test_soca_diags_sfs_v11.py` checks the statistics of the 17
+supported SFS_v11 ocean diag files from
+`s3://noaa-reanalyses-pds/analyses/scout_runs/exper/SFS_v11/2023/02/2023020112/gdas.20230201/12/analysis/ocean/diags/`.
+`get_unit_test_data.sh` downloads copies of them from
+`s3://noaa-reanalyses-pds/score_suite/test_data/sfs_v11/` to `tests/data/sfs_v11/`.

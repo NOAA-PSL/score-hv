@@ -4,9 +4,9 @@ ICEC_No_Filter:
   variable: seaIceFraction
   components:
     sensor: ssmis
-    satellite: DMSP 
+    satellite: dmsp
     level: null
-    file_region: north 
+    file_region: nh
     ocean_depth_bins: null
   expected_stats:
     mean:
@@ -39,15 +39,15 @@ ICEC_No_Filter:
       oman:  0.107778
       ombg:  0.124495
       ObsError:  0.0839827
-ICEC_No_Filter:
+ICEC_Strict_Filter:
   filename: icec_nsidc_nh.nc 
   QC_threshold: 10.0 
   variable: seaIceFraction
   components:
     sensor: ssmis
-    satellite: DMSP 
+    satellite: dmsp
     level: null
-    file_region: north 
+    file_region: nh
     ocean_depth_bins: null
   expected_stats:
     mean:
